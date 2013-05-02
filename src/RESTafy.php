@@ -330,7 +330,7 @@ final class ConfigurationManager {
     return self::$_Current->GetSection($_sectionName_);
   }
 
-  static function Initialize($_config_) {
+  static function Initialize(Configuration $_config_) {
     if (self::$_Initialized) {
       throw new ConfigurationException();
     }
@@ -700,7 +700,7 @@ class ProviderSection {
 }
 
 final class ProviderHelper {
-  static function InstantiateProvider($_section_) {
+  static function InstantiateProvider(ProviderSection $_section_) {
     $providerClass = $_section_->getProviderClass();
     $params = $_section_->getProviderParams();
 
@@ -774,12 +774,12 @@ class DefaultAssetProvider implements AssetProvider {
 
   function getImageUrl($_relativePath_) {
     return \sprintf(
-      '%s/assets/img/%s', $this->_params->getBaseUrl(), $_relativePath_);
+      '%s/img/%s', $this->_params->getBaseUrl(), $_relativePath_);
   }
 
   function getScriptUrl($_relativePath_) {
     return \sprintf(
-      '%s/assets/js/%s/%s',
+      '%s/%s/js/%s',
       $this->_params->getBaseUrl(),
       $this->_params->getScriptVersion(),
       $_relativePath_);
@@ -787,7 +787,7 @@ class DefaultAssetProvider implements AssetProvider {
 
   function getStyleUrl($_relativePath_) {
     return \sprintf(
-      '%s/assets/css/%s/%s',
+      '%s/%s/css/%s',
       $this->_params->getBaseUrl(),
       $this->_params->getStyleVersion(),
       $_relativePath_);
