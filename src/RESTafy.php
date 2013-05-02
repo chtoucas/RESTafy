@@ -657,7 +657,11 @@ final class HttpError {
   }
 }
 
-// Url ---------------------------------------------------------------------------
+// Addr --------------------------------------------------------------------------
+
+interface Addr {
+  function getUrl();
+}
 
 final class Url {
   private
@@ -670,7 +674,42 @@ final class Url {
   }
 
   function __toString() {
-    return $this->_baseUrl + $this->_relativePath_;
+    return $this->_baseUrl . $this->_relativePath_;
+  }
+}
+
+// Provider ----------------------------------------------------------------------
+
+class ProviderSection {
+  private
+    $_providerClass,
+    $_providerParams;
+
+  function __construct($_providerClass_, $_providerParams_ = \NULL) {
+    $this->_providerClass  = $_providerClass_;
+    $this->_providerParams = $_providerParams_;
+  }
+
+  function getProviderClass() {
+    return $this->_providerClass;
+  }
+
+  function getProviderParams() {
+    return $this->_providerParams;
+  }
+}
+
+final class ProviderHelper {
+  static function InstantiateProvider($_section_) {
+    $providerClass = $_section_->getProviderClass();
+    $params = $_section_->getProviderParams();
+
+    if (\NULL === $params) {
+      return new $providerClass();
+    } else {
+      $refl = new \ReflectionClass($providerClass);
+      return $refl->newInstance($params);
+    }
   }
 }
 
@@ -687,21 +726,30 @@ interface AssetProvider {
   function getStyleUrl($_relativePath_);
 }
 
-interface AssetProviderSettings
-{
-  function getProvider();
+class SimpleAssetProvider implements AssetProvider {
+  function getImageUrl($_relativePath_) {
+    return \sprintf('/assets/img/%s', $_relativePath_);
+  }
+
+  function getScriptUrl($_relativePath_) {
+    return \sprintf('/assets/js/%s', $_relativePath_);
+  }
+
+  function getStyleUrl($_relativePath_) {
+    return \sprintf('/assets/css/%s', $_relativePath_);
+  }
 }
 
-class AssetsSettings {
+class DefaultAssetProviderParams {
   private
     $_baseUrl,
     $_scriptVersion,
     $_styleVersion;
 
   function __construct($_baseUrl_, $_scriptVersion_, $_styleVersion_) {
-    $this->_baseUrl       = $_baseUrl_;
+    $this->_baseUrl = $_baseUrl_;
     $this->_scriptVersion = $_scriptVersion_;
-    $this->_styleVersion  = $_styleVersion_;
+    $this->_styleVersion = $_styleVersion_;
   }
 
   function getBaseUrl() {
@@ -717,75 +765,32 @@ class AssetsSettings {
   }
 }
 
-class AssetProviderBuilder {
-  private static $_Instance;
-  private $_factory;
-
-  function __construct() {
-    $this->setAssetProvider(new DefaultAssetProvider());
-  }
-
-  static function Current() {
-    if (\NULL === self::$_Instance) {
-      self::$_Instance = new self();
-    }
-    return self::$_Instance;
-  }
-
-  function getAssetProvider() {
-    return $this->_factory;
-  }
-
-  function setAssetProvider(IPathFactory $_factory_) {
-    $this->_factory = $_factory_;
-  }
-}
-
-class DefaultAssetProviderSettings
-  implements AssetProviderSettings
-{
-  private $_settings;
-
-  function __construct($_settings_) {
-    $this->_settings = $_settings_;
-  }
-
-  function getProvider() {
-    return new DefaultAssetProvider($this->_settings);
-  }
-}
-
 class DefaultAssetProvider implements AssetProvider {
-  function getImageUrl($_relativePath_) {
-    return \sprintf('/assets/img/%s', $_relativePath_);
-  }
+  private $_params;
 
-  function getScriptUrl($_relativePath_) {
-    return \sprintf('/assets/js/%s', $_relativePath_);
-  }
-
-  function getStyleUrl($_relativePath_) {
-    return \sprintf('/assets/css/%s', $_relativePath_);
-  }
-}
-
-class AssetProvider implements AssetProvider {
-  private $_settings;
-
-  function __construct($_settings_) {
-    $this->_settings = $_settings_;
+  function __construct($_params_) {
+    $this->_params = $_params_;
   }
 
   function getImageUrl($_relativePath_) {
-    return \sprintf('%s/assets/img/%s', $this->_settings->getBaseUrl(), $_relativePath_);
+    return \sprintf(
+      '%s/assets/img/%s', $this->_params->getBaseUrl(), $_relativePath_);
   }
 
   function getScriptUrl($_relativePath_) {
-    return \sprintf('%s/assets/js/%s/%s', $this->_settings->getBaseUrl(), $this->_settings->getScriptVersion(), $_relativePath_);
+    return \sprintf(
+      '%s/assets/js/%s/%s',
+      $this->_params->getBaseUrl(),
+      $this->_params->getScriptVersion(),
+      $_relativePath_);
   }
 
   function getStyleUrl($_relativePath_) {
-    return \sprintf('%s/assets/css/%s/%s', $this->_settings->getBaseUrl(), $this->_settings->getStyleVersion(), $_relativePath_);
+    return \sprintf(
+      '%s/assets/css/%s/%s',
+      $this->_params->getBaseUrl(),
+      $this->_params->getStyleVersion(),
+      $_relativePath_);
   }
 }
 
@@ -806,14 +811,15 @@ final class AssetManager {
 
   private static function _GetProvider() {
     if (\NULL === self::$_Provider) {
-      self::$_Provider
-        = ConfigurationManager::GetSection('AssetProvider')->getProvider();
+      $section = ConfigurationManager::GetSection('AssetSection');
+
+      self::$_Provider = ProviderHelper::InstantiateProvider($section);
     }
     return self::$_Provider;
   }
 }
 
-// View ------------------------------------------------------------------------
+// HtmlHelper ------------------------------------------------------------------
 
 final class HtmlHelper {
   static function SelfClosingTag($_name_, array $_attrs_ = array()) {
@@ -829,37 +835,33 @@ final class HtmlHelper {
       $_name_);
   }
 
-  static function Stylesheet($_path_, $_media_ = \NULL) {
-    $attrs = array(
-      'href' => AssetManager::GetStyleUrl($_path_),
-      'rel'  => stylesheet
-    );
-    if (\NULL !== $_media_) {
-      $attrs['media'] = $_media_;
+  static function Attributes(array $_attrs_) {
+    $result = '';
+    foreach ($_attrs_ as $k => $v) {
+      $result .= \sprintf(' %s="%s"', $k, $v);
     }
-    return self::SelfClosingTag('link', $attrs);
+    return $result;
   }
 
-  static function StylesheetList(array $_paths_, $_media_ = \NULL) {
-    $tag = '';
-    for ($i = 0, $count = \count($_paths_); $i < $count; $i++) {
-      $tag .= self::Stylesheet($_paths_[$i], $_media_);
-    }
-    return $tag;
+  static function ActionLink($_href_, $_inner_, array $_attrs_ = array()) {
+    $_attrs_['href'] = $_href_;
+    return self::Tag('a', $_inner_, $_attrs_);
   }
+}
 
+final class AssetHelper {
   static function Image($_path_, array $_attrs_ = array()) {
     $_attrs_['src'] = AssetManager::GetImageUrl($_path_);
-    return self::SelfClosingTag('img', $_attrs_);
+    return HtmlHelper::SelfClosingTag('img', $_attrs_);
   }
 
   static function ImageLink($_path_, $_inner_, array $_attrs_ = array()) {
-    return self::ActionLink(
+    return HtmlHelper::ActionLink(
       AssetManager::GetImageUrl($_path_), $_inner_, $_attrs_);
   }
 
   static function JavaScript($_path_, $_inline_ = '') {
-    return self::Tag(
+    return HtmlHelper::Tag(
       'script',
       $_inline_,
       array('src' => AssetManager::GetScriptUrl($_path_)));
@@ -873,227 +875,233 @@ final class HtmlHelper {
     return $tag;
   }
 
-  static function ActionLink($_href_, $_inner_, array $_attrs_ = array()) {
-    $_attrs_['href'] = $_href_;
-    return self::Tag('a', $_inner_, $_attrs_);
+  static function Stylesheet($_path_, $_media_ = \NULL) {
+    $attrs = array(
+      'href' => AssetManager::GetStyleUrl($_path_),
+      'rel'  => 'stylesheet'
+    );
+    if (\NULL !== $_media_) {
+      $attrs['media'] = $_media_;
+    }
+    return HtmlHelper::SelfClosingTag('link', $attrs);
   }
 
-  static function Attributes(array $_attrs_) {
-    $result = '';
-    foreach ($_attrs_ as $k => $v) {
-      $result .= \sprintf(' %s="%s"', $k, $v);
+  static function StylesheetList(array $_paths_, $_media_ = \NULL) {
+    $tag = '';
+    for ($i = 0, $count = \count($_paths_); $i < $count; $i++) {
+      $tag .= self::Stylesheet($_paths_[$i], $_media_);
     }
-    return $result;
+    return $tag;
   }
 }
 
 // View ------------------------------------------------------------------------
 
-class ViewException extends Exception { }
-
-interface View {
-  function render();
-}
-
-class NoopView implements View {
-  function render() {
-    ;
-  }
-}
-
-abstract class AbstractView implements View {
-  protected
-    $data_ = array(),
-      $model_;
-
-  protected function __construct($_model_) {
-    $this->model_ = $_model_;
-  }
-
-  /// \return string
-  abstract function getViewPath();
-
-  /// \throw  ViewException
-  function render() {
-    // Extract the view's properties into current scope
-    $this->data_['Model'] = $this->model_;
-
-    \extract($this->data_, \EXTR_REFS);
-
-    if (\FALSE === (include $this->getViewPath())) {
-      throw new ViewException(
-        \sprintf('Unable to include the view: "%s".', $this->getViewPath()));
-    }
-  }
-}
-
-abstract class AbstractPage extends AbstractView {
-  protected function __construct($_model_) {
-    parent::__construct($_model_);
-  }
-
-  function render() {
-    // Clear existing buffers.
-    while (\ob_get_level() > 0) {
-      \ob_end_flush();
-    }
-    // Start buffering.
-    \ob_start();
-
-    try {
-      parent::render();
-    } catch (ViewException $e) {
-      // Fail with correct error code.
-      HttpError::InternalServerError();
-    }
-
-    // Output the result.
-    \ob_flush();
-    // End buffering.
-    \ob_end_flush();
-
-    exit();
-  }
-}
-
-abstract class AbstractMasterPage extends AbstractPage {
-  protected function __construct($_model_, AbstractChildView $_child_) {
-    parent::__construct($_model_);
-    $this->data_['Child'] = $_child_;
-  }
-}
-
-abstract class AbstractChildView extends AbstractView {
-  protected $master_;
-
-  protected function __construct($_master_, $_model_) {
-    $this->master_ = $_master_;
-
-    parent::__construct($_model_);
-  }
-
-  function render() {
-    $this->master_->render();
-  }
-
-  function renderChild() {
-    parent::render();
-  }
-}
-
-// Action & Controller ---------------------------------------------------------
-
-class ActionException extends Exception { }
-
-class ControllerException extends Exception { }
-
-final class ControllerContext {
-  private
-    $_actionName,
-    $_controllerName,
-    $_request;
-
-  function __construct($_controllerName_, $_actionName_, $_request_) {
-    $this->_controllerName = $_controllerName_;
-    $this->_actionName = $_actionName_;
-    $this->_request = $_request_;
-  }
-
-  function getActionName() {
-    return $this->_actionName;
-  }
-
-  function getControllerName() {
-    return $this->_controllerName;
-  }
-
-  function getRequest() {
-    return $this->_request;
-  }
-}
-
-interface ControllerFactory {
-  function createController($_controllerName_);
-}
-
-abstract class AbstractApplication {
-  const
-    ActionKey     = 'action',
-    ControllerKey = 'controller',
-    DefaultControllerName = 'home',
-    DefaultActionName     = 'index';
-
-  protected function __construct() {
-    ;
-  }
-
-  abstract function createController($_controllerName_);
-
-  abstract protected function createErrorView_($_status_, $_message_);
-
-  function processRequest(array &$_req_) {
-    $context = self::ResolveContext_($_req_);
-
-    try {
-      $view = $this->invokeAction_($context);
-    } catch (ActionException $ae) {
-      $view = $this->createErrorView_(
-        HttpError::NotFound, $ae->getMessage());
-    } catch (\Exception $e) {
-      $view = $this->createErrorView_(
-        HttpError::InternalServerError, $e->getMessage());
-    }
-
-    try {
-      $view->render();
-    } catch (ViewException $ve) {
-      HttpError::InternalServerError();
-    }
-  }
-
-  protected static function ResolveContext_(array &$_req_) {
-    $req = $_req_;
-
-    if (isset($_req_[self::ControllerKey])) {
-      $controllerName = $_req_[self::ControllerKey];
-      unset($req[self::ControllerKey]);
-    } else {
-      $controllerName = self::DefaultControllerName;
-    }
-
-    if (isset($_req_[self::ActionKey])) {
-      $actionName = $_req_[self::ActionKey];
-      unset($req[self::ActionKey]);
-    } else {
-      $actionName = self::DefaultActionName;
-    }
-
-    return new ControllerContext(
-      $controllerName,
-      $actionName,
-      $req
-    );
-  }
-
-  protected function invokeAction_(ControllerContext $_context_) {
-    $actionName     = $_context_->getActionName();
-    $controllerName = $_context_->getControllerName();
-    $request        = $_context_->getRequest();
-
-    $controller = $this->createController($controllerName);
-
-    try {
-      $refl = new \ReflectionObject($controller);
-
-      if (!$refl->hasMethod($actionName)) {
-        throw new ActionException('La page demandée n\'existe pas.');
-      }
-
-      return $refl->getMethod($actionName)->invoke($controller, $request);
-    } catch (\ReflectionException $e) {
-      throw new ActionException('La page demandée n\'existe pas.');
-    }
-  }
-}
+//class ViewException extends Exception { }
+//
+//interface View {
+//  function render();
+//}
+//
+//class NoopView implements View {
+//  function render() {
+//    ;
+//  }
+//}
+//
+//abstract class AbstractView implements View {
+//  protected
+//    $data_ = array(),
+//      $model_;
+//
+//  protected function __construct($_model_) {
+//    $this->model_ = $_model_;
+//  }
+//
+//  /// \return string
+//  abstract function getViewPath();
+//
+//  /// \throw  ViewException
+//  function render() {
+//    // Extract the view's properties into current scope
+//    $this->data_['Model'] = $this->model_;
+//
+//    \extract($this->data_, \EXTR_REFS);
+//
+//    if (\FALSE === (include $this->getViewPath())) {
+//      throw new ViewException(
+//        \sprintf('Unable to include the view: "%s".', $this->getViewPath()));
+//    }
+//  }
+//}
+//
+//abstract class AbstractPage extends AbstractView {
+//  protected function __construct($_model_) {
+//    parent::__construct($_model_);
+//  }
+//
+//  function render() {
+//    // Clear existing buffers.
+//    while (\ob_get_level() > 0) {
+//      \ob_end_flush();
+//    }
+//    // Start buffering.
+//    \ob_start();
+//
+//    try {
+//      parent::render();
+//    } catch (ViewException $e) {
+//      // Fail with correct error code.
+//      HttpError::InternalServerError();
+//    }
+//
+//    // Output the result.
+//    \ob_flush();
+//    // End buffering.
+//    \ob_end_flush();
+//
+//    exit();
+//  }
+//}
+//
+//abstract class AbstractMasterPage extends AbstractPage {
+//  protected function __construct($_model_, AbstractChildView $_child_) {
+//    parent::__construct($_model_);
+//    $this->data_['Child'] = $_child_;
+//  }
+//}
+//
+//abstract class AbstractChildView extends AbstractView {
+//  protected $master_;
+//
+//  protected function __construct($_master_, $_model_) {
+//    $this->master_ = $_master_;
+//
+//    parent::__construct($_model_);
+//  }
+//
+//  function render() {
+//    $this->master_->render();
+//  }
+//
+//  function renderChild() {
+//    parent::render();
+//  }
+//}
+//
+//// Action & Controller ---------------------------------------------------------
+//
+//class ActionException extends Exception { }
+//
+//class ControllerException extends Exception { }
+//
+//final class ControllerContext {
+//  private
+//    $_actionName,
+//    $_controllerName,
+//    $_request;
+//
+//  function __construct($_controllerName_, $_actionName_, $_request_) {
+//    $this->_controllerName = $_controllerName_;
+//    $this->_actionName = $_actionName_;
+//    $this->_request = $_request_;
+//  }
+//
+//  function getActionName() {
+//    return $this->_actionName;
+//  }
+//
+//  function getControllerName() {
+//    return $this->_controllerName;
+//  }
+//
+//  function getRequest() {
+//    return $this->_request;
+//  }
+//}
+//
+//interface ControllerFactory {
+//  function createController($_controllerName_);
+//}
+//
+//abstract class AbstractApplication {
+//  const
+//    ActionKey     = 'action',
+//    ControllerKey = 'controller',
+//    DefaultControllerName = 'home',
+//    DefaultActionName     = 'index';
+//
+//  protected function __construct() {
+//    ;
+//  }
+//
+//  abstract function createController($_controllerName_);
+//
+//  abstract protected function createErrorView_($_status_, $_message_);
+//
+//  function processRequest(array &$_req_) {
+//    $context = self::ResolveContext_($_req_);
+//
+//    try {
+//      $view = $this->invokeAction_($context);
+//    } catch (ActionException $ae) {
+//      $view = $this->createErrorView_(
+//        HttpError::NotFound, $ae->getMessage());
+//    } catch (\Exception $e) {
+//      $view = $this->createErrorView_(
+//        HttpError::InternalServerError, $e->getMessage());
+//    }
+//
+//    try {
+//      $view->render();
+//    } catch (ViewException $ve) {
+//      HttpError::InternalServerError();
+//    }
+//  }
+//
+//  protected static function ResolveContext_(array &$_req_) {
+//    $req = $_req_;
+//
+//    if (isset($_req_[self::ControllerKey])) {
+//      $controllerName = $_req_[self::ControllerKey];
+//      unset($req[self::ControllerKey]);
+//    } else {
+//      $controllerName = self::DefaultControllerName;
+//    }
+//
+//    if (isset($_req_[self::ActionKey])) {
+//      $actionName = $_req_[self::ActionKey];
+//      unset($req[self::ActionKey]);
+//    } else {
+//      $actionName = self::DefaultActionName;
+//    }
+//
+//    return new ControllerContext(
+//      $controllerName,
+//      $actionName,
+//      $req
+//    );
+//  }
+//
+//  protected function invokeAction_(ControllerContext $_context_) {
+//    $actionName     = $_context_->getActionName();
+//    $controllerName = $_context_->getControllerName();
+//    $request        = $_context_->getRequest();
+//
+//    $controller = $this->createController($controllerName);
+//
+//    try {
+//      $refl = new \ReflectionObject($controller);
+//
+//      if (!$refl->hasMethod($actionName)) {
+//        throw new ActionException('La page demandée n\'existe pas.');
+//      }
+//
+//      return $refl->getMethod($actionName)->invoke($controller, $request);
+//    } catch (\ReflectionException $e) {
+//      throw new ActionException('La page demandée n\'existe pas.');
+//    }
+//  }
+//}
 
 // EOF
