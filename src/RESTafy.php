@@ -13,11 +13,7 @@ class Exception extends \Exception {
 class ArgumentException extends Exception {
   private $_paramName;
 
-  function __construct(
-    $_paramName_,
-    $_message_ = '',
-    \Exception $_innerException_ = \NULL
-  ) {
+  function __construct($_paramName_, $_message_ = '', \Exception $_innerException_ = \NULL) {
     $this->_paramName = $_paramName_;
     parent::__construct($_message_, $_innerException_);
   }
@@ -27,17 +23,15 @@ class ArgumentException extends Exception {
   }
 
   function __toString() {
-    return sprintf(
-      '%s%sParameter name: "%s".',
-      $this->getMessage(),
-      \PHP_EOL,
-      $this->_paramName);
+    return \sprintf('%s%sParameter name: "%s".', $this->getMessage(), \PHP_EOL, $this->_paramName);
   }
 }
 
 class ArgumentNullException extends ArgumentException { }
 
 class InvalidOperationException extends Exception { }
+
+class KeyNotFoundException extends Exception { }
 
 final class ObjectType {
   const
@@ -50,7 +44,7 @@ final class ObjectType {
     String    = 5,
     // Complex types.
     RealArray = 10,
-    Hash      = 11,
+    HashArray = 11,
     Object    = 12,
     Resource  = 13;
 }
@@ -64,8 +58,7 @@ class TypeName {
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
     $_TypeNameRegex = "/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/",
     // TODO: check this.
-    $_NamespaceNameRegex
-    = "/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$/";
+    $_NamespaceNameRegex = "/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$/";
 
   private
     /// \var string
@@ -73,11 +66,8 @@ class TypeName {
     /// \var string
     $_namespace;
 
-  function __construct(
-    $_name_,
-    $_namespace_ = self::GlobalNamespace
-  ) {
-    $this->_name = $_name_;
+  function __construct($_name_, $_namespace_ = self::GlobalNamespace) {
+    $this->_name      = $_name_;
     $this->_namespace = $_namespace_;
   }
 
@@ -151,7 +141,7 @@ final class Type {
       $i = 0;
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {
-          return ObjectType::Hash;
+          return ObjectType::HashArray;
         }
         $i++;
       }
@@ -193,22 +183,20 @@ final class DynamicLoader {
   /// \throw InvalidOperationException
   static function LoadFile($_path_) {
     if (\FALSE === (include_once $_path_)) {
-      throw new InvalidOperationException(
-        \sprintf('Unable to include the file: "%s".', $_path_));
+      throw new InvalidOperationException(\sprintf('Unable to include the file: "%s".', $_path_));
     }
   }
 
-  static function LoadType(TypeName $_type_) {
-    self::LoadFile( self::_GetTypePath($_type_) );
+  static function LoadType(TypeName $_typeName_) {
+    self::LoadFile( self::_GetTypePath($_typeName_) );
   }
 
-  private static function _GetTypePath(TypeName $_type_) {
-    return self::_ToPath($_type_->getQualifiedName());
+  private static function _GetTypePath(TypeName $_typeName_) {
+    return self::_ToPath($_typeName_->getQualifiedName());
   }
 
   private static function _ToPath($_name_) {
-    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_)
-      . self::FileExtension;
+    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
   }
 }
 
@@ -220,7 +208,7 @@ final class Guard {
   }
 }
 
-// Singleton -------------------------------------------------------------------
+// Singleton ---------------------------------------------------------------------------------------
 
 class Singleton {
   private static $_Instance = \NULL;
@@ -233,63 +221,30 @@ class Singleton {
     ;
   }
 
-  static function UniqueInstance() {
+  static function UniqInstance() {
     return static::$_Instance ?: static::$_Instance = new static();
-    //if (\NULL === self::$_Instance) {
-    //    self::$_Instance = new self();
-    //}
-    //return self::$_Instance;
   }
 }
 
-// Borg ------------------------------------------------------------------------
+// Borg --------------------------------------------------------------------------------------------
 
-abstract class AbstractBorg {
+class Borg {
   protected $state_;
 
-  protected static
-    $Initialized_ = \FALSE,
-    $SharedState_;
-
-  /// \throw InvalidOperationException
-  protected function __construct($_state_ = \NULL) {
-    if (static::$Initialized_) {
-      if (\NULL !== $_state_) {
-        throw new InvalidOperationException(
-          'The borg has already been initialized.');
-      }
-    } else {
-      self::_Initialize($_state_);
-    }
-
-    $this->state_ =& static::$SharedState_;
+  function __construct() {
+    $this->state_ =& static::GetSharedState_();
   }
 
-  protected static function Initialized_() {
-    return static::$Initialized_;
-  }
-
-  private static function _Initialize($_state_) {
-    Guard::NotNull($_state_, 'state');
-
-    // Initialize the borg using the provided state.
-    static::$SharedState_ = $_state_;
-    static::$Initialized_ = \TRUE;
+  protected static function & GetSharedState_() {
+    throw new NotImplementedException('XXX');
   }
 }
 
-class ArrayBorg extends AbstractBorg {
-  public function __construct() {
-    if (self::Initialized_()) {
-      parent::__construct();
-    } else {
-      $state = static::GetSharedState_();
-      if (!\is_array($state)) {
-        throw new InvalidOperationException(
-          'The initial state MUST be an array.');
-      }
-      parent::__construct($state);
-    }
+class ArrayBorg {
+  private $_state;
+
+  function __construct() {
+    $this->_state =& static::GetSharedState_();
   }
 
   protected static function & GetSharedState_() {
@@ -298,123 +253,30 @@ class ArrayBorg extends AbstractBorg {
 
   /// \return boolean
   function has($_key_) {
-    return \array_key_exists($_key_, $this->state_);
-  }
-
-  function set($_key_, $_value_) {
-    $this->state_[$_key_] = $_value_;
-  }
-
-  function remove($_key_) {
-    unset($this->state_[$_key_]);
-  }
-
-  /// \return mixed
-  function get($_key_) {
-    if (!$this->has($_key_)) {
-      throw new ArgumentException(
-        'key',
-        sprintf('The key "%s" does not exist.', $_key_));
-    }
-
-    return $this->state_[$_key_];
-  }
-}
-
-class ReadOnlyArrayBorg extends AbstractBorg {
-  private $_state;
-
-  public function __construct() {
-    if (self::Initialized_()) {
-      parent::__construct();
-    } else {
-      $state = static::GetSharedState_();
-      if (!\is_array($state)) {
-        throw new InvalidOperationException(
-          'The initial state MUST be an array.');
-      }
-      parent::__construct($state);
-    }
-
-    $this->_state = $this->state_;
-  }
-
-  /// \return boolean
-  function has($_key_) {
     return \array_key_exists($_key_, $this->_state);
   }
 
+  function set($_key_, $_value_) {
+    $this->_state[$_key_] = $_value_;
+  }
+
+  function remove($_key_) {
+    $this->_checkKey($_key_);
+    unset($this->_state[$_key_]);
+  }
+
   /// \return mixed
   function get($_key_) {
-    if (!$this->has($_key_)) {
-      throw new ArgumentException(
-        'key',
-        sprintf('The key "%s" does not exist.', $_key_));
-    }
-
+    $this->_checkKey($_key_);
     return $this->_state[$_key_];
   }
-}
 
-//class ArrayBorg {
-//  private $_state;
-//
-//  function __construct() {
-//    $this->_state =& static::GetSharedState_();
-//  }
-//
-//  protected static function & GetSharedState_() {
-//    return array();
-//  }
-//
-//  /// \return boolean
-//  function has($_key_) {
-//    return \array_key_exists($_key_, $this->_state);
-//  }
-//
-//  function set($_key_, $_value_) {
-//    $this->_state[$_key_] = $_value_;
-//  }
-//
-//  function remove($_key_) {
-//    unset($this->_state[$_key_]);
-//  }
-//
-//  /// \return mixed
-//  function get($_key_) {
-//    if (!$this->has($_key_)) {
-//      throw new ArgumentException(
-//        'key',
-//        sprintf('The key "%s" does not exist.', $_key_));
-//    }
-//
-//    return $this->_state[$_key_];
-//  }
-//}
-//
-//class ReadOnlyArrayBorg {
-//  private $_state;
-//
-//  function __construct() {
-//    $this->_state = static::GetSharedState_();
-//  }
-//
-//  /// \return boolean
-//  function has($_key_) {
-//    return \array_key_exists($_key_, $this->_state);
-//  }
-//
-//  /// \return mixed
-//  function get($_key_) {
-//    if (!$this->has($_key_)) {
-//      throw new ArgumentException(
-//        'key',
-//        sprintf('The key "%s" does not exist.', $_key_));
-//    }
-//
-//    return $this->_state[$_key_];
-//  }
-//}
+  private function _checkKey($_key_) {
+    if (!$this->has($_key_)) {
+      throw new KeyNotFoundException(\sprintf('The key "%s" does not exist.', $_key_));
+    }
+  }
+}
 
 // Observer --------------------------------------------------------------------
 
@@ -440,6 +302,41 @@ class Observable {
   function notify() {
     foreach ($this->_observers as $observer) {
       $observer->update($this);
+    }
+  }
+}
+
+// Provider ----------------------------------------------------------------------
+
+class ProviderSection {
+  private
+    $_providerClass,
+    $_providerParams;
+
+  function __construct($_providerClass_, $_providerParams_ = \NULL) {
+    $this->_providerClass  = $_providerClass_;
+    $this->_providerParams = $_providerParams_;
+  }
+
+  function getProviderClass() {
+    return $this->_providerClass;
+  }
+
+  function getProviderParams() {
+    return $this->_providerParams;
+  }
+}
+
+final class ProviderHelper {
+  static function InstantiateProvider(ProviderSection $_section_) {
+    $providerClass = $_section_->getProviderClass();
+    $params = $_section_->getProviderParams();
+
+    if (\NULL === $params) {
+      return new $providerClass();
+    } else {
+      $refl = new \ReflectionClass($providerClass);
+      return $refl->newInstance($params);
     }
   }
 }
@@ -700,8 +597,7 @@ final class DebugLevel {
       self::DataBase
       | self::JavaScript
       | self::RunTime
-      | self::StyleSheet
-      ;
+      | self::StyleSheet;
   }
 
   /// Only debug the UI.
@@ -810,41 +706,6 @@ final class Url {
   }
 }
 
-// Provider ----------------------------------------------------------------------
-
-class ProviderSection {
-  private
-    $_providerClass,
-    $_providerParams;
-
-  function __construct($_providerClass_, $_providerParams_ = \NULL) {
-    $this->_providerClass  = $_providerClass_;
-    $this->_providerParams = $_providerParams_;
-  }
-
-  function getProviderClass() {
-    return $this->_providerClass;
-  }
-
-  function getProviderParams() {
-    return $this->_providerParams;
-  }
-}
-
-final class ProviderHelper {
-  static function InstantiateProvider(ProviderSection $_section_) {
-    $providerClass = $_section_->getProviderClass();
-    $params = $_section_->getProviderParams();
-
-    if (\NULL === $params) {
-      return new $providerClass();
-    } else {
-      $refl = new \ReflectionClass($providerClass);
-      return $refl->newInstance($params);
-    }
-  }
-}
-
 // Assets ----------------------------------------------------------------------
 
 interface AssetProvider {
@@ -905,8 +766,7 @@ class DefaultAssetProvider implements AssetProvider {
   }
 
   function getImageUrl($_relativePath_) {
-    return \sprintf(
-      '%s/img/%s', $this->_params->getBaseUrl(), $_relativePath_);
+    return \sprintf('%s/img/%s', $this->_params->getBaseUrl(), $_relativePath_);
   }
 
   function getScriptUrl($_relativePath_) {
@@ -955,19 +815,19 @@ final class AssetManager {
 
 final class HtmlHelper {
   static function SelfClosingTag($_name_, array $_attrs_ = array()) {
-    return \sprintf('<%s%s/>', $_name_, self::Attributes($_attrs_));
+    return \sprintf('<%s%s/>', $_name_, self::SerializeAttrs($_attrs_));
   }
 
   static function Tag($_name_, $_inner_, array $_attrs_ = array()) {
     return \sprintf(
       '<%s%s>%s</%s>',
       $_name_,
-      self::Attributes($_attrs_),
+      self::SerializeAttrs($_attrs_),
       $_inner_,
       $_name_);
   }
 
-  static function Attributes(array $_attrs_) {
+  static function SerializeAttrs(array $_attrs_) {
     $result = '';
     foreach ($_attrs_ as $k => $v) {
       $result .= \sprintf(' %s="%s"', $k, $v);
