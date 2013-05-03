@@ -16,11 +16,11 @@ class ArgumentException extends Exception {
   function __construct(
     $_paramName_,
     $_message_ = '',
-    \Exception $_innerException_ = \NULL) {
-
-      $this->_paramName = $_paramName_;
-      parent::__construct($_message_, $_innerException_);
-    }
+    \Exception $_innerException_ = \NULL
+  ) {
+    $this->_paramName = $_paramName_;
+    parent::__construct($_message_, $_innerException_);
+  }
 
   function getParamName() {
     return $this->_paramName;
@@ -75,11 +75,11 @@ class TypeName {
 
   function __construct(
     $_name_,
-    $_namespace_ = self::GlobalNamespace) {
-
-      $this->_name = $_name_;
-      $this->_namespace = $_namespace_;
-    }
+    $_namespace_ = self::GlobalNamespace
+  ) {
+    $this->_name = $_name_;
+    $this->_namespace = $_namespace_;
+  }
 
   /// \return bool.
   static function IsWellformed($_name_) {
@@ -220,6 +220,202 @@ final class Guard {
   }
 }
 
+// Singleton -------------------------------------------------------------------
+
+class Singleton {
+  private static $_Instance = \NULL;
+
+  private function __construct() {
+    ;
+  }
+
+  final private function __clone() {
+    ;
+  }
+
+  static function UniqueInstance() {
+    return static::$_Instance ?: static::$_Instance = new static();
+    //if (\NULL === self::$_Instance) {
+    //    self::$_Instance = new self();
+    //}
+    //return self::$_Instance;
+  }
+}
+
+// Borg ------------------------------------------------------------------------
+
+abstract class AbstractBorg {
+  protected $state_;
+
+  protected static
+    $Initialized_ = \FALSE,
+    $SharedState_;
+
+  /// \throw InvalidOperationException
+  protected function __construct($_state_ = \NULL) {
+    if (static::$Initialized_) {
+      if (\NULL !== $_state_) {
+        throw new InvalidOperationException(
+          'The borg has already been initialized.');
+      }
+    } else {
+      self::_Initialize($_state_);
+    }
+
+    $this->state_ =& static::$SharedState_;
+  }
+
+  protected static function Initialized_() {
+    return static::$Initialized_;
+  }
+
+  private static function _Initialize($_state_) {
+    Guard::NotNull($_state_, 'state');
+
+    // Initialize the borg using the provided state.
+    static::$SharedState_ = $_state_;
+    static::$Initialized_ = \TRUE;
+  }
+}
+
+class ArrayBorg extends AbstractBorg {
+  public function __construct() {
+    if (self::Initialized_()) {
+      parent::__construct();
+    } else {
+      $state = static::GetSharedState_();
+      if (!\is_array($state)) {
+        throw new InvalidOperationException(
+          'The initial state MUST be an array.');
+      }
+      parent::__construct($state);
+    }
+  }
+
+  protected static function & GetSharedState_() {
+    return array();
+  }
+
+  /// \return boolean
+  function has($_key_) {
+    return \array_key_exists($_key_, $this->state_);
+  }
+
+  function set($_key_, $_value_) {
+    $this->state_[$_key_] = $_value_;
+  }
+
+  function remove($_key_) {
+    unset($this->state_[$_key_]);
+  }
+
+  /// \return mixed
+  function get($_key_) {
+    if (!$this->has($_key_)) {
+      throw new ArgumentException(
+        'key',
+        sprintf('The key "%s" does not exist.', $_key_));
+    }
+
+    return $this->state_[$_key_];
+  }
+}
+
+class ReadOnlyArrayBorg extends AbstractBorg {
+  private $_state;
+
+  public function __construct() {
+    if (self::Initialized_()) {
+      parent::__construct();
+    } else {
+      $state = static::GetSharedState_();
+      if (!\is_array($state)) {
+        throw new InvalidOperationException(
+          'The initial state MUST be an array.');
+      }
+      parent::__construct($state);
+    }
+
+    $this->_state = $this->state_;
+  }
+
+  /// \return boolean
+  function has($_key_) {
+    return \array_key_exists($_key_, $this->_state);
+  }
+
+  /// \return mixed
+  function get($_key_) {
+    if (!$this->has($_key_)) {
+      throw new ArgumentException(
+        'key',
+        sprintf('The key "%s" does not exist.', $_key_));
+    }
+
+    return $this->_state[$_key_];
+  }
+}
+
+//class ArrayBorg {
+//  private $_state;
+//
+//  function __construct() {
+//    $this->_state =& static::GetSharedState_();
+//  }
+//
+//  protected static function & GetSharedState_() {
+//    return array();
+//  }
+//
+//  /// \return boolean
+//  function has($_key_) {
+//    return \array_key_exists($_key_, $this->_state);
+//  }
+//
+//  function set($_key_, $_value_) {
+//    $this->_state[$_key_] = $_value_;
+//  }
+//
+//  function remove($_key_) {
+//    unset($this->_state[$_key_]);
+//  }
+//
+//  /// \return mixed
+//  function get($_key_) {
+//    if (!$this->has($_key_)) {
+//      throw new ArgumentException(
+//        'key',
+//        sprintf('The key "%s" does not exist.', $_key_));
+//    }
+//
+//    return $this->_state[$_key_];
+//  }
+//}
+//
+//class ReadOnlyArrayBorg {
+//  private $_state;
+//
+//  function __construct() {
+//    $this->_state = static::GetSharedState_();
+//  }
+//
+//  /// \return boolean
+//  function has($_key_) {
+//    return \array_key_exists($_key_, $this->_state);
+//  }
+//
+//  /// \return mixed
+//  function get($_key_) {
+//    if (!$this->has($_key_)) {
+//      throw new ArgumentException(
+//        'key',
+//        sprintf('The key "%s" does not exist.', $_key_));
+//    }
+//
+//    return $this->_state[$_key_];
+//  }
+//}
+
 // Observer --------------------------------------------------------------------
 
 interface Observer {
@@ -248,68 +444,6 @@ class Observable {
   }
 }
 
-// Borg ------------------------------------------------------------------------
-
-class ArrayBorg {
-  private $_state;
-
-  function __construct() {
-    $this->_state =& static::GetSharedState_();
-  }
-
-  protected static function & GetSharedState_() {
-    return array();
-  }
-
-  /// \return boolean
-  function has($_key_) {
-    return \array_key_exists($_key_, $this->_state);
-  }
-
-  function set($_key_, $_value_) {
-    $this->_state[$_key_] = $_value_;
-  }
-
-  function remove($_key_) {
-    unset($this->_state[$_key_]);
-  }
-
-  /// \return mixed
-  function get($_key_) {
-    if (!$this->has($_key_)) {
-      throw new ArgumentException(
-        'key',
-        sprintf('The key "%s" does not exist.', $_key_));
-    }
-
-    return $this->_state[$_key_];
-  }
-}
-
-class ReadOnlyArrayBorg {
-  private $_state;
-
-  function __construct() {
-    $this->_state = static::GetSharedState_();
-  }
-
-  /// \return boolean
-  function has($_key_) {
-    return \array_key_exists($_key_, $this->_state);
-  }
-
-  /// \return mixed
-  function get($_key_) {
-    if (!$this->has($_key_)) {
-      throw new ArgumentException(
-        'key',
-        sprintf('The key "%s" does not exist.', $_key_));
-    }
-
-    return $this->_state[$_key_];
-  }
-}
-
 // Configuration ---------------------------------------------------------------
 
 class ConfigurationException extends Exception { }
@@ -325,14 +459,14 @@ final class ConfigurationManager {
 
   static function GetSection($_sectionName_) {
     if (!self::$_Initialized) {
-      throw new ConfigurationException();
+      throw new ConfigurationException('XXX');
     }
     return self::$_Current->GetSection($_sectionName_);
   }
 
   static function Initialize(Configuration $_config_) {
     if (self::$_Initialized) {
-      throw new ConfigurationException();
+      throw new ConfigurationException('XXX');
     }
     self::$_Current = $_config_;
     self::$_Initialized = \TRUE;
@@ -349,8 +483,7 @@ final class ConfigurationManager {
 //    $_isEmpty = \FALSE,
 //    $_last    = 1,
 //    $_pointer = 0,
-//    $_slice
-//    ;
+//    $_slice;
 //
 //  function __construct(Iterator $_it_, $_count_, $_index_, $_max_) {
 //    $this->_isEmpty = ($_count_ <= 0);
@@ -559,8 +692,7 @@ final class DebugLevel {
     JavaScript = 1,
     StyleSheet = 2,
     RunTime    = 4,
-    DataBase   = 8
-    ;
+    DataBase   = 8;
 
   /// Enable full debug.
   static function All() {
