@@ -208,20 +208,19 @@ final class Guard {
   }
 }
 
-// TODO: not really ReadOnly, since the derived class can access the private
-// property.
+// TODO: not really ReadOnly, since the derived class can access the private property.
 trait ReadOnlyDictionary {
-  private $_dict;
+  private $_store;
 
   /// \return boolean
   function has($_key_) {
-    return \array_key_exists($_key_, $this->_dict);
+    return \array_key_exists($_key_, $this->_store);
   }
 
   /// \return mixed
   function get($_key_) {
     $this->_checkKey($_key_);
-    return $this->_dict[$_key_];
+    return $this->_store[$_key_];
   }
 
   private function _checkKey($_key_) {
@@ -235,12 +234,12 @@ trait Dictionary {
   use ReadOnlyDictionary;
 
   function set($_key_, $_value_) {
-    $this->_dict[$_key_] = $_value_;
+    $this->_store[$_key_] = $_value_;
   }
 
   function remove($_key_) {
     $this->_checkKey($_key_);
-    unset($this->_dict[$_key_]);
+    unset($this->_store[$_key_]);
   }
 }
 
@@ -287,7 +286,7 @@ class DictionaryBorg {
   use Dictionary;
 
   function __construct() {
-    $this->_dict =& static::GetSharedState_();
+    $this->_store =& static::GetSharedState_();
   }
 
   protected static function & GetSharedState_() {
