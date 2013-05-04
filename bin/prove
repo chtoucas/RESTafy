@@ -9,7 +9,7 @@ rm -f ${PROJECT_DIR}/test.log
 if [ "$1" = "" ]; then
     prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -f' t/
 else
-    php -n -c etc/phpt.ini -f "$1"
+    php -n -c ./etc/phpt.ini -f "$1"
 fi
 
 cd -

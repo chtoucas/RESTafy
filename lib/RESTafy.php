@@ -201,6 +201,12 @@ final class DynaLoader {
 }
 
 final class Guard {
+  static function NotEmpty($_value_, $_paramName_) {
+    if (empty($_value_)) {
+      throw new ArgumentNullException($_paramName_, 'Value can not be empty.');
+    }
+  }
+
   static function NotNull($_value_, $_paramName_) {
     if (\NULL === $_value_) {
       throw new ArgumentNullException($_paramName_, 'Value can not be null.');
@@ -210,7 +216,7 @@ final class Guard {
 
 // TODO: not really ReadOnly, since the derived class can access the private property.
 trait ReadOnlyDictionary {
-  private $_store;
+  private $_store = array();
 
   /// \return boolean
   function has($_key_) {
