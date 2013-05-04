@@ -1,9 +1,9 @@
 <?php
 
-require_once 'RESTafy.php';
+require_once 'Narvalo.php';
 
 use Narvalo\Test as t;
-use RESTafy\Singleton;
+use Narvalo\Singleton;
 
 t\no_plan();
 

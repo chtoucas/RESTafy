@@ -1,0 +1,7 @@
+#!/bin/sh
+total=0
+for currfile in `find . -name "*.php" -print`
+do
+    total=$[total+(`wc -l $currfile| awk '{print $1}'`)]
+    echo 'total=' $total
+done

@@ -1083,7 +1083,7 @@ class TestModule {
     return self::$_SharedProducer;
   }
 
-  function Producer() {
+  function getProducer() {
     return $this->_producer;
   }
 

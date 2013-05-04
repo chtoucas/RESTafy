@@ -2,6 +2,8 @@
 
 namespace Narvalo\Test\Framework\Tap;
 
+require_once 'Narvalo\Test\Framework.php';
+
 use Narvalo\Test\Framework;
 
 define('CRLF_REGEX_PART',       '(?:\r|\n)+');
@@ -11,8 +13,6 @@ define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
 define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
 /// RegEx to find any combination of \r and \n inside a normalized string.
 define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
-
-// }}}
 
 class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   // FIXME: find the correct version in use.
@@ -81,20 +81,20 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   }
 
   function writeTestCase(Framework\TestCase $_test_, $_number_) {
-    $desc = self::FormatDescription($_test_->Description());
+    $desc = self::FormatDescription($_test_->getDescription());
     $line = sprintf('%s %d - %s', $_test_->Passed() ? 'ok' : 'not ok', $_number_, $desc);
     return $this->writeLine($line);
   }
 
   function writeTodoTestCase(Framework\TodoTestCase $_test_, $_number_) {
-    $reason = self::FormatReason($_test_->Reason());
+    $reason = self::FormatReason($_test_->reason());
     $line = sprintf('ok %d # SKIP %s', $_number_, $reason);
     return $this->writeLine($line);
   }
 
   function writeSkipTestCase(Framework\SkipTestCase $_test_, $_number_) {
-    $desc   = self::FormatDescription($_test_->Description());
-    $reason = self::FormatReason($_test_->Reason());
+    $desc   = self::FormatDescription($_test_->getDescription());
+    $reason = self::FormatReason($_test_->reason());
     $line = sprintf('%s %d - %s # TODO %s',
       $_test_->Passed() ? 'ok' : 'not ok', $_number_, $desc, $reason);
     return $this->writeLine($line);
@@ -110,8 +110,6 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
     }
     return $this->write( $this->FormatMultiLine('# ', $_comment_) );
   }
-
-  // }}}
 }
 
 class StandardTapOutStream extends TapOutStream {

@@ -1,8 +1,8 @@
 <?php
 
-namespace Narvalo\Test\Unit;
+namespace Narvalo\Test\Framework\Unit;
 
-require_once 'Narvalo\Test.php';
+require_once 'Narvalo\Framework\Test.php';
 
 class TestSuite extends TapActor {
 }

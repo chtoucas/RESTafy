@@ -1,9 +1,9 @@
 <?php
 
-require_once 'RESTafy.php';
+require_once 'Narvalo.php';
 
 use Narvalo\Test as t;
-use RESTafy\DictionaryBorg;
+use Narvalo\DictionaryBorg;
 
 t\plan(4);
 
