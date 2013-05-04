@@ -1,0 +1,15 @@
+#!/bin/sh
+
+PROJECT_DIR=$(cd `dirname $0` && pwd)/..
+
+echo 'Building...';
+
+./bin/blib
+
+echo 'Done building.';
+echo;
+
+rm -f ${PROJECT_DIR}/test.log
+
+prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.blib.ini -f' t/
+

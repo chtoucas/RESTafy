@@ -175,7 +175,7 @@ final class Type {
   }
 }
 
-final class DynamicLoader {
+final class DynaLoader {
   const FileExtension = '.php';
 
   /// \brief Dynamically load a code file.
@@ -208,73 +208,91 @@ final class Guard {
   }
 }
 
-// Singleton ---------------------------------------------------------------------------------------
-
-class Singleton {
-  private static $_Instance = \NULL;
-
-  private function __construct() {
-    ;
-  }
-
-  final private function __clone() {
-    ;
-  }
-
-  static function UniqInstance() {
-    return static::$_Instance ?: static::$_Instance = new static();
-  }
-}
-
-// Borg --------------------------------------------------------------------------------------------
-
-class Borg {
-  protected $state_;
-
-  function __construct() {
-    $this->state_ =& static::GetSharedState_();
-  }
-
-  protected static function & GetSharedState_() {
-    throw new NotImplementedException('XXX');
-  }
-}
-
-class ArrayBorg {
-  private $_state;
-
-  function __construct() {
-    $this->_state =& static::GetSharedState_();
-  }
-
-  protected static function & GetSharedState_() {
-    return array();
-  }
+// TODO: not really ReadOnly, since the derived class can access the private
+// property.
+trait ReadOnlyDictionary {
+  private $_dict;
 
   /// \return boolean
   function has($_key_) {
-    return \array_key_exists($_key_, $this->_state);
-  }
-
-  function set($_key_, $_value_) {
-    $this->_state[$_key_] = $_value_;
-  }
-
-  function remove($_key_) {
-    $this->_checkKey($_key_);
-    unset($this->_state[$_key_]);
+    return \array_key_exists($_key_, $this->_dict);
   }
 
   /// \return mixed
   function get($_key_) {
     $this->_checkKey($_key_);
-    return $this->_state[$_key_];
+    return $this->_dict[$_key_];
   }
 
   private function _checkKey($_key_) {
     if (!$this->has($_key_)) {
       throw new KeyNotFoundException(\sprintf('The key "%s" does not exist.', $_key_));
     }
+  }
+}
+
+trait Dictionary {
+  use ReadOnlyDictionary;
+
+  function set($_key_, $_value_) {
+    $this->_dict[$_key_] = $_value_;
+  }
+
+  function remove($_key_) {
+    $this->_checkKey($_key_);
+    unset($this->_dict[$_key_]);
+  }
+}
+
+// Singleton ---------------------------------------------------------------------------------------
+
+trait Singleton {
+  private static $_Instance = \NULL;
+
+  private function __construct() {
+     $this->_initialize();
+  }
+
+  final private function __clone() {
+    ;
+  }
+
+  final private function __wakeup() {
+    ;
+  }
+
+  final static function UniqInstance() {
+    return static::$_Instance ?: static::$_Instance = new static();
+  }
+
+  private function _initialize() { }
+}
+
+// Borg --------------------------------------------------------------------------------------------
+
+//class Borg {
+//  protected $state_;
+//
+//  function __construct() {
+//    $this->state_ =& static::GetSharedState_();
+//  }
+//
+//  protected static function & GetSharedState_() {
+//    throw new NotImplementedException('XXX');
+//  }
+//}
+
+// TODO: extends \ArrayObject.
+class DictionaryBorg {
+  use Dictionary;
+
+  function __construct() {
+    $this->_dict =& static::GetSharedState_();
+  }
+
+  protected static function & GetSharedState_() {
+    static $state = array();
+    return $state;
   }
 }
 

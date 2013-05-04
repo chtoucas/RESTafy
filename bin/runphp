@@ -1,0 +1,11 @@
+#!/bin/sh
+
+PROJECT_DIR=$(cd `dirname $0` && pwd)/..
+
+if [ "$1" = "" ]; then
+    echo "You forgot to specify an input file.";
+    exit 0;
+fi
+
+php -n -c etc/php.cli.ini -f "$1"
+

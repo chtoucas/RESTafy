@@ -1,12 +1,7 @@
 <?php
-/*!
- * TODO:
- *  - exit codes?
- * BEWARE:
- *  - this file is an exception, as we do not follow the naming conventions
- */
+// FIXME: plenty of things to be fixed.
 
-namespace RESTafy\Test;
+namespace Test;
 
 const CODE_SUCCESS  = 0;
 const CODE_FATAL    = 255;
@@ -16,11 +11,11 @@ const CODE_FATAL    = 255;
  * Only useful during development phase.
  */
 function no_plan() {
-  _check_plan(TRUE);
+  _check_plan(\TRUE);
 
   $test =& _test_builder();
 
-  \register_shutdown_function('__no_plan_shutdown');
+  \register_shutdown_function('Test\__no_plan_shutdown');
 }
 
 /*!
@@ -29,7 +24,7 @@ function no_plan() {
  * \param $_max_ (integer) Number of tests
  */
 function plan($_max_) {
-  _check_plan(TRUE);
+  _check_plan(\TRUE);
 
   $max = (int)$_max_;
 
@@ -39,7 +34,7 @@ function plan($_max_) {
 
     echo "1..$max\n";
 
-    \register_shutdown_function('__plan_shutdown');
+    \register_shutdown_function('Test\__plan_shutdown');
   }
   elseif ($max == 0) {
     _test_die('You said to run 0 tests');
@@ -90,13 +85,13 @@ function ok($_test_, $_name_ = '') {
     $name = "- $_name_";
   }
 
-  if (($todo = _todo()) !== FALSE) {
+  if (($todo = _todo()) !== \FALSE) {
     /* flag the test as a TODO */
     $todo->seen++;
     $name .= " # TODO {$todo->why}";
   }
 
-  if ($_test_ === TRUE) {
+  if ($_test_ === \TRUE) {
     echo "ok $test->num_of_tests $name\n";
 
     $test->num_of_successes++;
@@ -239,8 +234,8 @@ function cmp_ok($_got_, $_operator_, $_expected_, $_name_ = '') {
   $passed = ok(eval("return (\$_got_ $_operator_ \$_expected_);"), $_name_);
 
   if (!$passed) {
-    diag('          got:' . print_r($_got_, TRUE));
-    diag('     expected:' . print_r($_expected_, TRUE));
+    diag('          got:' . print_r($_got_, \TRUE));
+    diag('     expected:' . print_r($_expected_, \TRUE));
   }
 
   return $passed;
@@ -249,7 +244,7 @@ function cmp_ok($_got_, $_operator_, $_expected_, $_name_ = '') {
 function can_ok($_obj_, $_methods_) {
   _check_plan();
 
-  $passed = TRUE;
+  $passed = \TRUE;
   $errors = array();
 
   $class = get_class($_obj_);
@@ -257,16 +252,16 @@ function can_ok($_obj_, $_methods_) {
   while (list(, $method) = each($_methods_))
   {
     if (!method_exists($_obj_, $method)) {
-      $passed = FALSE;
+      $passed = \FALSE;
       $errors[] = "   {$class}->$method failed";
     }
   }
 
   if ($passed) {
-    ok(TRUE, "method_exists(\$_obj_, ...)");
+    ok(\TRUE, "method_exists(\$_obj_, ...)");
   }
   else {
-    ok(FALSE, "method_exists(\$_obj_, ...)");
+    ok(\FALSE, "method_exists(\$_obj_, ...)");
 
     while (list(, $error) = each($errors))
     {
@@ -293,9 +288,9 @@ function isa_ok($_obj_, $_class_, $_obj_name_ = 'The object') {
   $passed = ($got == $_class_);
 
   if ($passed) {
-    ok(TRUE, "$_obj_name_ isa $_class_");
+    ok(\TRUE, "$_obj_name_ isa $_class_");
   } else {
-    ok(FALSE, "$_obj_name_ isa $_class_");
+    ok(\FALSE, "$_obj_name_ isa $_class_");
     diag("     $_obj_name_ isn't a '$_class_' it's a '$got'");
   }
 
@@ -305,13 +300,13 @@ function isa_ok($_obj_, $_class_, $_obj_name_ = 'The object') {
 function pass($_name_ = '') {
   _check_plan();
 
-  return ok(TRUE, $_name_);
+  return ok(\TRUE, $_name_);
 }
 
 function fail($_name_ = '') {
   _check_plan();
 
-  return ok(FALSE, $_name_);
+  return ok(\FALSE, $_name_);
 }
 
 function include_ok($_library_) {
@@ -351,7 +346,7 @@ function skip($_why_, $_how_many_) {
 
   for ($i = 0; $i < $_how_many_; $i++)
   {
-    ok(TRUE, "# SKIP $_why_");
+    ok(\TRUE, "# SKIP $_why_");
   }
 }
 
@@ -369,7 +364,7 @@ function todo_skip($_why_, $_how_many_) {
 
   for ($i = 0; $i < $_how_many_; $i++)
   {
-    ok(TRUE, "# TODO & SKIP $_why_");
+    ok(\TRUE, "# TODO & SKIP $_why_");
   }
 }
 
@@ -385,15 +380,15 @@ function & _test_builder() {
   static $test;
 
   if ($test === NULL) {
-    $test = new stdClass();
+    $test = new \stdClass();
 
     $test->num_of_successes = 0;   /* number of successful tests */
     $test->num_of_failures  = 0;   /* number of failed tests */
     $test->num_of_tests     = 0;   /* number of passed tests */
 
-    $test->has_died = FALSE;
+    $test->has_died = \FALSE;
 
-    register_shutdown_function('__test_shutdown');
+    \register_shutdown_function('Test\__test_shutdown');
   }
 
   return $test;
@@ -401,21 +396,21 @@ function & _test_builder() {
 
 function _test_die($_reason_) {
   $test = _test_builder();
-  $test->has_died = TRUE;
+  $test->has_died = \TRUE;
 
   echo "$_reason_\n";
 
   exit(CODE_FATAL);
 }
 
-function _check_plan($_planning_ = FALSE) {
-  static $planned = FALSE;
+function _check_plan($_planning_ = \FALSE) {
+  static $planned = \FALSE;
 
   if ($_planning_) {
     if ($planned) {
       _test_die('You tried to plan twice');
     } else {
-      $planned = TRUE;
+      $planned = \TRUE;
     }
   }
   else {
@@ -426,14 +421,14 @@ function _check_plan($_planning_ = FALSE) {
 }
 
 function _todo($_todo_ = NULL) {
-  static $todo = FALSE;
+  static $todo = \FALSE;
 
   if ($_todo_ !== NULL) {
     $todo = $_todo_;
   }
 
-  if ($todo !== FALSE && $todo->seen == $todo->max) {
-    $todo = FALSE;
+  if ($todo !== \FALSE && $todo->seen == $todo->max) {
+    $todo = \FALSE;
   }
 
   return $todo;

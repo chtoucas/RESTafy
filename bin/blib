@@ -1,0 +1,7 @@
+#!/bin/sh
+# TODO:
+# - clean
+# - more idiomatic build
+
+php -w lib/RESTafy.php > blib/RESTafy.php
+php -w lib/Test.php > blib/Test.php

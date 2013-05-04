@@ -1,0 +1,13 @@
+#!/bin/sh
+
+PROJECT_DIR=$(cd `dirname $0` && pwd)/..
+
+rm -f ${PROJECT_DIR}/test.log
+
+if [ "$1" = "" ]; then
+    prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -f' t/
+else
+    php -n -c etc/phpt.ini -f "$1"
+fi
+
+
