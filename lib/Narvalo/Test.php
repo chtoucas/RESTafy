@@ -95,7 +95,7 @@ function ok($_test_, $_name_ = '') {
     $test->num_of_failures++;
 
     // display the source of the prob
-    $calltree = debug_backtrace();
+    $calltree = \debug_backtrace();
 
     if (
       (   isset($_SERVER['PHP_SELF'])
@@ -115,8 +115,8 @@ function ok($_test_, $_name_ = '') {
 
     // FIXME: $file = str_replace($_SERVER['SERVER_ROOT'], 't', $file);
 
-    diag("   Failed test '$_name_'");
-    diag("   in $file at line $line");
+    _\diag("   Failed test '$_name_'");
+    _\diag("   in $file at line $line");
   }
 
   return $_test_;
@@ -142,8 +142,8 @@ function is($_got_, $_expected_, $_name_ = '') {
   $passed = ok($_got_ === $_expected_, $_name_);
 
   if (!$passed) {
-    diag("          got: '$_got_'");
-    diag("     expected: '$_expected_'");
+    _\diag("          got: '$_got_'");
+    _\diag("     expected: '$_expected_'");
   }
 
   return $passed;
@@ -167,9 +167,9 @@ function isnt($_got_, $_expected_, $_name_ = '') {
   $passed = ok($_got_ !== $_expected_, $_name_);
 
   if (!$passed) {
-    diag("     '$_got_'");
-    diag('         !=');
-    diag("     '$_expected_'");
+    _\diag("     '$_got_'");
+    _\diag('         !=');
+    _\diag("     '$_expected_'");
   }
 
   return $passed;
@@ -188,8 +188,8 @@ function like($_got_, $_pattern_, $_name_ = '') {
   $passed = ok(\preg_match($_pattern_, $_got_), $_name_);
 
   if (!$passed) {
-    diag("                 '$_got_'");
-    diag("   doesn't match '$_pattern_'");
+    _\diag("                 '$_got_'");
+    _\diag("   doesn't match '$_pattern_'");
   }
 
   return $passed;
@@ -207,8 +207,8 @@ function unlike($_got_, $_pattern_, $_name_ = '') {
   $passed = ok(!\preg_match($_pattern_, $_got_), $_name_);
 
   if (!$passed) {
-    diag("           '$_got_'");
-    diag("   matches '$_pattern_'");
+    _\diag("           '$_got_'");
+    _\diag("   matches '$_pattern_'");
   }
 
   return $passed;
@@ -227,8 +227,8 @@ function cmp_ok($_got_, $_operator_, $_expected_, $_name_ = '') {
   $passed = ok(eval("return (\$_got_ $_operator_ \$_expected_);"), $_name_);
 
   if (!$passed) {
-    diag('          got:' . print_r($_got_, \TRUE));
-    diag('     expected:' . print_r($_expected_, \TRUE));
+    _\diag('          got:' . print_r($_got_, \TRUE));
+    _\diag('     expected:' . print_r($_expected_, \TRUE));
   }
 
   return $passed;
@@ -255,9 +255,8 @@ function can_ok($_obj_, $_methods_) {
   else {
     ok(\FALSE, "method_exists(\$_obj_, ...)");
 
-    while (list(, $error) = each($errors))
-    {
-      diag($error);
+    while (list(, $error) = each($errors)) {
+      _\diag($error);
     }
   }
 
@@ -283,7 +282,7 @@ function isa_ok($_obj_, $_class_, $_obj_name_ = 'The object') {
     ok(\TRUE, "$_obj_name_ isa $_class_");
   } else {
     ok(\FALSE, "$_obj_name_ isa $_class_");
-    diag("     $_obj_name_ isn't a '$_class_' it's a '$got'");
+    _\diag("     $_obj_name_ isn't a '$_class_' it's a '$got'");
   }
 
   return $passed;
@@ -331,12 +330,6 @@ function is_deeply() {
   // TODO:
 
   _\check_plan();
-}
-
-function diag($_message_) {
-  _\check_plan();
-
-  echo "# $_message_\n";
 }
 
 function skip($_why_, $_how_many_) {
@@ -444,6 +437,12 @@ function test_todo($_todo_ = NULL) {
   }
 
   return $todo;
+}
+
+function diag($_message_) {
+  check_plan();
+
+  echo "# $_message_\n";
 }
 
 // #################################################################################################
