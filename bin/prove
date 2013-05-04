@@ -12,4 +12,4 @@ else
     php -n -c ./etc/phpt.ini -f "$1"
 fi
 
-cd -
+cd - > /dev/null

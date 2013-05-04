@@ -4,16 +4,16 @@ PROJECT_DIR=$(cd `dirname $0` && pwd)/..
 
 cd ${PROJECT_DIR}
 
-echo 'Building...';
-
-${PROJECT_DIR}/bin/blib
-
-echo 'Done building.';
-echo;
+if [ "$1" = "-b" ]; then
+    echo 'Building...';
+    ${PROJECT_DIR}/bin/blib
+    echo 'Done building.';
+    echo;
+fi
 
 rm -f ${PROJECT_DIR}/test.log
 
 prove -r --ext=.phpt --exec 'php -n -c ./etc/blib.ini -f' t/
 
-cd -
+cd - > /dev/null
 

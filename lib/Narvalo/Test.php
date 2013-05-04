@@ -1,20 +1,17 @@
 <?php
 // FIXME: plenty of things to be fixed.
 
-namespace Test;
+namespace Narvalo\Test;
 
-use Test\Internal as t;
+use Narvalo\Test\Internal as _;
 
 /*!
  * When you are not yet sure of the number of tests to run.
  * Only useful during development phase.
  */
 function no_plan() {
-  t\check_plan(\TRUE);
-
-  $test =& t\build_test();
-
-  t\register_no_plan();
+  _\check_plan(\TRUE);
+  _\start_no_plan();
 }
 
 /*!
@@ -23,23 +20,20 @@ function no_plan() {
  * \param $_max_ (integer) Number of tests
  */
 function plan($_max_) {
-  t\check_plan(\TRUE);
+  _\check_plan(\TRUE);
 
   $max = (int)$_max_;
 
   if ($max > 0) {
-    $test =& t\build_test();
-    $test->num_of_expected_tests = $max;
+    _\start_plan($max);
 
     echo "1..$max\n";
-
-    t\register_plan();
   }
   elseif (0 === $max) {
-    t\test_die('You said to run 0 tests');
+    _\test_die('You said to run 0 tests');
   }
   else {
-    t\test_die("Number of tests must be a positive integer. You gave it '$max'");
+    _\test_die("Number of tests must be a positive integer. You gave it '$max'");
   }
 }
 
@@ -50,10 +44,10 @@ function skip_all($_reason_) {
   //$reason = isset($_arg_) ? "# $_arg_" : '';
   echo "1..0 $_reason_\n";
 
-  exit(t\CODE_SUCCESS);
+  exit(_\CODE_SUCCESS);
 }
 
-// #############################################################################
+// #################################################################################################
 
 /*!
  * Evaluates the expression $_test_, if TRUE reports success, otherwise
@@ -68,9 +62,9 @@ function skip_all($_reason_) {
  * \return TRUE if test passed, FALSE otherwise
  */
 function ok($_test_, $_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
-  $test =& t\build_test();
+  $test =& _\build_test();
 
   $test->num_of_tests++;
 
@@ -84,7 +78,7 @@ function ok($_test_, $_name_ = '') {
     $name = "- $_name_";
   }
 
-  if (\FALSE !== ($todo = t\todo())) {
+  if (\FALSE !== ($todo = _\test_todo())) {
     // flag the test as a TODO
     $todo->seen++;
     $name .= " # TODO {$todo->why}";
@@ -128,7 +122,7 @@ function ok($_test_, $_name_ = '') {
   return $_test_;
 }
 
-// #############################################################################
+// #################################################################################################
 
 /*!
  * Compare $_got_ and $_expected_ with ===
@@ -143,7 +137,7 @@ function ok($_test_, $_name_ = '') {
  * \return TRUE if test passed, FALSE otherwise
  */
 function is($_got_, $_expected_, $_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
   $passed = ok($_got_ === $_expected_, $_name_);
 
@@ -168,7 +162,7 @@ function is($_got_, $_expected_, $_name_ = '') {
  * \return  TRUE if test passed, FALSE otherwise
  */
 function isnt($_got_, $_expected_, $_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
   $passed = ok($_got_ !== $_expected_, $_name_);
 
@@ -188,10 +182,10 @@ function isnt($_got_, $_expected_, $_name_ = '') {
  * \return  TRUE on success, FALSE on failure
  */
 function like($_got_, $_pattern_, $_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
-  $passed = ok(preg_match($_pattern_, $_got_), $_name_);
-  $passed = ok(preg_match($_pattern_, $_got_), $_name_);
+  $passed = ok(\preg_match($_pattern_, $_got_), $_name_);
+  $passed = ok(\preg_match($_pattern_, $_got_), $_name_);
 
   if (!$passed) {
     diag("                 '$_got_'");
@@ -208,9 +202,9 @@ function like($_got_, $_pattern_, $_name_ = '') {
  * \return  TRUE if test passed, FALSE otherwise
  */
 function unlike($_got_, $_pattern_, $_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
-  $passed = ok(!preg_match($_pattern_, $_got_), $_name_);
+  $passed = ok(!\preg_match($_pattern_, $_got_), $_name_);
 
   if (!$passed) {
     diag("           '$_got_'");
@@ -228,7 +222,7 @@ function unlike($_got_, $_pattern_, $_name_ = '') {
  * \return  TRUE if test passed, FALSE otherwise
  */
 function cmp_ok($_got_, $_operator_, $_expected_, $_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
   $passed = ok(eval("return (\$_got_ $_operator_ \$_expected_);"), $_name_);
 
@@ -241,12 +235,12 @@ function cmp_ok($_got_, $_operator_, $_expected_, $_name_ = '') {
 }
 
 function can_ok($_obj_, $_methods_) {
-  t\check_plan();
+  _\check_plan();
 
   $passed = \TRUE;
   $errors = array();
 
-  $class = get_class($_obj_);
+  $class = \get_class($_obj_);
 
   while (list(, $method) = each($_methods_)) {
     if (!\method_exists($_obj_, $method)) {
@@ -271,7 +265,7 @@ function can_ok($_obj_, $_methods_) {
 }
 
 function isa_ok($_obj_, $_class_, $_obj_name_ = 'The object') {
-  t\check_plan();
+  _\check_plan();
 
   $got = \get_class($_obj_);
 
@@ -296,31 +290,31 @@ function isa_ok($_obj_, $_class_, $_obj_name_ = 'The object') {
 }
 
 function pass($_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
   return ok(\TRUE, $_name_);
 }
 
 function fail($_name_ = '') {
-  t\check_plan();
+  _\check_plan();
 
   return ok(\FALSE, $_name_);
 }
 
-function throwex() {
+function panic() {
   // TODO:
 
-  t\check_plan();
+  _\check_plan();
 }
 
 function include_ok($_library_) {
-  t\check_plan();
+  _\check_plan();
 
   return ok((include $_library_) == 1, 'Loading library ' . $_library_);
 }
 
 function require_ok($_library_) {
-  t\check_plan();
+  _\check_plan();
 
   return ok((require $_library_) == 1, 'Loading library ' . $_library_);
 }
@@ -328,25 +322,25 @@ function require_ok($_library_) {
 function dl_ok($_extension_) {
   // TODO: check availability of dynamicly loaded extensions.
 
-  t\check_plan();
+  _\check_plan();
 
-  return ok( dl($_extension_) );
+  return ok(dl($_extension_));
 }
 
 function is_deeply() {
   // TODO:
 
-  t\check_plan();
+  _\check_plan();
 }
 
 function diag($_message_) {
-  t\check_plan();
+  _\check_plan();
 
   echo "# $_message_\n";
 }
 
 function skip($_why_, $_how_many_) {
-  t\check_plan();
+  _\check_plan();
 
   for ($i = 0; $i < $_how_many_; $i++) {
     ok(\TRUE, "# SKIP $_why_");
@@ -359,11 +353,11 @@ function todo($_why_, $_how_many_) {
   $todo->max  = $_how_many_;
   $todo->seen = 0;
 
-  t\todo($todo);
+  _\test_todo($todo);
 }
 
 function todo_skip($_why_, $_how_many_) {
-  t\check_plan();
+  _\check_plan();
 
   for ($i = 0; $i < $_how_many_; $i++) {
     ok(\TRUE, "# TODO & SKIP $_why_");
@@ -371,14 +365,14 @@ function todo_skip($_why_, $_how_many_) {
 }
 
 function BAIL_OUT($_reason_) {
-  t\check_plan();
+  _\check_plan();
 
-  t\test_die("Bail out! $_reason_");
+  _\test_die("Bail out! $_reason_");
 }
 
-// #############################################################################
+// #################################################################################################
 
-namespace Test\Internal;
+namespace Narvalo\Test\Internal;
 
 const CODE_SUCCESS  = 0;
 const CODE_FATAL    = 255;
@@ -400,19 +394,30 @@ function check_plan($_planning_ = \FALSE) {
   }
 }
 
+function start_no_plan() {
+  \register_shutdown_function(__NAMESPACE__.'\__no_plan_shutdown');
+}
+
+function start_plan($_max_) {
+  $test =& build_test();
+  $test->num_of_expected_tests = $_max_;
+
+  \register_shutdown_function(__NAMESPACE__.'\__plan_shutdown');
+}
+
 function & build_test() {
   static $test;
 
-  if ($test === NULL) {
+  if ($test === \NULL) {
     $test = new \stdClass();
 
-    $test->num_of_successes = 0;   /* number of successful tests */
-    $test->num_of_failures  = 0;   /* number of failed tests */
-    $test->num_of_tests     = 0;   /* number of passed tests */
+    $test->num_of_successes = 0;   // number of successful tests
+    $test->num_of_failures  = 0;   // number of failed tests
+    $test->num_of_tests     = 0;   // number of passed tests
 
     $test->has_died = \FALSE;
 
-    \register_shutdown_function('Test\Internal\__test_shutdown');
+    \register_shutdown_function(__NAMESPACE__.'\__test_shutdown');
   }
 
   return $test;
@@ -424,10 +429,10 @@ function test_die($_reason_) {
 
   echo "$_reason_\n";
 
-  exit(t\CODE_FATAL);
+  exit(CODE_FATAL);
 }
 
-function todo($_todo_ = NULL) {
+function test_todo($_todo_ = NULL) {
   static $todo = \FALSE;
 
   if (\NULL !== $_todo_) {
@@ -441,18 +446,10 @@ function todo($_todo_ = NULL) {
   return $todo;
 }
 
-function register_plan() {
-    \register_shutdown_function('Test\Internal\__plan_shutdown');
-}
-
-function register_no_plan() {
-  \register_shutdown_function('Test\Internal\__no_plan_shutdown');
-}
-
-// #############################################################################
+// #################################################################################################
 
 function __test_shutdown() {
-  $test= build_test();
+  $test = build_test();
 
   if ($test->has_died) {
     exit(CODE_FATAL);
@@ -494,8 +491,7 @@ function __plan_shutdown() {
 
   if ($test->num_of_failures > 0) {
     diag("Looks like you failed {$test->num_of_failures} tests of {$test->num_of_tests}.");
-    $exit_code
-      = \min(CODE_FATAL - 1, $test->num_of_failures + $num_extra);
+    $exit_code = \min(CODE_FATAL - 1, $test->num_of_failures + $num_extra);
   }
   else {
     $exit_code = $num_extra > 0 ? CODE_FATAL : CODE_SUCCESS;

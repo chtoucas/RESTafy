@@ -2,7 +2,7 @@
 
 namespace RESTafy;
 
-const VERSION = '0.1.0';
+const VERSION = '%%VERSION%%';
 
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
@@ -249,7 +249,7 @@ trait Dictionary {
   }
 }
 
-// Singleton ---------------------------------------------------------------------------------------
+// Singleton #######################################################################################
 
 trait Singleton {
   private static $_Instance = \NULL;
@@ -273,7 +273,7 @@ trait Singleton {
   private function _initialize() { }
 }
 
-// Borg --------------------------------------------------------------------------------------------
+// Borg ############################################################################################
 
 //class Borg {
 //  protected $state_;
@@ -329,7 +329,7 @@ class Observable {
   }
 }
 
-// Provider ----------------------------------------------------------------------
+// Provider ########################################################################################
 
 class ProviderSection {
   private
@@ -364,7 +364,7 @@ final class ProviderHelper {
   }
 }
 
-// Configuration ---------------------------------------------------------------
+// Configuration ###################################################################################
 
 class ConfigurationException extends Exception { }
 
@@ -393,7 +393,7 @@ final class ConfigurationManager {
   }
 }
 
-// Miscs -----------------------------------------------------------------------
+// Miscs ###########################################################################################
 
 //class Slice implements \Iterator {
 //  private
@@ -508,9 +508,9 @@ final class ConfigurationManager {
 //  }
 //}
 
-// Diagnostics -----------------------------------------------------------------
+// Diagnostics #####################################################################################
 
-// Container -------------------------------------------------------------------
+// Container #######################################################################################
 
 class ContainerException extends Exception { }
 
@@ -530,7 +530,7 @@ class Container {
   }
 }
 
-// Caching ---------------------------------------------------------------------
+// Caching #########################################################################################
 
 interface Cache {
   /// \brief Return TRUE if cache exists, FALSE otherwise
@@ -567,7 +567,7 @@ interface Cache {
   function getLastModified($_id_, $_namespace_);
 }
 
-// Persistence -----------------------------------------------------------------
+// Persistence #####################################################################################
 
 class DBIException extends Exception { }
 
@@ -587,7 +587,7 @@ interface DBI {
   //function finish();
 }
 
-// Diagnostics -----------------------------------------------------------------
+// Web #############################################################################################
 
 const HTTP_EOL = "\n";
 
@@ -708,7 +708,7 @@ final class HttpError {
   }
 }
 
-// Addr --------------------------------------------------------------------------
+// Addr ############################################################################################
 
 interface Addr {
   function getUrl();
@@ -729,7 +729,7 @@ final class Url {
   }
 }
 
-// Assets ----------------------------------------------------------------------
+// Assets ##########################################################################################
 
 interface AssetProvider {
   /// \return string
@@ -834,7 +834,7 @@ final class AssetManager {
   }
 }
 
-// HtmlHelper ------------------------------------------------------------------
+// HtmlHelper ######################################################################################
 
 final class HtmlHelper {
   static function SelfClosingTag($_name_, array $_attrs_ = array()) {
@@ -910,7 +910,7 @@ final class AssetHelper {
   }
 }
 
-// View ------------------------------------------------------------------------
+// View ############################################################################################
 
 //class ViewException extends Exception { }
 //
@@ -1003,9 +1003,9 @@ final class AssetHelper {
 //    parent::render();
 //  }
 //}
-//
-//// Action & Controller ---------------------------------------------------------
-//
+
+// Action & Controller #############################################################################
+
 //class ActionException extends Exception { }
 //
 //class ControllerException extends Exception { }

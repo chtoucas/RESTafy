@@ -4,10 +4,16 @@
 
 PROJECT_DIR=$(cd `dirname $0` && pwd)/..
 BLIB_DIR="${PROJECT_DIR}/blib"
+PHP="php -n -c ./etc/php.ini -w"
+
+cd ${PROJECT_DIR}
 
 [ -d ${BLIB_DIR} ] || mkdir ${BLIB_DIR}
 
 rm -rf ${BLIB_DIR}/*
 
-php -w lib/RESTafy.php > ${BLIB_DIR}/RESTafy.php
-php -w lib/Test.php > ${BLIB_DIR}/Test.php
+${PHP} lib/RESTafy.php > ${BLIB_DIR}/RESTafy.php
+mkdir blib/Narvalo
+${PHP} lib/Narvalo/Test.php > ${BLIB_DIR}/Narvalo/Test.php
+
+cd - > /dev/null

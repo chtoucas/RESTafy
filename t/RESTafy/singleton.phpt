@@ -2,7 +2,7 @@
 
 require_once 'RESTafy.php';
 
-use Test as t;
+use Narvalo\Test as t;
 use RESTafy\Singleton;
 
 t\no_plan();

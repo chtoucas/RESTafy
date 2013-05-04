@@ -1,6 +1,6 @@
 <?php
 
-use Test as t;
+use Narvalo\Test as t;
 
 t\plan(1);
 
