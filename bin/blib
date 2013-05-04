@@ -1,7 +1,13 @@
 #!/bin/sh
 # TODO:
 # - clean
-# - more idiomatic build
 
-php -w lib/RESTafy.php > blib/RESTafy.php
-php -w lib/Test.php > blib/Test.php
+PROJECT_DIR=$(cd `dirname $0` && pwd)/..
+BLIB_DIR="${PROJECT_DIR}/blib"
+
+[ -d ${BLIB_DIR} ] || mkdir ${BLIB_DIR}
+
+rm -rf ${BLIB_DIR}/*
+
+php -w lib/RESTafy.php > ${BLIB_DIR}/RESTafy.php
+php -w lib/Test.php > ${BLIB_DIR}/Test.php

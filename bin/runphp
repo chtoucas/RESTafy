@@ -7,5 +7,5 @@ if [ "$1" = "" ]; then
     exit 0;
 fi
 
-php -n -c etc/php.cli.ini -f "$1"
+php -n -c ${PROJECT_DIR}/etc/php.ini -f "$1"
 
