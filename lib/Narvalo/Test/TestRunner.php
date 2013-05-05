@@ -3,7 +3,7 @@
 namespace Narvalo\Test;
 
 require_once 'NarvaloBundle.php';
-require_once 'Narvalo\Test\Framework.php';
+require_once 'Narvalo\Test\FrameworkBundle.php';
 
 use \Narvalo;
 use \Narvalo\Test\Framework;
@@ -56,19 +56,18 @@ class TestRunnerHelper {
     \array_push($this->_errors, $_error_);
   }
 
-  function writeErrors(ErrStream $_errStream_) {
+  function writeErrors(Framework\ErrStream $_errStream_) {
     $count = $this->getErrorsCount();
     if ($count > 0) {
       for ($i = 0; $i < $count; $i++) {
         $_errStream_->write($this->_errors[$i]);
       }
-      trigger_error('There are hidden errors', E_USER_WARNING);
+      \trigger_error('There are hidden errors.', E_USER_WARNING);
     }
     return $count;
   }
 }
 
-/// NB: Only one TestRunner may exist at a given time.
 final class TestRunner {
   use Narvalo\Singleton;
 
@@ -83,9 +82,15 @@ final class TestRunner {
   }
 
   function runTest($_test_) {
+    // FIXME
+    Framework\TestModule::Initialize($this->_producer);
+
     // Override default error handler.
     $this->_helper->overrideErrorHandler();
-    // Run the test specification.
+
+    // Run the test.
+    $loaded = \FALSE;
+
     try {
       $loaded = include_once $_test_;
     } catch (Framework\NormalTestProducerInterrupt $e) {
@@ -94,10 +99,12 @@ final class TestRunner {
       ;
     } catch (\Exception $e) {
       $this->_helper->pushError('Unexpected error: ' . $e->getMessage());
+
       goto TERMINATE;
     }
 
     if (\FALSE === $loaded) {
+      // FIXME
     }
 
     TERMINATE: {
@@ -124,7 +131,7 @@ final class TestRunner {
 
   protected function getExitCode($_producer_) {
     if ($_producer_->passed()) {
-      // All tests passed.
+      // All tests passed and no abnormal error.
       $code = self::SUCCESS_CODE;
     } else if (($count = $_producer_->getFailuresCount()) > 0) {
       // There are failed tests.

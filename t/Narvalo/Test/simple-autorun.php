@@ -5,17 +5,13 @@ require_once 'Narvalo/Test/TestSuite.php';
 
 use \Narvalo\Test;
 
-class TestSuite extends Test\AbstractTestSuite {
-  public function __construct() {
-    ;
-  }
-
-  protected function runSuite() {
+class MyTestSuite extends Test\TestSuite {
+  static function Tests() {
     $t = new Test\Simple(1);
 
     $t->assert(\TRUE, 'OK');
   }
 }
 
-return TestSuite::Run();
+return MyTestSuite::AutoRun();
 

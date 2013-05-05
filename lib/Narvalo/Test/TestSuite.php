@@ -4,45 +4,35 @@ namespace Narvalo\Test;
 
 require_once 'Narvalo\Test\FrameworkBundle.php';
 
-use \Narvalo\Test\Internal as _;
-
-function run($_fun_) {
-  _\startup();
-  $_fun_();
-  _\shutdown();
-}
-
-abstract class AbstractTestSuite {
-  protected function __construct() {
+class TestSuite {
+  static function SetUp() {
     ;
   }
 
-  abstract protected function runSuite();
+  static function Tests() {
+    ;
+  }
+
+  static function TearDown() {
+    ;
+  }
+
+  final static function AutoRun() {
+    $mod = new Framework\TestModule();
+    $producer = $mod->getProducer();
+
+    $producer->startup();
+
+    self::Run();
+
+    $producer->shutdown();
+  }
 
   final static function Run() {
-    $suite = new static();
-    $suite->_run();
+    static::SetUp();
+    static::Tests();
+    static::TearDown();
   }
-
-  private final function _run() {
-    _\startup();
-    $this->runSuite();
-    _\shutdown();
-  }
-}
-
-namespace Narvalo\Test\Internal;
-
-use \Narvalo\Test\Framework;
-
-function startup() {
-  $mod = new Framework\TestModule();
-  $mod->getProducer()->startup();
-}
-
-function shutdown() {
-  $mod = new Framework\TestModule();
-  $mod->getProducer()->shutdown();
 }
 
 // EOF

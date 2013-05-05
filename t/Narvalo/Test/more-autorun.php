@@ -5,24 +5,32 @@ require_once 'Narvalo/Test/TestSuite.php';
 
 use \Narvalo\Test;
 
-class TestSuite extends Test\AbstractTestSuite {
-  private $t;
+class MyTestSuite extends Test\TestSuite {
+  static $T;
 
-  public function __construct() {
-    $this->t = new Test\More();
+  static function SetUp() {
+    self::$T = new Test\More();
+    self::$T->plan(3);
   }
 
-  protected function runSuite() {
-    $this->t->plan(3);
-    $this->t->assert(\TRUE, 'Passing test.');
-    $this->assert();
+  static function Tests() {
+    self::Test1();
+    self::Test2();
+    self::Test3();
   }
 
-  protected function assert() {
-    $this->t->pass('Passing test.');
-    $this->t->fail('Failing test.');
+  static function Test1() {
+    self::$T->assert(\TRUE, 'Passing test.');
+  }
+
+  static function Test2() {
+    self::$T->pass('Passing test.');
+  }
+
+  static function Test3() {
+    self::$T->fail('Failing test.');
   }
 }
 
-return TestSuite::Run();
+return MyTestSuite::AutoRun();
 

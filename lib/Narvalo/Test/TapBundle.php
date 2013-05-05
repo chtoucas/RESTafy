@@ -10,8 +10,10 @@ namespace Narvalo\Test\Tap;
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo\Test\FrameworkBundle.php';
+require_once 'Narvalo\Test\TestRunner.php';
 
 use Narvalo;
+use Narvalo\Test;
 use Narvalo\Test\Framework;
 
 define('CRLF_REGEX_PART',       '(?:\r|\n)+');
@@ -25,7 +27,7 @@ define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
 // {{{ OutStream
 
 class TapOutStream extends Framework\FileStream implements Framework\OutStream {
-  // FIXME: find the correct version in use.
+  // FIXME: check the correct version in use.
   const Version = '13';
 
   protected $verbose;
@@ -180,8 +182,6 @@ final class DefaultTapProducer extends Framework\TestProducer {
 // }}} #############################################################################################
 // {{{ TapRunner
 
-/// FIXME: MUST be a borg.
-/// FIXME: use TestRunner & co.
 final class TapRunner {
   use Narvalo\Singleton;
 
@@ -189,76 +189,69 @@ final class TapRunner {
     SUCCESS_CODE = 0,
     FATAL_CODE   = 255;
 
-
-  //  private static
-  //    $_Instance;
-
   private
-    // Errors list.
-    $_errors     = array(),
-      // PHP display_errors on/off.
-      //$_phpDisplayErrors,
-      // PHP error reporting level.
-      $_phpErrorReporting,
+      $_helper,
       $_producer;
 
   private function _initialize() {
     $this->_producer = new DefaultTapProducer();
+    $this->_helper = new Test\TestRunnerHelper();
   }
 
-  //  private function __construct(Framework\TestProducer $_producer_) {
-  //    $this->producer = $_producer_;
-  //  }
-  //
-  //  final private function __clone() {
-  //    ;
-  //  }
-  //
-  //  /// Singleton method.
-  //  static function UniqInstance(Framework\TestProducer $_producer_ = \NULL) {
-  //    if (\NULL === self::$_Instance) {
-  //      self::$_Instance = new self(
-  //        $_producer_ != \NULL ? $_producer_ : self::_GetDefaultProducer());
-  //    }
-  //    return self::$_Instance;
-  //  }
-
   function runTest($_test_) {
-    //
+    // FIXME
     Framework\TestModule::Initialize($this->_producer);
+
     // Override default error handler.
-    $this->_overrideErrorHandler();
-    // Run the test specification.
+    $this->_helper->overrideErrorHandler();
+
+    // Run the test.
     $loaded = \FALSE;
+
     try {
       $loaded = include_once $_test_;
-    }
-    catch (Framework\NormalTestProducerInterrupt $e) {
+    } catch (Framework\NormalTestProducerInterrupt $e) {
       ;
-    }
-    catch (Framework\FatalTestProducerInterrupt $e) {
+    } catch (Framework\FatalTestProducerInterrupt $e) {
       ;
-    }
-    catch (\Exception $e) {
-      \array_push($this->_errors, 'Unexpected error: ' . $e->getMessage());
-      $this->_restoreErrorHandler();
-      $this->_displayErrors($this->_producer->getErrStream());
-      $this->terminate(self::FATAL_CODE);
+    } catch (\Exception $e) {
+      $this->_helper->pushError('Unexpected error: ' . $e->getMessage());
+
+      goto TERMINATE;
+
+      //$this->_helper->restoreErrorHandler();
+      //$this->_helper->writeErrors($this->_producer->getErrStream());
+
+      //$this->terminate(self::FATAL_CODE);
     }
 
     if (\FALSE === $loaded) {
       // FIXME
     }
 
-    // Restore default error handler.
-    $this->_restoreErrorHandler();
-    // Report on unhandled errors and exceptions.
-    if (($count = \count($this->_errors)) > 0) {
-      $this->_displayErrors($this->_producer->getErrStream());
-      $this->terminate(self::FATAL_CODE);
+    TERMINATE: {
+      // Restore default error handler.
+      $this->_helper->restoreErrorHandler();
+      $errors_count = $this->_helper->writeErrors($this->_producer->getErrStream());
+
+      // Report on unhandled errors and exceptions.
+      if ($errors_count > 0) {
+        $exit_code = self::FATAL_CODE;
+      } else {
+        $exit_code = $this->getExitCode($this->_producer);
+      }
+
+      // Exit!
+      $this->terminate($exit_code);
     }
+
+    // Report on unhandled errors and exceptions.
+    //if (($count = \count($this->_errors)) > 0) {
+    //  $this->_displayErrors($this->_producer->getErrStream());
+    //  $this->terminate(self::FATAL_CODE);
+    //}
     // Exit!
-    $this->terminate( $this->getExitCode($this->_producer) );
+    //$this->terminate( $this->getExitCode($this->_producer) );
   }
 
   protected function terminate($_code_) {
@@ -279,42 +272,6 @@ final class TapRunner {
       $code = self::FATAL_CODE;
     }
     return $code;
-  }
-
-  private function _overrideErrorHandler() {
-    // One way or another, we want to see all errors.
-    //$this->_phpDisplayErrors  = ini_get('display_errors');
-    $this->_phpErrorReporting = \ini_get('error_reporting');
-    //ini_set('display_errors', 'Off');
-    \error_reporting(E_ALL | E_STRICT);
-    // Beware we can not catch all errors.
-    // See: http://php.net/manual/en/function.set-error-handler.php
-    // The following error types cannot be handled with a user defined
-    // function: E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
-    // E_COMPILE_ERROR, E_COMPILE_WARNING, and most of E_STRICT raised in
-    // the file where set_error_handler() is called.
-    $errors =& $this->_errors;
-    \set_error_handler(
-      function ($errno , $errstr, $errfile, $errline, $errcontext) use (&$errors) {
-        \array_push($errors, "Error at {$errfile} line {$errline}.\n$errstr");
-      }
-    );
-  }
-
-  private function _restoreErrorHandler() {
-    \restore_error_handler();
-    // Restore PHP settings
-    //ini_set('display_errors', $this->_phpDisplayErrors);
-    \error_reporting($this->_phpErrorReporting);
-  }
-
-  private function _displayErrors(Framework\ErrStream $_errStream_) {
-    if (($count = \count($this->_errors)) > 0) {
-      for ($i = 0; $i < $count; $i++) {
-        $_errStream_->write($this->_errors[$i]);
-      }
-      \trigger_error('There are hidden errors', E_USER_WARNING);
-    }
   }
 }
 
