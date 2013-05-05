@@ -2,7 +2,7 @@
 
 namespace Narvalo\Test;
 
-require_once 'Narvalo\Test\Framework.php';
+require_once 'Narvalo\Test\FrameworkBundle.php';
 
 class More extends Framework\TestModule {
   function plan($_how_many_) {

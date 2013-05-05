@@ -6,10 +6,10 @@
 // - http://podwiki.hexten.net/TAP/TAP13.html?page=TAP13
 // - http://podwiki.hexten.net/TAP/TAP.html?page=TAP
 
-namespace Narvalo\Test\Framework\Tap;
+namespace Narvalo\Test\Tap;
 
-require_once 'Narvalo.php';
-require_once 'Narvalo\Test\Framework.php';
+require_once 'NarvaloBundle.php';
+require_once 'Narvalo\Test\FrameworkBundle.php';
 
 use Narvalo;
 use Narvalo\Test\Framework;
@@ -21,6 +21,8 @@ define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
 define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
 /// RegEx to find any combination of \r and \n inside a normalized string.
 define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
+
+// {{{ OutStream
 
 class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   // FIXME: find the correct version in use.
@@ -88,7 +90,7 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
     return $this->writeLine('1..0 skip ' . self::FormatReason($_reason_));
   }
 
-  function writeTestCase(Framework\TestCase $_test_, $_number_) {
+  function writeTestCase(Framework\DefaultTestCase $_test_, $_number_) {
     $desc = self::FormatDescription($_test_->getDescription());
     $line = \sprintf('%s %d - %s', $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc);
     return $this->writeLine($line);
@@ -109,7 +111,7 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   }
 
   function writeBailOut($_reason_) {
-    return $this->rawWrite('Bail out! ' . self::FormatReason($_reason_) . self::EndOfLine());
+    return $this->rawWrite('Bail out! ' . self::FormatReason($_reason_) . self::EOL);
   }
 
   function writeComment($_comment_) {
@@ -120,7 +122,7 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   }
 }
 
-class TapStdOutStream extends TapOutStream {
+class DefaultTapOutStream extends TapOutStream {
   function __construct($_verbose_) {
     // FIXME STDOUT
     parent::__construct('php://stdout', $_verbose_);
@@ -132,6 +134,9 @@ class InMemoryTapOutStream extends TapOutStream {
     parent::__construct('php://memory', $_verbose_);
   }
 }
+
+// }}} #############################################################################################
+// {{{ ErrStream
 
 class TapErrStream extends Framework\FileStream implements Framework\ErrStream {
   protected function cleanup($_disposing_) {
@@ -156,12 +161,24 @@ class TapErrStream extends Framework\FileStream implements Framework\ErrStream {
   }
 }
 
-class TapStdErrStream extends TapErrStream {
+class DefaultTapErrStream extends TapErrStream {
   function __construct() {
     // FIXME STDERR
     parent::__construct('php://stderr');
   }
 }
+
+// }}} #############################################################################################
+// {{{ DefaultTapProducer
+
+final class DefaultTapProducer extends Framework\TestProducer {
+  public function __construct() {
+    parent::__construct(new DefaultTapOutStream(\TRUE), new DefaultTapErrStream());
+  }
+}
+
+// }}} #############################################################################################
+// {{{ TapRunner
 
 /// FIXME: MUST be a borg.
 /// FIXME: use TestRunner & co.
@@ -169,13 +186,12 @@ final class TapRunner {
   use Narvalo\Singleton;
 
   const
-    CODE_SUCCESS = 0,
-    CODE_FATAL   = 255;
+    SUCCESS_CODE = 0,
+    FATAL_CODE   = 255;
 
-  protected $producer;
 
-//  private static
-//    $_Instance;
+  //  private static
+  //    $_Instance;
 
   private
     // Errors list.
@@ -183,32 +199,33 @@ final class TapRunner {
       // PHP display_errors on/off.
       //$_phpDisplayErrors,
       // PHP error reporting level.
-      $_phpErrorReporting;
+      $_phpErrorReporting,
+      $_producer;
 
   private function _initialize() {
-    $this->producer = self::_GetDefaultProducer();
+    $this->_producer = new DefaultTapProducer();
   }
 
-//  private function __construct(Framework\TestProducer $_producer_) {
-//    $this->producer = $_producer_;
-//  }
-//
-//  final private function __clone() {
-//    ;
-//  }
-//
-//  /// Singleton method.
-//  static function UniqInstance(Framework\TestProducer $_producer_ = \NULL) {
-//    if (\NULL === self::$_Instance) {
-//      self::$_Instance = new self(
-//        $_producer_ != \NULL ? $_producer_ : self::_GetDefaultProducer());
-//    }
-//    return self::$_Instance;
-//  }
+  //  private function __construct(Framework\TestProducer $_producer_) {
+  //    $this->producer = $_producer_;
+  //  }
+  //
+  //  final private function __clone() {
+  //    ;
+  //  }
+  //
+  //  /// Singleton method.
+  //  static function UniqInstance(Framework\TestProducer $_producer_ = \NULL) {
+  //    if (\NULL === self::$_Instance) {
+  //      self::$_Instance = new self(
+  //        $_producer_ != \NULL ? $_producer_ : self::_GetDefaultProducer());
+  //    }
+  //    return self::$_Instance;
+  //  }
 
   function runTest($_test_) {
     //
-    Framework\TestModule::Initialize($this->producer);
+    Framework\TestModule::Initialize($this->_producer);
     // Override default error handler.
     $this->_overrideErrorHandler();
     // Run the test specification.
@@ -225,8 +242,8 @@ final class TapRunner {
     catch (\Exception $e) {
       \array_push($this->_errors, 'Unexpected error: ' . $e->getMessage());
       $this->_restoreErrorHandler();
-      $this->_displayErrors($this->producer->getErrStream());
-      $this->terminate(self::CODE_FATAL);
+      $this->_displayErrors($this->_producer->getErrStream());
+      $this->terminate(self::FATAL_CODE);
     }
 
     if (\FALSE === $loaded) {
@@ -237,11 +254,11 @@ final class TapRunner {
     $this->_restoreErrorHandler();
     // Report on unhandled errors and exceptions.
     if (($count = \count($this->_errors)) > 0) {
-      $this->_displayErrors($this->producer->getErrStream());
-      $this->terminate(self::CODE_FATAL);
+      $this->_displayErrors($this->_producer->getErrStream());
+      $this->terminate(self::FATAL_CODE);
     }
     // Exit!
-    $this->terminate( $this->getExitCode($this->producer) );
+    $this->terminate( $this->getExitCode($this->_producer) );
   }
 
   protected function terminate($_code_) {
@@ -251,21 +268,17 @@ final class TapRunner {
   protected function getExitCode($_producer_) {
     if ($_producer_->passed()) {
       // All tests passed and no abnormal error.
-      $code = self::CODE_SUCCESS;
+      $code = self::SUCCESS_CODE;
     }
     else if (($count = $_producer_->getFailuresCount()) > 0) {
       // There are failed tests.
-      $code = $count < self::CODE_FATAL ? $count : (self::CODE_FATAL - 1);
+      $code = $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
     }
     else {
       // Other kind of errors: extra tests, unattended interrupt.
-      $code = self::CODE_FATAL;
+      $code = self::FATAL_CODE;
     }
     return $code;
-  }
-
-  private static function _GetDefaultProducer() {
-    return new Framework\TestProducer(new TapStdOutStream(\TRUE), new TapStdErrStream());
   }
 
   private function _overrideErrorHandler() {
@@ -304,5 +317,7 @@ final class TapRunner {
     }
   }
 }
+
+// }}}
 
 // EOF

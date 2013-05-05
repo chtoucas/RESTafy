@@ -4,6 +4,8 @@ namespace Narvalo;
 
 const VERSION = '%%VERSION%%';
 
+// {{{ Core
+
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
     parent::__construct($_message_, 0, $_innerException_);
@@ -35,24 +37,24 @@ class KeyNotFoundException extends Exception { }
 
 final class ObjectType {
   const
-    Unknown   = 0,
+    UNKNOWN   = 0,
     // Simple types.
-    Null      = 1,
-    Boolean   = 2,
-    Integer   = 3,
-    Float     = 4,
-    String    = 5,
+    NULL      = 1,
+    BOOLEAN   = 2,
+    INTEGER   = 3,
+    FLOAT     = 4,
+    STRING    = 5,
     // Complex types.
-    RealArray = 10,
-    HashArray = 11,
-    Object    = 12,
-    Resource  = 13;
+    REAL_ARRAY = 10,
+    HASH       = 11,
+    OBJECT     = 12,
+    RESOURCE   = 13;
 }
 
 class TypeName {
   const
-    Delimiter       = '\\',
-    GlobalNamespace = '\\';
+    DELIMITER        = '\\',
+    GLOBAL_NAMESPACE = '\\';
 
   private static
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
@@ -66,7 +68,7 @@ class TypeName {
     /// \var string
     $_namespace;
 
-  function __construct($_name_, $_namespace_ = self::GlobalNamespace) {
+  function __construct($_name_, $_namespace_ = self::GLOBAL_NAMESPACE) {
     $this->_name      = $_name_;
     $this->_namespace = $_namespace_;
   }
@@ -83,7 +85,7 @@ class TypeName {
 
   /// \return string.
   function getFullyQualifiedName() {
-    return self::Delimiter . $this->getQualifiedName();
+    return self::DELIMITER . $this->getQualifiedName();
   }
 
   /// \return string.
@@ -93,7 +95,7 @@ class TypeName {
 
   /// \return string.
   function getQualifiedName() {
-    return $this->_namespace . self::Delimiter . $this->_name;
+    return $this->_namespace . self::DELIMITER . $this->_name;
   }
 }
 
@@ -120,19 +122,19 @@ final class Type {
   static function GetType($_value_) {
     if (\NULL === $_value_) {
       // Keep this on top.
-      return ObjectType::Null;
+      return ObjectType::NULL;
     }
     elseif (\is_string($_value_)) {
-      return ObjectType::String;
+      return ObjectType::STRING;
     }
     elseif (\is_int($_value_)) {
-      return ObjectType::Integer;
+      return ObjectType::INTEGER;
     }
     elseif (\is_float($_value_)) {
-      return ObjectType::Float;
+      return ObjectType::FLOAT;
     }
     elseif (\is_bool($_value_)) {
-      return ObjectType::Boolean;
+      return ObjectType::BOOLEAN;
     }
     elseif (\is_array($_value_)) {
       // Much faster alternative to the usual snippet:
@@ -141,20 +143,20 @@ final class Type {
       $i = 0;
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {
-          return ObjectType::HashArray;
+          return ObjectType::HASH;
         }
         $i++;
       }
-      return ObjectType::RealArray;
+      return ObjectType::REAL_ARRAY;
     }
     elseif (\is_object($_value_)) {
-      return ObjectType::Object;
+      return ObjectType::OBJECT;
     }
     elseif (\is_resource($_value_)) {
-      return ObjectType::Resource;
+      return ObjectType::RESOURCE;
     }
     else {
-      return ObjectType::Unknown;
+      return ObjectType::UNKNOWN;
     }
   }
 
@@ -164,10 +166,10 @@ final class Type {
 
   static function IsSimple($_value_) {
     switch ($type = self::GetType($_value_)) {
-    case ObjectType::Boolean:
-    case ObjectType::Integer:
-    case ObjectType::Float:
-    case ObjectType::String:
+    case ObjectType::BOOLEAN:
+    case ObjectType::INTEGER:
+    case ObjectType::FLOAT:
+    case ObjectType::STRING:
       return \TRUE;
     default:
       return \FALSE;
@@ -176,7 +178,7 @@ final class Type {
 }
 
 final class DynaLoader {
-  const FileExtension = '.php';
+  const FILE_EXTENSION = '.php';
 
   /// \brief Dynamically load a code file.
   /// WARNING: only works if the included file does not return FALSE.
@@ -196,7 +198,7 @@ final class DynaLoader {
   }
 
   private static function _ToPath($_name_) {
-    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
+    return \str_replace(TypeName::DELIMITER, \DIRECTORY_SEPARATOR, $_name_) . self::FILE_EXTENSION;
   }
 }
 
@@ -249,7 +251,8 @@ trait Dictionary {
   }
 }
 
-// Singleton #######################################################################################
+// }}} #############################################################################################
+// {{{ Singleton
 
 trait Singleton {
   private static $_Instance = \NULL;
@@ -273,7 +276,8 @@ trait Singleton {
   private function _initialize() { }
 }
 
-// Borg ############################################################################################
+// }}} #############################################################################################
+// {{{ Borg
 
 //class Borg {
 //  protected $state_;
@@ -301,7 +305,8 @@ class DictionaryBorg {
   }
 }
 
-// Observer --------------------------------------------------------------------
+// }}} #############################################################################################
+// {{{ Observer
 
 interface Observer {
   function update(Observable $_observable_);
@@ -329,7 +334,8 @@ class Observable {
   }
 }
 
-// Provider ########################################################################################
+// }}} #############################################################################################
+// {{{ Provider
 
 class ProviderSection {
   private
@@ -364,7 +370,8 @@ final class ProviderHelper {
   }
 }
 
-// Configuration ###################################################################################
+// }}} #############################################################################################
+// {{{ Configuration
 
 class ConfigurationException extends Exception { }
 
@@ -393,7 +400,8 @@ final class ConfigurationManager {
   }
 }
 
-// Miscs ###########################################################################################
+// }}} #############################################################################################
+// {{{ Miscs
 
 //class Slice implements \Iterator {
 //  private
@@ -508,9 +516,11 @@ final class ConfigurationManager {
 //  }
 //}
 
-// Diagnostics #####################################################################################
+// }}} #############################################################################################
+// {{{ Diagnostics
 
-// Container #######################################################################################
+// }}} #############################################################################################
+// {{{ Container
 
 class ContainerException extends Exception { }
 
@@ -530,7 +540,8 @@ class Container {
   }
 }
 
-// Caching #########################################################################################
+// }}} #############################################################################################
+// {{{ Caching
 
 interface Cache {
   /// \brief Return TRUE if cache exists, FALSE otherwise
@@ -567,7 +578,8 @@ interface Cache {
   function getLastModified($_id_, $_namespace_);
 }
 
-// Persistence #####################################################################################
+// }}} #############################################################################################
+// {{{ Persistence
 
 class DBIException extends Exception { }
 
@@ -586,5 +598,7 @@ interface DBI {
   //function rollback();
   //function finish();
 }
+
+// }}}
 
 // EOF

@@ -1,17 +1,17 @@
 <?php
 
-require_once 'Narvalo/Test/Framework/Tap.php';
+require_once 'Narvalo/Test/TapBundle.php';
 
-use \Narvalo\Test\Framework\Tap\TapRunner;
+use \Narvalo\Test\Tap\TapRunner;
 
 $runner = TapRunner::UniqInstance();
 
-//$runner->runTest('t/Narvalo/Test/Framework/simple-autorun.php');
-//$runner->runTest('t/Narvalo/Test/Framework/simple-inline.php');
-//$runner->runTest('t/Narvalo/Test/Framework/more-autorun.php');
-//$runner->runTest('t/Narvalo/Test/Framework/more-bailout.php');
-$runner->runTest('t/Narvalo/Test/Framework/more-noplan.php');
-//$runner->runTest('t/Narvalo/Test/Framework/more-plan.php');
-//$runner->runTest('t/Narvalo/Test/Framework/more-skipall.php');
-//$runner->runTest('t/Narvalo/Test/Framework/more-complex.php');
+//$runner->runTest('t/Narvalo/Test/simple-autorun.php');
+//$runner->runTest('t/Narvalo/Test/simple-inline.php');
+//$runner->runTest('t/Narvalo/Test/more-autorun.php');
+//$runner->runTest('t/Narvalo/Test/more-bailout.php');
+//$runner->runTest('t/Narvalo/Test/more-noplan.php');
+//$runner->runTest('t/Narvalo/Test/more-plan.php');
+//$runner->runTest('t/Narvalo/Test/more-skipall.php');
+$runner->runTest('t/Narvalo/Test/more-complex.php');
 

@@ -3,7 +3,7 @@
 
 namespace Narvalo\Test;
 
-use Narvalo\Test\Internal as _;
+use \Narvalo\Test\Internal as _;
 
 /*!
  * When you are not yet sure of the number of tests to run.
@@ -44,7 +44,7 @@ function skip_all($_reason_) {
   //$reason = isset($_arg_) ? "# $_arg_" : '';
   echo "1..0 $_reason_\n";
 
-  exit(_\CODE_SUCCESS);
+  exit(_\SUCCESS_CODE);
 }
 
 // #################################################################################################
@@ -367,8 +367,8 @@ function BAIL_OUT($_reason_) {
 
 namespace Narvalo\Test\Internal;
 
-const CODE_SUCCESS  = 0;
-const CODE_FATAL    = 255;
+const SUCCESS_CODE  = 0;
+const FATAL_CODE    = 255;
 
 function check_plan($_planning_ = \FALSE) {
   static $planned = \FALSE;
@@ -422,7 +422,7 @@ function test_die($_reason_) {
 
   echo "$_reason_\n";
 
-  exit(CODE_FATAL);
+  exit(FATAL_CODE);
 }
 
 function test_todo($_todo_ = NULL) {
@@ -451,7 +451,7 @@ function __test_shutdown() {
   $test = build_test();
 
   if ($test->has_died) {
-    exit(CODE_FATAL);
+    exit(FATAL_CODE);
   }
 }
 
@@ -462,10 +462,10 @@ function __no_plan_shutdown() {
 
   if ($test->num_of_failures > 0) {
     diag("Looks like you failed {$test->num_of_failures} tests of {$test->num_of_tests}.");
-    $exit_code = min(CODE_FATAL - 1, $test->num_of_failures);
+    $exit_code = min(FATAL_CODE - 1, $test->num_of_failures);
   }
   else {
-    $exit_code = CODE_SUCCESS;
+    $exit_code = SUCCESS_CODE;
   }
 
   exit($exit_code);
@@ -490,10 +490,10 @@ function __plan_shutdown() {
 
   if ($test->num_of_failures > 0) {
     diag("Looks like you failed {$test->num_of_failures} tests of {$test->num_of_tests}.");
-    $exit_code = \min(CODE_FATAL - 1, $test->num_of_failures + $num_extra);
+    $exit_code = \min(FATAL_CODE - 1, $test->num_of_failures + $num_extra);
   }
   else {
-    $exit_code = $num_extra > 0 ? CODE_FATAL : CODE_SUCCESS;
+    $exit_code = $num_extra > 0 ? FATAL_CODE : SUCCESS_CODE;
   }
 
   exit($exit_code);

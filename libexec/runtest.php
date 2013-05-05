@@ -1,15 +1,16 @@
 <?php
 
-require_once 'Narvalo/Test/Framework.php';
-require_once 'Narvalo/Test/Framework/Tap.php';
+require_once 'Narvalo/Test/FrameworkBundle.php';
+require_once 'Narvalo/Test/TapBundle.php';
 
-use Narvalo\Test\Framework\Tap\TapRunner;
-use Narvalo\Test\Framework\TestModule;
-use Narvalo\Test\Framework\TestProducer;
-use Narvalo\Test\Framework\TestRunner;
+use Narvalo\Test\Tap;
+use Narvalo\Test\Framework;
 
-//$producer = new TestProducer(new Tap\TapStdOutStream(\TRUE), new Tap\TapStdErrStream());
-//TestModule::Initialize($producer);
-//TestRunner::UniqInstance()->runTest('t/Narvalo/Test/Framework/more/autorun.t');
-//Tap\TapRunner::UniqInstance()->runTest('t/Narvalo/Test/Framework/more/inline.t');
+$producer = new Tap\DefaultTapProducer();
+Framework\TestModule::Initialize($producer);
 
+$producer->startup();
+
+include_once 't/Narvalo/Test/more-raw.php';
+
+$producer->shutdown();

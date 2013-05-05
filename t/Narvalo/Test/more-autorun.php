@@ -1,18 +1,18 @@
 <?php
 
 require_once 'Narvalo/Test/More.php';
-require_once 'Narvalo/Test/TestSpec.php';
+require_once 'Narvalo/Test/TestSuite.php';
 
-use Narvalo\Test;
+use \Narvalo\Test;
 
-class TestSpec extends Test\AbstractTestSpec {
+class TestSuite extends Test\AbstractTestSuite {
   private $t;
 
   public function __construct() {
     $this->t = new Test\More();
   }
 
-  protected function runScenario() {
+  protected function runSuite() {
     $this->t->plan(3);
     $this->t->assert(\TRUE, 'Passing test.');
     $this->assert();
@@ -24,5 +24,5 @@ class TestSpec extends Test\AbstractTestSpec {
   }
 }
 
-return TestSpec::AutoRun();
+return TestSuite::Run();
 

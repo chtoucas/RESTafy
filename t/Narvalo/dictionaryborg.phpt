@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Narvalo.php';
+require_once 'NarvaloBundle.php';
 
 use Narvalo\Test as t;
 use Narvalo\DictionaryBorg;

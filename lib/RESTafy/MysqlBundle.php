@@ -2,7 +2,7 @@
 
 namespace RESTafy\Mysql;
 
-require_once 'RESTafy.php';
+require_once 'RESTafyBundle.php';
 
 use RESTafy;
 

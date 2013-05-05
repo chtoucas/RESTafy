@@ -1,14 +1,14 @@
 <?php
 
-require_once 'Narvalo/Test/Framework.php';
+require_once 'Narvalo/Test/TestHarness.php';
 
-use Narvalo\Test\Framework\TestHarness;
+use Narvalo\Test\TestHarness;
 
 $harness = new TestHarness();
 $harness->runTests(array(
-  't/Narvalo/Test/Framework/more/002-plan.t',
-  't/Narvalo/Test/Framework/more/003-noplan.t',
-  //'t/Narvalo/Test/Framework/more/004-skipall.t',
-  //'t/Narvalo/Test/Framework/more/005-bailout.t'
+  't/Narvalo/Test/more-plan.php',
+  't/Narvalo/Test/more-noplan.php',
+  't/Narvalo/Test/more-skipall.php',
+  't/Narvalo/Test/more-bailout.php'
 ));
 

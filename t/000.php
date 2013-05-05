@@ -1,4 +1,4 @@
 <?php
 
-require_once 'Narvalo\Test.php';
+require_once 'Narvalo\TestBundle.php';
 

@@ -2,7 +2,7 @@
 
 namespace Narvalo\Test;
 
-require_once 'Narvalo\Test\Framework.php';
+require_once 'Narvalo\Test\FrameworkBundle.php';
 
 /// This class should get you up to speed.
 /// Once you are familiar with the TAP protocol, you should move

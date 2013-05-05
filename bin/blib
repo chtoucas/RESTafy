@@ -13,9 +13,9 @@ cd ${PROJECT_DIR}
 rm -rf ${BLIB_DIR}/*
 
 mkdir blib/Narvalo
-${PHP} lib/Narvalo.php > ${BLIB_DIR}/Narvalo.php
-${PHP} lib/Narvalo/Test.php > ${BLIB_DIR}/Narvalo/Test.php
+${PHP} lib/NarvaloBundle.php > ${BLIB_DIR}/NarvaloBundle.php
+${PHP} lib/Narvalo/TestBundle.php > ${BLIB_DIR}/Narvalo/TestBundle.php
 
-${PHP} lib/RESTafy.php > ${BLIB_DIR}/RESTafy.php
+${PHP} lib/RESTafyBundle.php > ${BLIB_DIR}/RESTafyBundle.php
 
 cd - > /dev/null

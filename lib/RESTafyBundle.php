@@ -2,7 +2,11 @@
 
 namespace RESTafy;
 
+require_once 'NarvaloBundle.php';
+
 const VERSION = '%%VERSION%%';
+
+// {{{ Core
 
 const HTTP_EOL = "\n";
 
@@ -14,99 +18,99 @@ final class HttpVersion {
 
 final class HttpVerb {
   const
-    Get    = 'GET',
-    Post   = 'POST',
-    Put    = 'PUT',
-    Delete = 'DELETE',
-    Head   = 'HEAD';
+    GET    = 'GET',
+    POST   = 'POST',
+    PUT    = 'PUT',
+    DELETE = 'DELETE',
+    HEAD   = 'HEAD';
 }
 
 final class DebugLevel {
   const
-    None       = 0,
-    JavaScript = 1,
-    StyleSheet = 2,
-    RunTime    = 4,
-    DataBase   = 8;
+    NONE       = 0,
+    JAVASCRIPT = 1,
+    STYLESHEET = 2,
+    RUNTIME    = 4,
+    DATABASE   = 8;
 
   /// Enable full debug.
   static function All() {
     return
-      self::DataBase
-      | self::JavaScript
-      | self::RunTime
-      | self::StyleSheet;
+      self::DATABASE
+      | self::JAVASCRIPT
+      | self::RUNTIME
+      | self::STYLESHEET;
   }
 
   /// Only debug the UI.
   static function UI() {
-    return self::JavaScript | self::StyleSheet;
+    return self::JAVASCRIPT | self::STYLESHEET;
   }
 }
 
 final class HttpError {
   const
-    SeeOther            = 303,
-    BadRequest          = 400,
-    Unauthorized        = 401,
-    Forbidden           = 403,
-    NotFound            = 404,
-    MethodNotAllowed    = 405,
-    PreconditionFailed  = 412,
-    InternalServerError = 500;
+    SEE_OTHER             = 303,
+    BAD_REQUEST           = 400,
+    UNAUTHORIZED          = 401,
+    FORBIDDEN             = 403,
+    NOT_FOUND             = 404,
+    METHOD_NOT_ALLOWED    = 405,
+    PRECONDITION_FAILED   = 412,
+    INTERNAL_SERVER_ERROR = 500;
 
   static function SeeOther($_url_) {
-    self::_Header(self::SeeOther);
+    self::_Header(self::SEE_OTHER);
     \header('Location: ' . $_url_);
     exit();
   }
 
   static function BadRequest($_msg_ = '') {
-    self::_Render(self::BadRequest, $_msg_);
+    self::_Render(self::BAD_REQUEST, $_msg_);
   }
 
   static function Unauthorized($_msg_ = '') {
-    self::_Render(self::Unauthorized, $_msg_);
+    self::_Render(self::UNAUTHORIZED, $_msg_);
   }
 
   static function Forbidden($_msg_ = '') {
-    self::_Render(self::Forbidden, $_msg_);
+    self::_Render(self::FORBIDDEN, $_msg_);
   }
 
   static function NotFound($_msg_ = '') {
-    self::_Render(self::NotFound, $_msg_);
+    self::_Render(self::NOT_FOUND, $_msg_);
   }
 
   static function MethodNotAllowed($_msg_ = '') {
-    self::_Render(self::MethodNotAllowed, $_msg_);
+    self::_Render(self::METHOD_NOT_ALLOWED, $_msg_);
   }
 
   static function PreconditionFailed ($_msg_ = '') {
-    self::_Render(self::PreconditionFailed, $_msg_);
+    self::_Render(self::PRECONDITION_FAILED, $_msg_);
   }
 
   static function InternalServerError($_msg_ = '') {
-    self::_Render(self::InternalServerError, $_msg_);
+    self::_Render(self::INTERNAL_SERVER_ERROR, $_msg_);
   }
 
   private static function _Header($_status_) {
     $statusLine = '';
     switch ($_status_) {
-    case self::SeeOther:
+    case self::SEE_OTHER:
       $statusLine = '303 See Other'; break;
-    case self::BadRequest:
+    case self::BAD_REQUEST:
       $statusLine = '400 Bad Request'; break;
-    case self::Unauthorized:
+    case self::UNAUTHORIZED:
       $statusLine = '401 Unauthorized'; break;
-    case self::Forbidden:
+    case self::FORBIDDEN:
       $statusLine = '403 Forbidden'; break;
-    case self::NotFound:
+    case self::NOT_FOUND:
       $statusLine = '404 Not Found'; break;
-    case self::MethodNotAllowed:
+    case self::METHOD_NOT_ALLOWED:
       $statusLine = '405 Method Not Allowed'; break;
-    case self::PreconditionFailed:
+    case self::PRECONDITION_FAILED:
       $statusLine = '412 Precondition Failed'; break;
-    case self::InternalServerError:
+    case self::INTERNAL_SERVER_ERROR:
     default:
       $statusLine = '500 Internal Server Error'; break;
     }
@@ -123,7 +127,8 @@ final class HttpError {
   }
 }
 
-// Addr ############################################################################################
+// }}} #############################################################################################
+// {{{ Addr
 
 interface Addr {
   function getUrl();
@@ -144,7 +149,8 @@ final class Url {
   }
 }
 
-// Assets ##########################################################################################
+// }}} #############################################################################################
+// {{{ Assets
 
 interface AssetProvider {
   /// \return string
@@ -249,7 +255,8 @@ final class AssetManager {
   }
 }
 
-// HtmlHelper ######################################################################################
+// }}} #############################################################################################
+// {{{ HtmlHelper
 
 final class HtmlHelper {
   static function SelfClosingTag($_name_, array $_attrs_ = array()) {
@@ -325,7 +332,8 @@ final class AssetHelper {
   }
 }
 
-// View ############################################################################################
+// }}} #############################################################################################
+// {{{ View
 
 //class ViewException extends Exception { }
 //
@@ -419,7 +427,8 @@ final class AssetHelper {
 //  }
 //}
 
-// Action & Controller #############################################################################
+// }}} #############################################################################################
+// {{{ Action & Controller
 
 //class ActionException extends Exception { }
 //
@@ -476,10 +485,10 @@ final class AssetHelper {
 //      $view = $this->invokeAction_($context);
 //    } catch (ActionException $ae) {
 //      $view = $this->createErrorView_(
-//        HttpError::NotFound, $ae->getMessage());
+//        HttpError::NOT_FOUND, $ae->getMessage());
 //    } catch (\Exception $e) {
 //      $view = $this->createErrorView_(
-//        HttpError::InternalServerError, $e->getMessage());
+//        HttpError::INTERNAL_SERVER_ERROR, $e->getMessage());
 //    }
 //
 //    try {
@@ -533,5 +542,7 @@ final class AssetHelper {
 //    }
 //  }
 //}
+
+// }}}
 
 // EOF
