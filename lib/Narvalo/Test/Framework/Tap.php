@@ -1,9 +1,17 @@
 <?php
+// Cf.
+// - http://testanything.org/wiki/index.php/Main_Page
+// - http://search.cpan.org/~petdance/Test-Harness-2.65_02/lib/Test/Harness/TAP.pod
+// TAP specification
+// - http://podwiki.hexten.net/TAP/TAP13.html?page=TAP13
+// - http://podwiki.hexten.net/TAP/TAP.html?page=TAP
 
 namespace Narvalo\Test\Framework\Tap;
 
+require_once 'Narvalo.php';
 require_once 'Narvalo\Test\Framework.php';
 
+use Narvalo;
 use Narvalo\Test\Framework;
 
 define('CRLF_REGEX_PART',       '(?:\r|\n)+');
@@ -26,7 +34,7 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   }
 
   protected function cleanup($_disposing_) {
-    if (!$this->Opened()) {
+    if (!$this->opened()) {
       return;
     }
     // FIXME Close workflow
@@ -35,11 +43,11 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
 
   static function FormatDescription($_desc_) {
     // Escape EOL.
-    $desc = preg_replace(CRLF_REGEX, '¤', $_desc_);
+    $desc = \preg_replace(CRLF_REGEX, '¤', $_desc_);
     // Escape leading unsafe chars.
-    $desc = preg_replace('{^[\d\s]+}', '¤', $desc);
+    $desc = \preg_replace('{^[\d\s]+}', '¤', $desc);
     // Escape #.
-    $desc = str_replace('#', '\\#', $desc);
+    $desc = \str_replace('#', '\\#', $desc);
     if ($desc != $_desc_) {
       trigger_error("The description '$_desc_' contains invalid chars.", E_USER_NOTICE);
     }
@@ -47,7 +55,7 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   }
 
   static function FormatReason($_reason_) {
-    $reason = preg_replace(CRLF_REGEX, '¤', $_reason_);
+    $reason = \preg_replace(CRLF_REGEX, '¤', $_reason_);
     if ($reason != $_reason_) {
       trigger_error("The reason '$_reason_' contains invalid chars.", E_USER_NOTICE);
     }
@@ -82,21 +90,21 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
 
   function writeTestCase(Framework\TestCase $_test_, $_number_) {
     $desc = self::FormatDescription($_test_->getDescription());
-    $line = sprintf('%s %d - %s', $_test_->Passed() ? 'ok' : 'not ok', $_number_, $desc);
+    $line = \sprintf('%s %d - %s', $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc);
     return $this->writeLine($line);
   }
 
   function writeTodoTestCase(Framework\TodoTestCase $_test_, $_number_) {
-    $reason = self::FormatReason($_test_->reason());
-    $line = sprintf('ok %d # SKIP %s', $_number_, $reason);
+    $reason = self::FormatReason($_test_->getReason());
+    $line = \sprintf('ok %d # SKIP %s', $_number_, $reason);
     return $this->writeLine($line);
   }
 
   function writeSkipTestCase(Framework\SkipTestCase $_test_, $_number_) {
     $desc   = self::FormatDescription($_test_->getDescription());
-    $reason = self::FormatReason($_test_->reason());
-    $line = sprintf('%s %d - %s # TODO %s',
-      $_test_->Passed() ? 'ok' : 'not ok', $_number_, $desc, $reason);
+    $reason = self::FormatReason($_test_->getReason());
+    $line = \sprintf('%s %d - %s # TODO %s',
+      $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc, $reason);
     return $this->writeLine($line);
   }
 
@@ -112,7 +120,7 @@ class TapOutStream extends Framework\FileStream implements Framework\OutStream {
   }
 }
 
-class StandardTapOutStream extends TapOutStream {
+class TapStdOutStream extends TapOutStream {
   function __construct($_verbose_) {
     // FIXME STDOUT
     parent::__construct('php://stdout', $_verbose_);
@@ -127,7 +135,7 @@ class InMemoryTapOutStream extends TapOutStream {
 
 class TapErrStream extends Framework\FileStream implements Framework\ErrStream {
   protected function cleanup($_disposing_) {
-    if (!$this->Opened()) {
+    if (!$this->opened()) {
       return;
     }
     parent::cleanup($_disposing_);
@@ -148,24 +156,26 @@ class TapErrStream extends Framework\FileStream implements Framework\ErrStream {
   }
 }
 
-class StandardTapErrStream extends TapErrStream {
+class TapStdErrStream extends TapErrStream {
   function __construct() {
     // FIXME STDERR
     parent::__construct('php://stderr');
   }
 }
 
-/// NB: Only one TapRunner may exist at a given time.
+/// FIXME: MUST be a borg.
+/// FIXME: use TestRunner & co.
 final class TapRunner {
+  use Narvalo\Singleton;
+
   const
     CODE_SUCCESS = 0,
     CODE_FATAL   = 255;
 
-  protected
-    $producer;
+  protected $producer;
 
-  private static
-    $_Instance;
+//  private static
+//    $_Instance;
 
   private
     // Errors list.
@@ -175,22 +185,26 @@ final class TapRunner {
       // PHP error reporting level.
       $_phpErrorReporting;
 
-  private function __construct(Framework\TestProducer $_producer_) {
-    $this->producer = $_producer_;
+  private function _initialize() {
+    $this->producer = self::_GetDefaultProducer();
   }
 
-  final private function __clone() {
-    ;
-  }
-
-  /// Singleton method.
-  static function UniqInstance(Framework\TestProducer $_producer_ = \NULL) {
-    if (\NULL === self::$_Instance) {
-      self::$_Instance = new self(
-        $_producer_ != \NULL ? $_producer_ : self::_defaultProducer());
-    }
-    return self::$_Instance;
-  }
+//  private function __construct(Framework\TestProducer $_producer_) {
+//    $this->producer = $_producer_;
+//  }
+//
+//  final private function __clone() {
+//    ;
+//  }
+//
+//  /// Singleton method.
+//  static function UniqInstance(Framework\TestProducer $_producer_ = \NULL) {
+//    if (\NULL === self::$_Instance) {
+//      self::$_Instance = new self(
+//        $_producer_ != \NULL ? $_producer_ : self::_GetDefaultProducer());
+//    }
+//    return self::$_Instance;
+//  }
 
   function runTest($_test_) {
     //
@@ -198,6 +212,7 @@ final class TapRunner {
     // Override default error handler.
     $this->_overrideErrorHandler();
     // Run the test specification.
+    $loaded = \FALSE;
     try {
       $loaded = include_once $_test_;
     }
@@ -208,36 +223,37 @@ final class TapRunner {
       ;
     }
     catch (\Exception $e) {
-      array_push($this->_errors, 'Unexpected error: ' . $e->getMessage());
+      \array_push($this->_errors, 'Unexpected error: ' . $e->getMessage());
       $this->_restoreErrorHandler();
-      $this->_displayErrors($this->producer->ErrStream());
+      $this->_displayErrors($this->producer->getErrStream());
       $this->terminate(self::CODE_FATAL);
     }
 
     if (\FALSE === $loaded) {
+      // FIXME
     }
 
     // Restore default error handler.
     $this->_restoreErrorHandler();
     // Report on unhandled errors and exceptions.
-    if (($count = count($this->_errors)) > 0) {
-      $this->_displayErrors($this->producer->ErrStream());
+    if (($count = \count($this->_errors)) > 0) {
+      $this->_displayErrors($this->producer->getErrStream());
       $this->terminate(self::CODE_FATAL);
     }
     // Exit!
-    $this->terminate( $this->exitCode($this->producer) );
+    $this->terminate( $this->getExitCode($this->producer) );
   }
 
   protected function terminate($_code_) {
     exit($_code_);
   }
 
-  protected function exitCode($_producer_) {
-    if ($_producer_->Passed()) {
+  protected function getExitCode($_producer_) {
+    if ($_producer_->passed()) {
       // All tests passed and no abnormal error.
       $code = self::CODE_SUCCESS;
     }
-    else if (($count = $_producer_->FailuresCount()) > 0) {
+    else if (($count = $_producer_->getFailuresCount()) > 0) {
       // There are failed tests.
       $code = $count < self::CODE_FATAL ? $count : (self::CODE_FATAL - 1);
     }
@@ -248,16 +264,16 @@ final class TapRunner {
     return $code;
   }
 
-  private function _defaultProducer() {
-    return new Framework\TestProducer(new StandardTapOutStream(\TRUE), new StandardTapErrStream());
+  private static function _GetDefaultProducer() {
+    return new Framework\TestProducer(new TapStdOutStream(\TRUE), new TapStdErrStream());
   }
 
   private function _overrideErrorHandler() {
     // One way or another, we want to see all errors.
     //$this->_phpDisplayErrors  = ini_get('display_errors');
-    $this->_phpErrorReporting = ini_get('error_reporting');
+    $this->_phpErrorReporting = \ini_get('error_reporting');
     //ini_set('display_errors', 'Off');
-    error_reporting(E_ALL | E_STRICT);
+    \error_reporting(E_ALL | E_STRICT);
     // Beware we can not catch all errors.
     // See: http://php.net/manual/en/function.set-error-handler.php
     // The following error types cannot be handled with a user defined
@@ -265,26 +281,26 @@ final class TapRunner {
     // E_COMPILE_ERROR, E_COMPILE_WARNING, and most of E_STRICT raised in
     // the file where set_error_handler() is called.
     $errors =& $this->_errors;
-    set_error_handler(
+    \set_error_handler(
       function ($errno , $errstr, $errfile, $errline, $errcontext) use (&$errors) {
-        array_push($errors, "Error at {$errfile} line {$errline}.\n$errstr");
+        \array_push($errors, "Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
   }
 
   private function _restoreErrorHandler() {
-    restore_error_handler();
+    \restore_error_handler();
     // Restore PHP settings
     //ini_set('display_errors', $this->_phpDisplayErrors);
-    error_reporting($this->_phpErrorReporting);
+    \error_reporting($this->_phpErrorReporting);
   }
 
   private function _displayErrors(Framework\ErrStream $_errStream_) {
-    if (($count = count($this->_errors)) > 0) {
+    if (($count = \count($this->_errors)) > 0) {
       for ($i = 0; $i < $count; $i++) {
-        $_errstream_->write($this->_errors[$i]);
+        $_errStream_->write($this->_errors[$i]);
       }
-      trigger_error('There are hidden errors', E_USER_WARNING);
+      \trigger_error('There are hidden errors', E_USER_WARNING);
     }
   }
 }

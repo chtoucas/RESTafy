@@ -83,7 +83,7 @@ abstract class AbstractSpecialTestCase implements ITestCase {
     ;
   }
 
-  function reason() {
+  function getReason() {
     return $this->reason;
   }
 }
@@ -154,7 +154,7 @@ class FileStream {
     if (!$this->_opened) {
       return;
     }
-    if (\TRUE === fclose($this->_handle)) {
+    if (\TRUE === \fclose($this->_handle)) {
       $this->_opened = \FALSE;
     }
   }
@@ -174,19 +174,19 @@ class FileStream {
 
   function canWrite() {
     // XXX
-    return $this->_opened && 0 === fwrite($this->_handle, '');
+    return $this->_opened && 0 === \fwrite($this->_handle, '');
   }
 
   final protected function rawWrite($_value_) {
-    return fwrite($this->_handle, $_value_);
+    return \fwrite($this->_handle, $_value_);
   }
 
   protected function write($_value_) {
-    return fwrite($this->_handle, $this->_indent . $_value_);
+    return \fwrite($this->_handle, $this->_indent . $_value_);
   }
 
   protected function writeLine($_value_) {
-    return fwrite($this->_handle, $this->_indent . $_value_ . self::$_EndOfLine);
+    return \fwrite($this->_handle, $this->_indent . $_value_ . self::$_EndOfLine);
   }
 
   protected function indent() {
@@ -194,17 +194,17 @@ class FileStream {
   }
 
   protected function unindent() {
-    $this->_indent = substr($this->_indent, 4);
+    $this->_indent = \substr($this->_indent, 4);
   }
 
   protected function formatLine($_prefix_, $_value_) {
-    return $_prefix_ . preg_replace(CRLF_REGEX, '', $value) . self::$_EndOfLine;
+    return $_prefix_ . \preg_replace(CRLF_REGEX, '', $value) . self::$_EndOfLine;
   }
 
   protected function formatMultiLine($_prefix_, $_value_) {
     $prefix = self:: $_EndOfLine . $this->_indent . $_prefix_;
-    $value = preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
-    return $_prefix_ . preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value) . self::$_EndOfLine;
+    $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
+    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value) . self::$_EndOfLine;
   }
 }
 
@@ -312,7 +312,7 @@ abstract class AbstractTestSet {
   }
 
   abstract function close(ErrStream $_stream_);
-  ///
+
   abstract function passed();
 
   function addTest(ITestCase $_test_) {
@@ -359,8 +359,7 @@ class DynamicTestSet extends AbstractTestSet {
           . "of {$tests_count} run.");
       }
       $_stream_->write('No plan!');
-    }
-    else {
+    } else {
       // No tests run.
       $_stream_->write('No plan. No tests run!');
     }
@@ -413,8 +412,7 @@ class FixedSizeTestSet extends AbstractTestSet {
         $_stream_->write("Looks like you failed {$this->failuresCount} test{$s} "
           . "of {$tests_count}{$qualifier}.");
       }
-    }
-    else {
+    } else {
       // No tests run.
       $_stream_->write('No tests run!');
     }
@@ -858,7 +856,7 @@ Failed $what '$description'
 at {$caller['file']} line {$caller['line']}.
 EOL;
       }
-      $this->Diagnose($diag);
+      $this->diagnose($diag);
     }
 
     return $test->passed();
@@ -936,7 +934,7 @@ EOL;
     $this->skip(1, $_reason_);
   }
 
-  function Diagnose($_diag_) {
+  function diagnose($_diag_) {
     if ($this->inTodo()) {
       $this->_addComment($_diag_);
     }
@@ -945,11 +943,11 @@ EOL;
     }
   }
 
-  function Note($_note_) {
+  function note($_note_) {
     $this->_addComment($_note_);
   }
 
-  function Warn($_errmsg_) {
+  function warn($_errmsg_) {
     $this->_addError($_errmsg_);
   }
 
@@ -993,64 +991,75 @@ EOL;
     $this->_workflow->enterFooter();
     $this->outStream->writeFooter();
   }
+
   /// \return integer
   private function _startSubTest() {
     $this->_workflow->startSubTest();
     $this->outStream->startSubTest();
     $this->errStream->startSubTest();
   }
+
   /// \return void
   private function _endSubTest() {
     $this->_workflow->endSubTest();
     $this->outStream->endSubTest();
     $this->errStream->endSubTest();
   }
+
   /// \return integer
   private function _startTodo() {
     $this->_workflow->startTodo();
     //$this->outStream->startTodo();
     //$this->errStream->startTodo();
   }
+
   /// \return void
   private function _endTodo() {
     $this->_workflow->endTodo();
     //$this->outStream->endTodo();
     //$this->errStream->endTodo();
   }
+
   private function _addPlan($_num_of_tests_) {
     $this->_workflow->enterPlan();
     $this->outStream->writePlan($_num_of_tests_);
   }
+
   private function _addSkipAll($_reason_) {
     $this->_workflow->enterSkipAll();
     $this->outStream->writeSkipAll($_reason_);
   }
+
   private function _addTestCase(TestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
     $this->outStream->writeTestCase($_test_, $_number_);
   }
+
   private function _addTodoTestCase(TodoTestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
     $this->outStream->writeTodoTestCase($_test_, $_number_);
   }
+
   private function _addSkipTestCase(SkipTestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
     $this->outStream->writeSkipTestCase($_test_, $_number_);
   }
+
   private function _addBailOut($_reason_) {
     $this->_workflow->enterBailOut();
     $this->outStream->writeBailOut($_reason_);
   }
+
   private function _addComment($_comment_) {
     $this->_workflow->enterComment();
     $this->outStream->writeComment($_comment_);
   }
+
   private function _addError($_errmsg_) {
     $this->_workflow->enterError();
     $this->errStream->write($_errmsg_);
   }
 }
-
 
 /// NB: TestModule is a Borg: you can create as many instances of this
 /// class as you wish and they will all share the same state.
@@ -1066,11 +1075,9 @@ class TestModule {
   private static function Construct() {
     if (\NULL === self::$_SharedProducer) {
       throw new TestModuleException('First, you must initialize ' . __CLASS__);
-            /*
-            self::$_SharedProducer
-                = new TestProducer(new \Narvalo\Test\Tap\StandardTapOutStream(\TRUE),
-                    new \Narvalo\Test\Tap\StandardTapErrStream());
-             */
+      //self::$_SharedProducer
+      //  = new TestProducer(new \Narvalo\Test\Tap\StandardTapOutStream(\TRUE),
+      //    new \Narvalo\Test\Tap\StandardTapErrStream());
     }
   }
   function __construct() {
@@ -1078,7 +1085,7 @@ class TestModule {
     $this->_producer =& self::$_SharedProducer;
   }
 
-  static function SharedProducer() {
+  static function GetSharedProducer() {
     self::Construct();
     return self::$_SharedProducer;
   }
@@ -1093,7 +1100,8 @@ class TestModule {
     }
     self::$_SharedProducer = $_producer_;
   }
-  static function reset(TestProducer $_producer_ = \NULL) {
+
+  static function Reset(TestProducer $_producer_ = \NULL) {
     self::$_SharedProducer = $_producer_;
   }
 }
@@ -1115,7 +1123,7 @@ class TestRunnerHelper {
     return \count($this->_errors);
   }
 
-  function OverrideErrorHandler() {
+  function overrideErrorHandler() {
     // One way or another, we want to see all errors.
     //$this->_phpDisplayErrors  = ini_get('display_errors');
     $this->_phpErrorReporting = \ini_get('error_reporting');
@@ -1134,15 +1142,18 @@ class TestRunnerHelper {
       }
     );
   }
+
   function restoreErrorHandler() {
     \restore_error_handler();
     // Restore PHP settings
     //ini_set('display_errors', $this->_phpDisplayErrors);
     \error_reporting($this->_phpErrorReporting);
   }
-  function PushError($_error_) {
+
+  function pushError($_error_) {
     \array_push($this->_errors, $_error_);
   }
+
   function writeErrors(ErrStream $_errStream_) {
     $count = $this->getErrorsCount();
     if ($count > 0) {
@@ -1167,6 +1178,7 @@ final class TestRunner {
   private function __construct() {
     $this->_helper = new TestRunnerHelper();
   }
+
   final private function __clone() {
     ;
   }
@@ -1179,21 +1191,18 @@ final class TestRunner {
     return self::$_Instance;
   }
 
-  function RunTest($_test_) {
+  function runTest($_test_) {
     // Override default error handler.
-    $this->_helper->OverrideErrorHandler();
+    $this->_helper->overrideErrorHandler();
     // Run the test specification.
     try {
       $loaded = include_once $_test_;
-    }
-    catch (NormalTestProducerInterrupt $e) {
+    } catch (NormalTestProducerInterrupt $e) {
       ;
-    }
-    catch (FatalTestProducerInterrupt $e) {
+    } catch (FatalTestProducerInterrupt $e) {
       ;
-    }
-    catch (\Exception $e) {
-      $this->_helper->PushError('Unexpected error: ' . $e->getMessage());
+    } catch (\Exception $e) {
+      $this->_helper->pushError('Unexpected error: ' . $e->getMessage());
       goto TERMINATE;
     }
 
@@ -1201,34 +1210,33 @@ final class TestRunner {
     }
 
     TERMINATE:
-      $producer = TestModule::SharedProducer();
+      $producer = TestModule::GetSharedProducer();
+
     // Restore default error handler.
     $this->_helper->restoreErrorHandler();
     $errors_count = $this->_helper->writeErrors($producer->getErrStream());
     //
     if ($errors_count > 0) {
       $exit_code = self::CODE_FATAL;
-    }
-    else {
-      $exit_code = $this->ExitCode($producer);
+    } else {
+      $exit_code = $this->getExitCode($producer);
     }
     //
-    $this->Terminate($exit_code);
+    $this->terminate($exit_code);
   }
 
-  protected function Terminate($_code_) {
+  protected function terminate($_code_) {
     exit($_code_);
   }
-  protected function ExitCode($_producer_) {
+
+  protected function getExitCode($_producer_) {
     if ($_producer_->passed()) {
       // All tests passed.
       $code = self::CODE_SUCCESS;
-    }
-    else if (($count = $_producer_->getFailuresCount()) > 0) {
+    } else if (($count = $_producer_->getFailuresCount()) > 0) {
       // There are failed tests.
       $code = $count < self::CODE_FATAL ? $count : (self::CODE_FATAL - 1);
-    }
-    else {
+    } else {
       // Other kind of errors: extra tests, unattended interrupt.
       $code = self::CODE_FATAL;
     }
@@ -1249,13 +1257,13 @@ final class TestHarness {
     ;
   }
 
-  function RunTests($_tests_) {
+  function runTests($_tests_) {
     // Open streams.
     // Create a new test producer: no output at all.
     $producer = new TestProducer(new NullOutStream(), new NullErrStream());
     TestModule::Initialize($producer);
     // Override default error handler.
-    $this->_OverrideErrorHandler();
+    $this->_overrideErrorHandler();
     // Run the test suite.
     foreach ($_tests_ as $test) {
       try {
@@ -1265,27 +1273,22 @@ final class TestHarness {
         //error_reporting(0);
         $exit_code = include_once $test;
         //error_reporting($errlevel);
-      }
-      catch (TestProducerException $e) {
+      } catch (TestProducerException $e) {
         // XXX
         $exit_code = $e->getCode();
-      }
-      catch (\Exception $e) {
+      } catch (\Exception $e) {
         exit('Unexpected error: ' . $e->getMessage());
       }
 
-      if (TestProducer::CODE_SUCCESS === $exit_code) {
+      if (TestRunner::CODE_SUCCESS === $exit_code) {
         $status= 'OK';
-      }
-      else if ($exit_code > TestProducer::CODE_SUCCESS
-        && $exit_code <= TestProducer::CODE_FATAL
+      } else if ($exit_code > TestRunner::CODE_SUCCESS
+        && $exit_code <= TestRunner::CODE_FATAL
       ) {
         $status = 'KO';
-      }
-      else if (\FALSE === $exit_code) {
+      } else if (\FALSE === $exit_code) {
         $status = 'NOT FOUND';
-      }
-      else {
+      } else {
         $status = 'UNKNOWN';
       }
 
@@ -1298,10 +1301,10 @@ final class TestHarness {
 
       if (($dotlen = 40 - \strlen($test)) > 0) {
         $statusline = $test . \str_repeat('.', $dotlen) . $status;
-      }
-      else {
+      } else {
         $statusline = $test . '...'. $status;
       }
+
       echo $statusline, "\n";
 
       // reset.
@@ -1311,7 +1314,7 @@ final class TestHarness {
     $this->_restoreErrorHandler();
   }
 
-  private function _OverrideErrorHandler() {
+  private function _overrideErrorHandler() {
     // One way or another, we want to see all errors.
     //$this->_phpDisplayErrors  = ini_get('display_errors');
     $this->_phpErrorReporting = \ini_get('error_reporting');

@@ -4,24 +4,22 @@ namespace Narvalo\Test;
 
 require_once 'Narvalo\Test\Framework.php';
 
-use Narvalo\Test\Framework\TestModule;
-
-class More extends TestModule {
+class More extends Framework\TestModule {
   function plan($_how_many_) {
-    return $this->getProducer()->Plan($_how_many_);
+    return $this->getProducer()->plan($_how_many_);
   }
 
   function skipAll($_reason_) {
-    return $this->getProducer()->SkipAll($_reason_);
+    return $this->getProducer()->skipAll($_reason_);
   }
 
   function assert($_test_, $_description_) {
-    return $this->getProducer()->Assert($_test_, $_description_);
+    return $this->getProducer()->assert($_test_, $_description_);
   }
 
   /// Compare $_got_ and $_expect_ with ==
   function isEqual($_got_, $_expect_, $_description_) {
-    $passed = $this->getProducer()->Assert($_got_ == $_expect_, $_description_);
+    $passed = $this->getProducer()->assert($_got_ == $_expect_, $_description_);
     if (!$passed) {
       $this->_diagnoseIsEqual($_got_, $_expect_);
     }
@@ -30,7 +28,7 @@ class More extends TestModule {
 
   /// Compare $_got_ and $_expect_ with !=
   function isNotEqual($_got_, $_expect_, $_description_) {
-    $passed = $this->getProducer()->Assert($_got_ != $_expect_, $_description_);
+    $passed = $this->getProducer()->assert($_got_ != $_expect_, $_description_);
     if (!$passed) {
       $this->_diagnoseIsNotEqual($_got_, $_expect_);
     }
@@ -67,12 +65,12 @@ class More extends TestModule {
       $passed = $_got_ >= $_expect_;
       break;
     default:
-      $this->getProducer()->Assert(FALSE, $_description_);
+      $this->getProducer()->assert(\FALSE, $_description_);
       $this->getProducer()->diagnose("Unrecognized comparison operator: {$_type_}");
       return;
     }
 
-    $this->getProducer()->Assert($passed, $_description_);
+    $this->getProducer()->assert($passed, $_description_);
 
     if (!$passed) {
       switch ($_type_) {
@@ -93,7 +91,7 @@ class More extends TestModule {
 
   function like($_subject_, $_pattern_, $_description_) {
     $test = 1 === preg_match($_pattern_, $_subject_);
-    $passed = $this->getProducer()->Assert($test, $_description_);
+    $passed = $this->getProducer()->assert($test, $_description_);
     if (!$passed) {
       // XXX
     }
@@ -102,7 +100,7 @@ class More extends TestModule {
 
   function unlike($_subject_, $_pattern_, $_description_) {
     $test = 0 === preg_match($_pattern_, $_subject_);
-    $passed = $this->getProducer()->Assert($test, $_description_);
+    $passed = $this->getProducer()->assert($test, $_description_);
     if (!$passed) {
       // XXX
     }
@@ -118,8 +116,8 @@ class More extends TestModule {
     // script.
     $errlevel = ini_get('error_reporting');
     error_reporting(0);
-    $test = eval('return (FALSE !== (include_once $_library_))');
-    $passed = $this->getProducer()->Assert($test, $_description_);
+    $test = eval('return (\FALSE !== (include_once $_library_))');
+    $passed = $this->getProducer()->assert($test, $_description_);
     error_reporting($errlevel);
     return $passed;
   }
@@ -127,8 +125,8 @@ class More extends TestModule {
   function canRequire($_library_, $_description_) {
     $errlevel = ini_get('error_reporting');
     error_reporting(0);
-    $test = eval('return (FALSE !== (require_once $_library_))');
-    $passed = $this->getProducer()->Assert($test, $_description_);
+    $test = eval('return (\FALSE !== (require_once $_library_))');
+    $passed = $this->getProducer()->assert($test, $_description_);
     error_reporting($errlevel);
     return $passed;
   }
@@ -136,7 +134,7 @@ class More extends TestModule {
   function hasMethod($_class_, $_method_, $_description_) {
     // FIXME: check that the class exists
     $rc = new ReflectionClass($_class_);
-    return $this->getProducer()->Assert($rc->hasMethod($_method_), $_description_);
+    return $this->getProducer()->assert($rc->hasMethod($_method_), $_description_);
   }
 
   function implementsInterface($_class_, $_interface_, $_description_) {
@@ -144,23 +142,23 @@ class More extends TestModule {
     // check that we do have an interface by reflection or via
     // interface_exists()
     $rc = new ReflectionClass($_class_);
-    return $this->getProducer()->Assert($rc->implementsInterface($_interface_), $_description_);
+    return $this->getProducer()->assert($rc->implementsInterface($_interface_), $_description_);
   }
 
   function isInstanceOf($_object_, $_class_, $_description_) {
     // FIXME: __autoload
-    return $this->getProducer()->Assert($_object_ instanceof $_class_, $_description_);
+    return $this->getProducer()->assert($_object_ instanceof $_class_, $_description_);
   }
 
   function pass($_description_) {
-    return $this->getProducer()->Assert(TRUE, $_description_);
+    return $this->getProducer()->assert(\TRUE, $_description_);
   }
 
   function fail($_description_) {
-    return $this->getProducer()->Assert(FALSE, $_description_);
+    return $this->getProducer()->assert(\FALSE, $_description_);
   }
 
-  function subTest(Test\TestModule $_m_, $_code_, $_description_) {
+  function subTest(Framework\TestModule $_m_, $_code_, $_description_) {
     return $this->getProducer()->SubTest($_m_, $_code_, $_description_);
   }
 
@@ -173,24 +171,24 @@ class More extends TestModule {
   }
 
   function skip($_how_many_, $_reason_) {
-    return $this->getProducer()->Skip($_how_many_, $_reason_);
+    return $this->getProducer()->skip($_how_many_, $_reason_);
   }
 
-  function skipSubTest(Test\TestModule $_m_, $_code_, $_description_, $_reason_) {
-    return $this->getProducer()->SkipSubTest($_reason_);
+  function skipSubTest(Framework\TestModule $_m_, $_code_, $_description_, $_reason_) {
+    return $this->getProducer()->skipSubTest($_reason_);
   }
 
   function bailOut($_reason_) {
-    return $this->getProducer()->BailOut($_reason_);
+    return $this->getProducer()->bailOut($_reason_);
   }
 
   function note($_note_) {
-    return $this->getProducer()->Note($_note_);
+    return $this->getProducer()->note($_note_);
   }
 
   private function _diagnoseCompare($_got_, $_type_, $_expect_) {
-    $got    = NULL === $_got_    ? 'NULL' : "'$_got_'";
-    $expect = NULL === $_expect_ ? 'NULL' : "'$_expect_'";
+    $got    = \NULL === $_got_    ? 'NULL' : "'$_got_'";
+    $expect = \NULL === $_expect_ ? 'NULL' : "'$_expect_'";
 
     $diag = <<<EOL
     $got
@@ -201,8 +199,8 @@ EOL;
   }
 
   private function _diagnoseIsEqual($_got_, $_expect_) {
-    $got    = NULL === $_got_    ? 'NULL' : "'$_got_'";
-    $expect = NULL === $_expect_ ? 'NULL' : "'$_expect_'";
+    $got    = \NULL === $_got_    ? 'NULL' : "'$_got_'";
+    $expect = \NULL === $_expect_ ? 'NULL' : "'$_expect_'";
 
     $diag = <<<EOL
          got: $got
@@ -212,7 +210,7 @@ EOL;
   }
 
   private function _diagnoseIsNotEqual($_got_) {
-    $got = NULL === $_got_ ? 'NULL' : "'$_got_'";
+    $got = \NULL === $_got_ ? 'NULL' : "'$_got_'";
 
     $diag = <<<EOL
          got: $got

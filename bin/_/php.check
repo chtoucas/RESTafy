@@ -1,6 +1,0 @@
-#!/bin/sh
-total=0
-for currfile in `find . -name "*.php" -print`
-do
-    php -l $currfile
-done
