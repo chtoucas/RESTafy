@@ -1,15 +1,13 @@
 <?php
 
-require_once 'Narvalo/Test/run.php';
 require_once 'Narvalo/Test/More.php';
 
 use \Narvalo\Test;
 
-return Test\run(function() {
-  $t = new Test\More();
+$t = new Test\More();
 
-  $t->plan(1);
+$t->plan(1);
 
-  $t->assert(\TRUE, 'OK');
-});
+$t->assert(\TRUE, 'OK');
 
+// EOF

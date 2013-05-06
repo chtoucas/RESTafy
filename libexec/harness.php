@@ -1,14 +1,20 @@
 <?php
 
-require_once 'Narvalo/Test/TestHarness.php';
+require_once 'Narvalo/Test/RunnerBundle.php';
 
-use Narvalo\Test\TestHarness;
+use Narvalo\Test\Runner;
 
-$harness = new TestHarness();
+$harness = new Runner\TestHarness();
 $harness->runTests(array(
-  't/Narvalo/Test/more-plan.php',
+  't/arvalo/Test/more-autorun.php',
+  't/Narvalo/Test/more-bailout.php',
+  't/Narvalo/Test/more-complex.php',
   't/Narvalo/Test/more-noplan.php',
+  't/Narvalo/Test/more-plan.php',
+  't/Narvalo/Test/more-raw.php',
   't/Narvalo/Test/more-skipall.php',
-  't/Narvalo/Test/more-bailout.php'
+  't/Narvalo/Test/simple-inline.php',
+  't/Narvalo/Test/simple-autorun.php',
 ));
 
+// EOF

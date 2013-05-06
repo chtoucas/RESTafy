@@ -2,8 +2,6 @@
 
 namespace Narvalo\Test;
 
-require_once 'Narvalo\Test\FrameworkBundle.php';
-
 class TestSuite {
   static function SetUp() {
     ;
@@ -15,17 +13,6 @@ class TestSuite {
 
   static function TearDown() {
     ;
-  }
-
-  final static function AutoRun() {
-    $mod = new Framework\TestModule();
-    $producer = $mod->getProducer();
-
-    $producer->startup();
-
-    self::Run();
-
-    $producer->shutdown();
   }
 
   final static function Run() {

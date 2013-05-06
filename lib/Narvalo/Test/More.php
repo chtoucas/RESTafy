@@ -90,7 +90,7 @@ class More extends Framework\TestModule {
   }
 
   function like($_subject_, $_pattern_, $_description_) {
-    $test = 1 === preg_match($_pattern_, $_subject_);
+    $test = 1 === \preg_match($_pattern_, $_subject_);
     $passed = $this->getProducer()->assert($test, $_description_);
     if (!$passed) {
       // XXX
@@ -99,7 +99,7 @@ class More extends Framework\TestModule {
   }
 
   function unlike($_subject_, $_pattern_, $_description_) {
-    $test = 0 === preg_match($_pattern_, $_subject_);
+    $test = 0 === \preg_match($_pattern_, $_subject_);
     $passed = $this->getProducer()->assert($test, $_description_);
     if (!$passed) {
       // XXX
@@ -114,26 +114,26 @@ class More extends Framework\TestModule {
     // We turn off error reporting otherwise we will have duplicate errors.
     // We eval the code otherwise the include call may abort the whole
     // script.
-    $errlevel = ini_get('error_reporting');
-    error_reporting(0);
+    $errlevel = \ini_get('error_reporting');
+    \error_reporting(0);
     $test = eval('return (\FALSE !== (include_once $_library_))');
     $passed = $this->getProducer()->assert($test, $_description_);
-    error_reporting($errlevel);
+    \error_reporting($errlevel);
     return $passed;
   }
 
   function canRequire($_library_, $_description_) {
-    $errlevel = ini_get('error_reporting');
-    error_reporting(0);
+    $errlevel = \ini_get('error_reporting');
+    \error_reporting(0);
     $test = eval('return (\FALSE !== (require_once $_library_))');
     $passed = $this->getProducer()->assert($test, $_description_);
-    error_reporting($errlevel);
+    \error_reporting($errlevel);
     return $passed;
   }
 
   function hasMethod($_class_, $_method_, $_description_) {
     // FIXME: check that the class exists
-    $rc = new ReflectionClass($_class_);
+    $rc = new \ReflectionClass($_class_);
     return $this->getProducer()->assert($rc->hasMethod($_method_), $_description_);
   }
 
@@ -141,7 +141,7 @@ class More extends Framework\TestModule {
     // FIXME: __autoload
     // check that we do have an interface by reflection or via
     // interface_exists()
-    $rc = new ReflectionClass($_class_);
+    $rc = new \ReflectionClass($_class_);
     return $this->getProducer()->assert($rc->implementsInterface($_interface_), $_description_);
   }
 

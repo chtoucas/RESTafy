@@ -19,39 +19,39 @@ interface TestCase {
 }
 
 class DefaultTestCase implements TestCase {
-  protected
-    $description,
-    $passed;
+  private
+    $_description,
+    $_passed;
 
   function __construct($_description_, $_passed_) {
-    $this->description = empty($_description_) ? 'unamed test' : $_description_;
-    $this->passed      = $_passed_;
+    $this->_description = empty($_description_) ? 'unamed test' : $_description_;
+    $this->_passed      = $_passed_;
   }
 
   function getDescription() {
-    return $this->description;
+    return $this->_description;
   }
 
   function passed() {
-    return $this->passed;
+    return $this->_passed;
   }
 }
 
 abstract class AbstractTestCase implements TestCase {
-  protected $reason;
+  private $_reason;
 
-  protected function __construct() {
-    ;
+  protected function __construct($_reason_) {
+    $this->_reason = $_reason_;
   }
 
   function getReason() {
-    return $this->reason;
+    return $this->_reason;
   }
 }
 
 class SkipTestCase extends AbstractTestCase {
   function __construct($_reason_) {
-    $this->reason = $_reason_;
+    parent::__construct($_reason_);
   }
 
   function getDescription() {
@@ -64,28 +64,29 @@ class SkipTestCase extends AbstractTestCase {
 }
 
 class TodoTestCase extends AbstractTestCase {
-  protected $inner;
+  private $_inner;
 
   function __construct(DefaultTestCase $_inner_, $_reason_) {
-    $this->inner  = $_inner_;
-    $this->reason = $_reason_;
+    parent::__construct($_reason_);
+
+    $this->_inner  = $_inner_;
   }
 
   function getDescription() {
-    return $this->inner->getDescription();
+    return $this->_inner->getDescription();
   }
 
   function passed() {
-    return $this->inner->passed();
+    return $this->_inner->passed();
   }
 }
 
 // }}} #############################################################################################
 // {{{ TestStream's
 
-class FileStreamException extends \Exception { }
+class TestStreamException extends \Exception { }
 
-interface OutStream {
+interface TestOutStream {
   function close();
   function reset();
   function canWrite();
@@ -104,7 +105,7 @@ interface OutStream {
   function writeComment($_comment_);
 }
 
-interface ErrStream {
+interface TestErrStream {
   function close();
   function reset();
   function canWrite();
@@ -115,202 +116,38 @@ interface ErrStream {
   function write($_value_);
 }
 
-class FileStream {
-  const EOL = "\n";
-
-  private
-    $_handle,
-    $_indent = '',
-    $_opened = \FALSE;
-
-  function __construct($_path_) {
-    // Open the handle
-    $handle = \fopen($_path_, 'w');
-    if (\FALSE === $handle) {
-      throw new FileStreamException("Unable to open '{$_path_}' for writing");
-    }
-    $this->_opened = \TRUE;
-    $this->_handle = $handle;
-  }
-
-  function __destruct() {
-    $this->cleanup(\FALSE);
-  }
-
-  function close() {
-    $this->cleanup(\TRUE);
-  }
-
-  protected function cleanup($_disposing_) {
-    if (!$this->_opened) {
-      return;
-    }
-    if (\TRUE === \fclose($this->_handle)) {
-      $this->_opened = \FALSE;
-    }
-  }
-
-  function opened() {
-    // XXX
-    return $this->_opened;
-  }
-
-  function reset() {
-    $this->_indent = '';
-  }
-
-  function canWrite() {
-    // XXX
-    return $this->_opened && 0 === \fwrite($this->_handle, '');
-  }
-
-  final protected function rawWrite($_value_) {
-    return \fwrite($this->_handle, $_value_);
-  }
-
-  protected function write($_value_) {
-    return \fwrite($this->_handle, $this->_indent . $_value_);
-  }
-
-  protected function writeLine($_value_) {
-    return \fwrite($this->_handle, $this->_indent . $_value_ . self::EOL);
-  }
-
-  protected function indent() {
-    $this->_indent = '    ' . $this->_indent;
-  }
-
-  protected function unindent() {
-    $this->_indent = \substr($this->_indent, 4);
-  }
-
-  protected function formatLine($_prefix_, $_value_) {
-    return $_prefix_ . \preg_replace(CRLF_REGEX, '', $value) . self::EOL;
-  }
-
-  protected function formatMultiLine($_prefix_, $_value_) {
-    $prefix = self::EOL . $this->_indent . $_prefix_;
-    $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
-    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value) . self::EOL;
-  }
-}
-
-class NullOutStream implements OutStream {
-  function close() {
-    ;
-  }
-
-  function reset() {
-    ;
-  }
-
-  function canWrite() {
-    return \TRUE;
-  }
-
-  function startSubTest() {
-    ;
-  }
-
-  function endSubTest() {
-    ;
-  }
-
-  function writeHeader() {
-    ;
-  }
-
-  function writeFooter() {
-    ;
-  }
-
-  function writePlan($_num_of_tests_) {
-    ;
-  }
-
-  function writeSkipAll($_reason_) {
-    ;
-  }
-
-  function writeTestCase(DefaultTestCase $_test_, $_number_) {
-    ;
-  }
-
-  function writeTodoTestCase(TodoTestCase $_test_, $_number_) {
-    ;
-  }
-
-  function writeSkipTestCase(SkipTestCase $_test_, $_number_) {
-    ;
-  }
-
-  function writeBailOut($_reason_) {
-    ;
-  }
-
-  function writeComment($_comment_) {
-    ;
-  }
-}
-
-class NullErrStream implements ErrStream {
-  function close() {
-    ;
-  }
-
-  function reset() {
-    ;
-  }
-
-  function canWrite() {
-    return \TRUE;
-  }
-
-  function startSubTest() {
-    ;
-  }
-
-  function endSubTest() {
-    ;
-  }
-
-  function write($_value_) {
-    ;
-  }
-}
-
 // }}} #############################################################################################
 // {{{ TestSet's
 
 abstract class AbstractTestSet {
-  protected
-    /// Number of failed tests
-    $failuresCount  = 0,
-    /// List of tests
-    $tests          = array();
+  private
+  // Number of failed tests.
+    $_failuresCount = 0,
+    // List of tests.
+    $_tests = array();
 
   protected function __construct() {
     ;
   }
 
   function getTestsCount() {
-    return \count($this->tests);
+    return \count($this->_tests);
   }
 
   function getFailuresCount() {
-    return $this->failuresCount;
+    return $this->_failuresCount;
   }
 
-  abstract function close(ErrStream $_stream_);
+  abstract function close(TestErrStream $_errStream_);
 
   abstract function passed();
 
   function addTest(TestCase $_test_) {
     if (!$_test_->passed()) {
-      $this->failuresCount++;
+      $this->_failuresCount++;
     }
     $number = $this->getTestsCount();
-    $this->tests[$number] = $_test_;
+    $this->_tests[$number] = $_test_;
     return 1 + $number;
   }
 }
@@ -324,7 +161,7 @@ class EmptyTestSet extends AbstractTestSet {
     return \TRUE;
   }
 
-  function close(ErrStream $_stream_) {
+  function close(TestErrStream $_errStream_) {
     ;
   }
 
@@ -338,73 +175,72 @@ class DynamicTestSet extends AbstractTestSet {
     ;
   }
 
-  function close(ErrStream $_stream_) {
-    //
+  function close(TestErrStream $_errStream_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
-      if ($this->failuresCount > 0) {
+      if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
-        $s = $this->failuresCount > 1 ? 's' : '';
-        $_stream_->write("Looks like you failed {$this->failuresCount} test{$s} "
+        $s = $failures_count > 1 ? 's' : '';
+        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
           . "of {$tests_count} run.");
       }
-      $_stream_->write('No plan!');
+      $_errStream_->write('No plan!');
     } else {
       // No tests run.
-      $_stream_->write('No plan. No tests run!');
+      $_errStream_->write('No plan. No tests run!');
     }
   }
 
   function passed() {
     // We actually run tests and they all passed.
-    return 0 === $this->failuresCount && $this->getTestsCount() != 0;
+    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
   }
 }
 
 class FixedSizeTestSet extends AbstractTestSet {
-  /// Number of expected tests
-  protected $length;
+  // Number of expected tests.
+  private $_length;
 
   function __construct($_length_) {
-    $this->length = $_length_;
+    $this->_length = $_length_;
   }
 
   /// \return integer
   function getLength() {
-    return $this->length;
+    return $this->_length;
   }
 
   function getExtrasCount() {
-    return $this->getTestsCount() - $this->length;
+    return $this->getTestsCount() - $this->_length;
   }
 
   function passed() {
     // We actually run tests, they all passed and there are no extras tests.
-    return 0 === $this->failuresCount && $this->getTestsCount() != 0
+    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0
       && 0 === $this->getExtrasCount();
   }
 
-  function close(ErrStream $_stream_) {
+  function close(TestErrStream $_errStream_) {
     //
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
       if ($extras_count != 0) {
         // Count missmatch.
-        $s = $this->length > 1 ? 's' : '';
-        $_stream_->write("Looks like you planned {$this->length} test{$s} "
+        $s = $this->_length > 1 ? 's' : '';
+        $_errStream_->write("Looks like you planned {$this->_length} test{$s} "
           . "but ran {$tests_count}.");
       }
-      if ($this->failuresCount > 0) {
+      if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
-        $s = $this->failuresCount > 1 ? 's' : '';
+        $s = $failures_count > 1 ? 's' : '';
         $qualifier = 0 == $extras_count ? '' : ' run';
-        $_stream_->write("Looks like you failed {$this->failuresCount} test{$s} "
+        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
           . "of {$tests_count}{$qualifier}.");
       }
     } else {
       // No tests run.
-      $_stream_->write('No tests run!');
+      $_errStream_->write('No tests run!');
     }
   }
 }
@@ -414,7 +250,7 @@ class FixedSizeTestSet extends AbstractTestSet {
 
 class TestWorkflowException extends \Exception { }
 
-class TestWorkflow {
+final class TestWorkflow {
   const
     START       = 0,
     HEADER      = 1,
@@ -436,10 +272,10 @@ class TestWorkflow {
     $_todoLevel    = 0;
 
   function __destruct() {
-    $this->cleanup(\FALSE);
+    $this->cleanup_(\FALSE);
   }
 
-  protected function cleanup($_disposing_) {
+  protected function cleanup_($_disposing_) {
     if ($this->_disposed) {
       return;
     }
@@ -477,10 +313,20 @@ class TestWorkflow {
     if (self::START === $this->_state) {
       // Allowed state.
       $this->_state = self::HEADER;
-    }
-    else {
+    } else {
       // Invalid state.
       throw new TestWorkflowException('The header must come first. Invalid workflow state: ' . $this->_state);
+    }
+  }
+
+  function notLoaded() {
+    if (self::HEADER === $this->_state) {
+      // Allowed state.
+      $this->_state = self::END;
+    } else {
+      // Invalid state.
+      throw new TestWorkflowException(
+        'XXX Invalid workflow state: ' . $this->_state);
     }
   }
 
@@ -735,13 +581,11 @@ function is_strictly_positive_integer($_value_) {
 }
 
 class TestProducer {
-  protected
-    /// Error stream
-    $errStream,
-    /// Out stream
-    $outStream;
-
   private
+    // Error stream
+    $_errStream,
+    // Out stream
+    $_outStream,
     /// TAP set
     $_set,
     // TODO stack level
@@ -753,20 +597,24 @@ class TestProducer {
     //
     $_workflow;
 
-  function __construct(OutStream $_outStream_, ErrStream $_errStream_) {
-    $this->outStream = $_outStream_;
-    $this->errStream = $_errStream_;
+  function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
+    $this->_outStream = $_outStream_;
+    $this->_errStream = $_errStream_;
     // NB: Until we make a plan, we use a dynamic TAP set.
     $this->_set      = new DynamicTestSet();
     $this->_workflow = new TestWorkflow();
   }
 
   function getOutStream() {
-    return $this->outStream;
+    return $this->_outStream;
   }
 
   function getErrStream() {
-    return $this->errStream;
+    return $this->_errStream;
+  }
+
+  function getTestsCount() {
+    return $this->_set->getTestsCount();
   }
 
   function getFailuresCount() {
@@ -782,8 +630,8 @@ class TestProducer {
   }
 
   function reset() {
-    $this->errStream->reset();
-    $this->outStream->reset();
+    $this->_errStream->reset();
+    $this->_outStream->reset();
     $this->_set        = new DynamicTestSet();
     $this->_todoLevel  = 0;
     $this->_todoReason = '';
@@ -799,19 +647,23 @@ class TestProducer {
     $this->_set = new EmptyTestSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
-    $this->NormalInterrupt();
+    self::_NormalInterrupt();
   }
 
   function bailOut($_reason_) {
     $this->_addBailOut($_reason_);
     $this->_addFooter();
-    $this->FatalInterrupt();
+    self::_FatalInterrupt();
   }
 
-  function shutdown() {
-    $this->_postPlan();
-    $this->_endTestSet();
-    $this->_addFooter();
+  function shutdown($_loaded_) {
+    if ($_loaded_) {
+      $this->_postPlan();
+      $this->_endTestSet();
+      $this->_addFooter();
+    } else {
+      $this->_notLoaded();
+    }
   }
 
   function plan($_how_many_) {
@@ -960,16 +812,6 @@ EOL;
     return array('file' => $file,  'line' => $line);
   }
 
-  protected function FatalInterrupt() {
-    // THIS IS BAD! but I do not see any other way to do it.
-    throw new FatalTestProducerInterrupt();
-  }
-
-  protected function NormalInterrupt() {
-    // THIS IS BAD! but I do not see any other way to do it.
-    throw new NormalTestProducerInterrupt();
-  }
-
   protected function _postPlan() {
     if ($this->_set instanceof DynamicTestSet
       && ($tests_count = $this->_set->getTestsCount()) > 0
@@ -981,85 +823,99 @@ EOL;
 
   protected function _endTestSet() {
     // Print helpful messages if something went wrong.
-    $this->_set->close($this->errStream);
+    $this->_set->close($this->_errStream);
+  }
+
+  private static function _FatalInterrupt() {
+    // THIS IS BAD! but I do not see any other simple way to do it.
+    throw new FatalTestProducerInterrupt();
+  }
+
+  private static function _NormalInterrupt() {
+    // THIS IS BAD! but I do not see any other simple way to do it.
+    throw new NormalTestProducerInterrupt();
+  }
+
+  private function _notLoaded() {
+    $this->_workflow->notLoaded();
   }
 
   private function _addHeader() {
     $this->_workflow->enterHeader();
-    $this->outStream->writeHeader();
+    $this->_outStream->writeHeader();
   }
 
   private function _addFooter() {
     $this->_workflow->enterFooter();
-    $this->outStream->writeFooter();
+    $this->_outStream->writeFooter();
   }
 
   /// \return integer
   private function _startSubTest() {
     $this->_workflow->startSubTest();
-    $this->outStream->startSubTest();
-    $this->errStream->startSubTest();
+    $this->_outStream->startSubTest();
+    $this->_errStream->startSubTest();
   }
 
   /// \return void
   private function _endSubTest() {
     $this->_workflow->endSubTest();
-    $this->outStream->endSubTest();
-    $this->errStream->endSubTest();
+    $this->_outStream->endSubTest();
+    $this->_errStream->endSubTest();
   }
 
   /// \return integer
   private function _startTodo() {
     $this->_workflow->startTodo();
-    //$this->outStream->startTodo();
-    //$this->errStream->startTodo();
+    //$this->_outStream->startTodo();
+    //$this->_errStream->startTodo();
   }
 
   /// \return void
   private function _endTodo() {
     $this->_workflow->endTodo();
-    //$this->outStream->endTodo();
-    //$this->errStream->endTodo();
+    //$this->_outStream->endTodo();
+    //$this->_errStream->endTodo();
   }
 
   private function _addPlan($_num_of_tests_) {
     $this->_workflow->enterPlan();
-    $this->outStream->writePlan($_num_of_tests_);
+    $this->_outStream->writePlan($_num_of_tests_);
   }
 
   private function _addSkipAll($_reason_) {
     $this->_workflow->enterSkipAll();
-    $this->outStream->writeSkipAll($_reason_);
+    $this->_outStream->writeSkipAll($_reason_);
   }
 
   private function _addTestCase(DefaultTestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
-    $this->outStream->writeTestCase($_test_, $_number_);
+    $this->_outStream->writeTestCase($_test_, $_number_);
   }
 
   private function _addTodoTestCase(TodoTestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
-    $this->outStream->writeTodoTestCase($_test_, $_number_);
+    $this->_outStream->writeTodoTestCase($_test_, $_number_);
   }
 
   private function _addSkipTestCase(SkipTestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
-    $this->outStream->writeSkipTestCase($_test_, $_number_);
+    $this->_outStream->writeSkipTestCase($_test_, $_number_);
   }
 
   private function _addBailOut($_reason_) {
     $this->_workflow->enterBailOut();
-    $this->outStream->writeBailOut($_reason_);
+    $this->_outStream->writeBailOut($_reason_);
   }
 
   private function _addComment($_comment_) {
     $this->_workflow->enterComment();
-    $this->outStream->writeComment($_comment_);
+    $this->_outStream->writeComment($_comment_);
   }
 
   private function _addError($_errmsg_) {
     $this->_workflow->enterError();
-    $this->errStream->write($_errmsg_);
+    $this->_errStream->write($_errmsg_);
   }
 }
 
@@ -1068,33 +924,34 @@ EOL;
 
 class TestModuleException extends \Exception { }
 
-/// NB: TestModule is a Borg: you can create as many instances of this
-/// class as you wish and they will all share the same producer.
+/// NB: TestModule is a Borg: you can create as many instances of any derived
+/// class and they will all share the same producer.
 class TestModule {
   // All modules share the same producer.
   private static $_SharedProducer;
   private $_producer;
 
   function __construct() {
-    $this->_producer =& self::GetSharedProducer_();
+    $this->_producer = self::_GetSharedProducer();
   }
 
-  private static function & GetSharedProducer_() {
-    if (\NULL === self::$_SharedProducer) {
-      throw new TestModuleException('First, you must initialize '.__CLASS__);
+  // FIXME
+  static function Initialize(TestProducer $_producer_) {
+    if (\NULL !== self::$_SharedProducer) {
+      throw new TestModuleException(__CLASS__.' already initialized');
     }
-    return self::$_SharedProducer;
+    self::$_SharedProducer = $_producer_;
   }
 
   function getProducer() {
     return $this->_producer;
   }
 
-  static function Initialize(TestProducer $_producer_) {
-    if (\NULL !== self::$_SharedProducer) {
-      throw new TestModuleException(__CLASS__.' already initialized');
+  private static function & _GetSharedProducer() {
+    if (\NULL === self::$_SharedProducer) {
+      throw new TestModuleException('First, you must initialize '.__CLASS__);
     }
-    self::$_SharedProducer = $_producer_;
+    return self::$_SharedProducer;
   }
 }
 
@@ -1106,27 +963,28 @@ class TestModule {
 //
 //\todo
 //
-//\li Add a verbose mode for TapRunner
-//\li check all constructors for validity
-//\li reset states
-//\li return values for methods
-//\li can TAP normal and error streams use the same FH?
-//\li flush on handles to ensure correct ordering
-//\li test the test
-//\li in a subtest, we should unindent in bailout
-//\li how to catch exceptions so that they do not garble the output
-//\li Test::Harness, Test::Differences, Test::Deeper, Test::Class, Test::Most
-//\li doc: code, usage, diff with Test::More, error reporting
+// - noPlan()
+// - add a verbose mode for TapRunner
+// - check all constructors for validity
+// - reset states
+// - return values for methods
+// - can TAP normal and error streams use the same FH?
+// - flush on handles to ensure correct ordering
+// - test the test
+// - in a subtest, we should unindent in bailout
+// - how to catch exceptions so that they do not garble the output
+// - Test::Harness, Test::Differences, Test::Deeper, Test::Class, Test::Most
+// - doc: code, usage, diff with Test::More, error reporting
 //
 //\par ERROR REPORTING
 //
 //Several ways to report an error:
-//\li throws an Exception for any internal error and for fatal error
+// - throws an Exception for any internal error and for fatal error
 //    where we can not use TestProducer::bailOut()
-//\li trigger_error()
+// - trigger_error()
 //    * \c E_USER_ERROR for any fatal error during GC
 //    * \c E_USER_WARNING for any non-fatal error where we can not use \c TestProducer::Warn()
-//\li \c TestProducer::bailOut() for remaining fatal errors
-//\li \c TestProducer::Warn() for remaining non-fatal errors
+// - \c TestProducer::bailOut() for remaining fatal errors
+// - \c TestProducer::Warn() for remaining non-fatal errors
 
 // EOF

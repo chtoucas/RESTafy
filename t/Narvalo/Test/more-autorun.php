@@ -5,7 +5,7 @@ require_once 'Narvalo/Test/TestSuite.php';
 
 use \Narvalo\Test;
 
-class MyTestSuite extends Test\TestSuite {
+class MyMoreTestSuite extends Test\TestSuite {
   static $T;
 
   static function SetUp() {
@@ -32,5 +32,6 @@ class MyTestSuite extends Test\TestSuite {
   }
 }
 
-return MyTestSuite::AutoRun();
+MyMoreTestSuite::Run();
 
+// EOF

@@ -1,6 +1,6 @@
 <?php
 
-require 'Narvalo\Test\More.php';
+require_once 'Narvalo\Test\More.php';
 
 use Narvalo\Test;
 
@@ -10,3 +10,4 @@ $t->plan(1);
 
 $t->assert(\TRUE, 'Passing test.');
 
+// EOF
