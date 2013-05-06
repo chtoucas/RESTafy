@@ -214,15 +214,15 @@ final class TapRunner extends Runner\TestRunner {
     exit($_code_);
   }
 
-  protected function getExitCode_($_producer_) {
+  protected function getExitCode_() {
     $producer = $this->getProducer_();
 
-    if ($_producer_->passed()) {
+    if ($producer->passed()) {
       // All tests passed and no abnormal error.
       $code = self::SUCCESS_CODE;
-    } else if ($_producer_->bailedOut()) {
+    } else if ($producer->bailedOut()) {
       $code = self::FATAL_CODE;
-    } else if (($count = $_producer_->getFailuresCount()) > 0) {
+    } else if (($count = $producer->getFailuresCount()) > 0) {
       // There are failures.
       $code = $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
     } else {

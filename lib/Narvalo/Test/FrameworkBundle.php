@@ -325,8 +325,7 @@ final class TestWorkflow {
       $this->_state = self::END;
     } else {
       // Invalid state.
-      throw new TestWorkflowException(
-        'XXX Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException('The header must come first. Invalid workflow state: ' . $this->_state);
     }
   }
 
@@ -341,9 +340,9 @@ final class TestWorkflow {
       break;
       // Invalid state.
     case self::END:
-      throw new TestWorkflowException('Workflow already ended');
+      throw new TestWorkflowException('Workflow already ended.');
     case self::HEADER:
-      throw new TestWorkflowException('The workflow will end prematurely');
+      throw new TestWorkflowException('The workflow will end prematurely.');
     default:
       throw new TestWorkflowException('The workflow will end in an invalid state: ' . $this->_state);
     }
@@ -731,8 +730,7 @@ EOL;
       $errmsg = 'The number of skipped tests must be a strictly positive integer';
       if ($this->_set instanceof FixedSizeTestSet) {
         $this->bailOut($errmsg);
-      }
-      else {
+      } else {
         $this->Warn($errmsg); return;
       }
     }
@@ -749,7 +747,7 @@ EOL;
   function startTodo($_reason_) {
     if ($this->inTodo()) {
       // Keep the upper-level TODO in memory
-      array_push($this->_todoStack, $this->_todoReason);
+      \array_push($this->_todoStack, $this->_todoReason);
     }
     $this->_todoReason = $_reason_;
     $this->_startTodo();
@@ -820,7 +818,11 @@ EOL;
     return array('file' => $file,  'line' => $line);
   }
 
-  protected function _postPlan() {
+  private function _notLoaded() {
+    $this->_workflow->notLoaded();
+  }
+
+  private function _postPlan() {
     if ($this->_set instanceof DynamicTestSet
       && ($tests_count = $this->_set->getTestsCount()) > 0
     ) {
@@ -829,7 +831,7 @@ EOL;
     }
   }
 
-  protected function _endTestSet() {
+  private function _endTestSet() {
     // Print helpful messages if something went wrong.
     $this->_set->close($this->_errStream);
   }
@@ -842,10 +844,6 @@ EOL;
   private static function _SkipInterrupt() {
     // THIS IS BAD! but I do not see any other simple way to do it.
     throw new SkipTestProducerInterrupt();
-  }
-
-  private function _notLoaded() {
-    $this->_workflow->notLoaded();
   }
 
   private function _addHeader() {
