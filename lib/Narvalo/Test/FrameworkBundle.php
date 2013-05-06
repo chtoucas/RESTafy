@@ -571,9 +571,9 @@ final class TestWorkflow {
 // }}} #############################################################################################
 // {{{ TestProducer
 
-class NormalTestProducerInterrupt extends \Exception { }
+class SkipTestProducerInterrupt extends \Exception { }
 
-class FatalTestProducerInterrupt extends \Exception { }
+class BailOutTestProducerInterrupt extends \Exception { }
 
 /// \return boolean
 function is_strictly_positive_integer($_value_) {
@@ -588,6 +588,8 @@ class TestProducer {
     $_outStream,
     /// TAP set
     $_set,
+    // Bailed out?
+    $_bailedOut     = \FALSE,
     // TODO stack level
     $_todoLevel     = 0,
     // TODO reason
@@ -621,8 +623,12 @@ class TestProducer {
     return $this->_set->getFailuresCount();
   }
 
+  function bailedOut() {
+    return $this->_bailedOut;
+  }
+
   function passed() {
-    return $this->_set->passed();
+    return !$this->_bailedOut && $this->_set->passed();
   }
 
   function inTodo() {
@@ -633,6 +639,7 @@ class TestProducer {
     $this->_errStream->reset();
     $this->_outStream->reset();
     $this->_set        = new DynamicTestSet();
+    $this->_bailedOut  = \FALSE;
     $this->_todoLevel  = 0;
     $this->_todoReason = '';
     $this->_todoStack  = array();
@@ -647,13 +654,14 @@ class TestProducer {
     $this->_set = new EmptyTestSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
-    self::_NormalInterrupt();
+    self::_SkipInterrupt();
   }
 
   function bailOut($_reason_) {
+    $this->_bailedOut = \TRUE;
     $this->_addBailOut($_reason_);
     $this->_addFooter();
-    self::_FatalInterrupt();
+    self::_BailOutInterrupt();
   }
 
   function shutdown($_loaded_) {
@@ -826,14 +834,14 @@ EOL;
     $this->_set->close($this->_errStream);
   }
 
-  private static function _FatalInterrupt() {
+  private static function _BailOutInterrupt() {
     // THIS IS BAD! but I do not see any other simple way to do it.
-    throw new FatalTestProducerInterrupt();
+    throw new BailOutTestProducerInterrupt();
   }
 
-  private static function _NormalInterrupt() {
+  private static function _SkipInterrupt() {
     // THIS IS BAD! but I do not see any other simple way to do it.
-    throw new NormalTestProducerInterrupt();
+    throw new SkipTestProducerInterrupt();
   }
 
   private function _notLoaded() {

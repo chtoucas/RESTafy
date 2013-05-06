@@ -31,7 +31,6 @@ class TestRunner {
 
     // Run the test.
     $loaded = \FALSE;
-    $bailedOut = \FALSE;
 
     try {
       $this->_producer->startup();
@@ -39,30 +38,20 @@ class TestRunner {
       $loaded = \FALSE !== (include_once $_test_);
 
       $this->_producer->shutdown($loaded);
-    } catch (Framework\NormalTestProducerInterrupt $e) {
+    } catch (Framework\SkipTestProducerInterrupt $e) {
       $loaded = \TRUE;
-    } catch (Framework\FatalTestProducerInterrupt $e) {
+    } catch (Framework\BailOutTestProducerInterrupt $e) {
       $loaded = \TRUE;
-      $bailedOut = \TRUE;
     } catch (\Exception $e) {
       $this->_errorCatcher->pushException($e);
-
-      goto TERMINATE;
     }
 
-    if (\FALSE === $loaded) {
-      // FIXME
-    }
+    // Restore default error handler.
+    $this->_errorCatcher->restoreErrorHandler();
+    $hidden_errors_count = $this->_errorCatcher->writeErrorsTo($this->_producer->getErrStream());
+    $this->_errorCatcher->reset();
 
-    TERMINATE: {
-      $this->_errorCatcher->restoreErrorHandler();
-
-      $hidden_errors_count = $this->_errorCatcher->writeErrorsTo($this->_producer->getErrStream());
-
-      $this->_errorCatcher->reset();
-
-      return $hidden_errors_count;
-    }
+    return $hidden_errors_count;
   }
 }
 
@@ -94,7 +83,6 @@ final class TestHarness {
     // Run the test suite.
     foreach ($_tests_ as $test) {
       $loaded = \FALSE;
-      $bailedOut = \FALSE;
 
       try {
         $this->_producer->startup();
@@ -102,18 +90,15 @@ final class TestHarness {
         $loaded = \FALSE !== (include_once $test);
 
         $this->_producer->shutdown($loaded);
-      } catch (Framework\NormalTestProducerInterrupt $e) {
+      } catch (Framework\SkipTestProducerInterrupt $e) {
         $loaded = \TRUE;
-      } catch (Framework\FatalTestProducerInterrupt $e) {
+      } catch (Framework\BailOutTestProducerInterrupt $e) {
         $loaded = \TRUE;
-        $bailedOut = \TRUE;
       } catch (\Exception $e) {
         $this->_errorCatcher->pushException($e);
       }
 
-      $passed = $loaded
-        && !$bailedOut
-        && $this->_producer->passed();
+      $passed = $loaded && $this->_producer->passed();
 
       if ($passed) {
         $status = 'ok';
@@ -122,7 +107,7 @@ final class TestHarness {
 
         if (!$loaded) {
           $status = 'NOT FOUND';
-        } else if ($bailedOut) {
+        } else if ($this->_producer->bailedOut()) {
           $status = 'BAIL OUT!';
         } else {
           $status = 'ko';
@@ -146,7 +131,7 @@ final class TestHarness {
 
       echo $statusline, \PHP_EOL;
 
-      if ($loaded && !$bailedOut && !$this->_producer->passed()) {
+      if ($loaded && !$this->_producer->bailedOut() && !$this->_producer->passed()) {
         echo \sprintf(
           'Failed %s/%s subtests%s',
           $this->_producer->getFailuresCount(),
@@ -156,7 +141,7 @@ final class TestHarness {
 
       $tests_count += $this->_producer->getTestsCount();
 
-      // Reset the producer.
+      // Reset all.
       $this->_errorCatcher->reset();
       $this->_producer->reset();
     }
