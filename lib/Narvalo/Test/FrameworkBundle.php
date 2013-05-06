@@ -5,6 +5,7 @@ namespace Narvalo\Test\Framework;
 require_once 'NarvaloBundle.php';
 
 use \Narvalo;
+use \Narvalo\Test\Framework\Internal as _;
 
 // {{{ TestCase's
 
@@ -114,135 +115,6 @@ interface TestErrStream {
   function endSubTest();
 
   function write($_value_);
-}
-
-// }}} #############################################################################################
-// {{{ TestSet's
-
-abstract class AbstractTestSet {
-  private
-  // Number of failed tests.
-    $_failuresCount = 0,
-    // List of tests.
-    $_tests = array();
-
-  protected function __construct() {
-    ;
-  }
-
-  function getTestsCount() {
-    return \count($this->_tests);
-  }
-
-  function getFailuresCount() {
-    return $this->_failuresCount;
-  }
-
-  abstract function close(TestErrStream $_errStream_);
-
-  abstract function passed();
-
-  function addTest(TestCase $_test_) {
-    if (!$_test_->passed()) {
-      $this->_failuresCount++;
-    }
-    $number = $this->getTestsCount();
-    $this->_tests[$number] = $_test_;
-    return 1 + $number;
-  }
-}
-
-class EmptyTestSet extends AbstractTestSet {
-  function __construct() {
-    ;
-  }
-
-  function passed() {
-    return \TRUE;
-  }
-
-  function close(TestErrStream $_errStream_) {
-    ;
-  }
-
-  final function addTest(TestCase $_test_) {
-    return 0;
-  }
-}
-
-class DynamicTestSet extends AbstractTestSet {
-  function __construct() {
-    ;
-  }
-
-  function close(TestErrStream $_errStream_) {
-    if (($tests_count = $this->getTestsCount()) > 0) {
-      // We actually run tests.
-      if (($failures_count = $this->getFailuresCount()) > 0) {
-        // There are failures.
-        $s = $failures_count > 1 ? 's' : '';
-        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
-          . "of {$tests_count} run.");
-      }
-      $_errStream_->write('No plan!');
-    } else {
-      // No tests run.
-      $_errStream_->write('No plan. No tests run!');
-    }
-  }
-
-  function passed() {
-    // We actually run tests and they all passed.
-    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
-  }
-}
-
-class FixedSizeTestSet extends AbstractTestSet {
-  // Number of expected tests.
-  private $_length;
-
-  function __construct($_length_) {
-    $this->_length = $_length_;
-  }
-
-  /// \return integer
-  function getLength() {
-    return $this->_length;
-  }
-
-  function getExtrasCount() {
-    return $this->getTestsCount() - $this->_length;
-  }
-
-  function passed() {
-    // We actually run tests, they all passed and there are no extras tests.
-    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0
-      && 0 === $this->getExtrasCount();
-  }
-
-  function close(TestErrStream $_errStream_) {
-    //
-    if (($tests_count = $this->getTestsCount()) > 0) {
-      // We actually run tests.
-      $extras_count = $this->getExtrasCount();
-      if ($extras_count != 0) {
-        // Count missmatch.
-        $s = $this->_length > 1 ? 's' : '';
-        $_errStream_->write("Looks like you planned {$this->_length} test{$s} "
-          . "but ran {$tests_count}.");
-      }
-      if (($failures_count = $this->getFailuresCount()) > 0) {
-        // There are failures.
-        $s = $failures_count > 1 ? 's' : '';
-        $qualifier = 0 == $extras_count ? '' : ' run';
-        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
-          . "of {$tests_count}{$qualifier}.");
-      }
-    } else {
-      // No tests run.
-      $_errStream_->write('No tests run!');
-    }
-  }
 }
 
 // }}} #############################################################################################
@@ -602,7 +474,7 @@ class TestProducer {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
     // NB: Until we make a plan, we use a dynamic TAP set.
-    $this->_set      = new DynamicTestSet();
+    $this->_set      = new _\DynamicTestSet();
     $this->_workflow = new TestWorkflow();
   }
 
@@ -637,7 +509,7 @@ class TestProducer {
   function reset() {
     $this->_errStream->reset();
     $this->_outStream->reset();
-    $this->_set        = new DynamicTestSet();
+    $this->_set        = new _\DynamicTestSet();
     $this->_bailedOut  = \FALSE;
     $this->_todoLevel  = 0;
     $this->_todoReason = '';
@@ -650,7 +522,7 @@ class TestProducer {
   }
 
   function skipAll($_reason_) {
-    $this->_set = new EmptyTestSet();
+    $this->_set = new _\EmptyTestSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
     self::_SkipInterrupt();
@@ -679,7 +551,7 @@ class TestProducer {
       $this->bailOut('Number of tests must be a strictly positive integer. '
         . "You gave it '$_how_many_'.");
     }
-    $this->_set = new FixedSizeTestSet($_how_many_);
+    $this->_set = new _\FixedSizeTestSet($_how_many_);
     $this->_addPlan($_how_many_);
   }
 
@@ -728,7 +600,7 @@ EOL;
   function skip($_how_many_, $_reason_) {
     if (!is_strictly_positive_integer($_how_many_)) {
       $errmsg = 'The number of skipped tests must be a strictly positive integer';
-      if ($this->_set instanceof FixedSizeTestSet) {
+      if ($this->_set instanceof _\FixedSizeTestSet) {
         $this->bailOut($errmsg);
       } else {
         $this->Warn($errmsg); return;
@@ -765,7 +637,7 @@ EOL;
   function subTest(TestModule $_m_, $_code_, $_description_) {
     // Switch to a new TestSet.
     $set = $this->_set;
-    $this->_set = new DynamicTestSet();
+    $this->_set = new _\DynamicTestSet();
     // Notify outputs.
     $this->_startSubTest();
     // Execute the tests.
@@ -823,7 +695,7 @@ EOL;
   }
 
   private function _postPlan() {
-    if ($this->_set instanceof DynamicTestSet
+    if ($this->_set instanceof _\DynamicTestSet
       && ($tests_count = $this->_set->getTestsCount()) > 0
     ) {
       // We actually run tests.
@@ -958,6 +830,140 @@ class TestModule {
       throw new TestModuleException('First, you must initialize '.__CLASS__);
     }
     return self::$_SharedProducer;
+  }
+}
+
+// }}} #############################################################################################
+
+namespace Narvalo\Test\Framework\Internal;
+
+use \Narvalo\Test\Framework;
+
+// {{{ TestSet's
+
+abstract class AbstractTestSet {
+  private
+  // Number of failed tests.
+    $_failuresCount = 0,
+    // List of tests.
+    $_tests = array();
+
+  protected function __construct() {
+    ;
+  }
+
+  function getTestsCount() {
+    return \count($this->_tests);
+  }
+
+  function getFailuresCount() {
+    return $this->_failuresCount;
+  }
+
+  abstract function close(Framework\TestErrStream $_errStream_);
+
+  abstract function passed();
+
+  function addTest(Framework\TestCase $_test_) {
+    if (!$_test_->passed()) {
+      $this->_failuresCount++;
+    }
+    $number = $this->getTestsCount();
+    $this->_tests[$number] = $_test_;
+    return 1 + $number;
+  }
+}
+
+class EmptyTestSet extends AbstractTestSet {
+  function __construct() {
+    ;
+  }
+
+  function passed() {
+    return \TRUE;
+  }
+
+  function close(Framework\TestErrStream $_errStream_) {
+    ;
+  }
+
+  final function addTest(Framework\TestCase $_test_) {
+    return 0;
+  }
+}
+
+class DynamicTestSet extends AbstractTestSet {
+  function __construct() {
+    ;
+  }
+
+  function close(Framework\TestErrStream $_errStream_) {
+    if (($tests_count = $this->getTestsCount()) > 0) {
+      // We actually run tests.
+      if (($failures_count = $this->getFailuresCount()) > 0) {
+        // There are failures.
+        $s = $failures_count > 1 ? 's' : '';
+        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
+          . "of {$tests_count} run.");
+      }
+      $_errStream_->write('No plan!');
+    } else {
+      // No tests run.
+      $_errStream_->write('No plan. No tests run!');
+    }
+  }
+
+  function passed() {
+    // We actually run tests and they all passed.
+    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
+  }
+}
+
+class FixedSizeTestSet extends AbstractTestSet {
+  // Number of expected tests.
+  private $_length;
+
+  function __construct($_length_) {
+    $this->_length = $_length_;
+  }
+
+  /// \return integer
+  function getLength() {
+    return $this->_length;
+  }
+
+  function getExtrasCount() {
+    return $this->getTestsCount() - $this->_length;
+  }
+
+  function passed() {
+    // We actually run tests, they all passed and there are no extras tests.
+    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0
+      && 0 === $this->getExtrasCount();
+  }
+
+  function close(Framework\TestErrStream $_errStream_) {
+    //
+    if (($tests_count = $this->getTestsCount()) > 0) {
+      // We actually run tests.
+      $extras_count = $this->getExtrasCount();
+      if ($extras_count != 0) {
+        // Count missmatch.
+        $s = $this->_length > 1 ? 's' : '';
+        $_errStream_->write("Looks like you planned {$this->_length} test{$s} "
+          . "but ran {$tests_count}.");
+      }
+      if (($failures_count = $this->getFailuresCount()) > 0) {
+        // There are failures.
+        $s = $failures_count > 1 ? 's' : '';
+        $qualifier = 0 == $extras_count ? '' : ' run';
+        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
+          . "of {$tests_count}{$qualifier}.");
+      }
+    } else {
+      // No tests run.
+      $_errStream_->write('No tests run!');
+    }
   }
 }
 
