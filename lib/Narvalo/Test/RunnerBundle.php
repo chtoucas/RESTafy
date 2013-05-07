@@ -2,8 +2,10 @@
 
 namespace Narvalo\Test\Runner;
 
+require_once 'NarvaloBundle.php';
 require_once 'Narvalo\Test\FrameworkBundle.php';
 
+use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner\Internal as _;
 
@@ -24,24 +26,23 @@ class TestRunner {
   }
 
   function runTest($_test_) {
-    Framework\TestModule::Initialize($this->_producer);
+    Framework\TestModulesKernel::Bootstrap($this->_producer, \TRUE);
 
     // Override default error handler.
     $this->_errorCatcher->overrideErrorHandler();
 
     // Run the test.
-    $loaded = \FALSE;
+    $loaded = \TRUE;
 
     $this->_producer->startup();
 
     try {
-      $loaded = \FALSE !== (include_once $_test_);
-    } catch (Framework\SkipTestProducerInterrupt $e) {
-      $loaded = \TRUE;
-    } catch (Framework\BailOutTestProducerInterrupt $e) {
-      $loaded = \TRUE;
+      Narvalo\DynaLoader::LoadFile($_test_);
+    } catch (Narvalo\RuntimeException $e) {
+      $loaded = \FALSE;
+    } catch (Framework\TestProducerInterrupt $e) {
+      ;
     } catch (\Exception $e) {
-      $loaded = \TRUE;
       $this->_errorCatcher->pushException($e);
     }
 
@@ -73,7 +74,7 @@ final class TestHarness {
   }
 
   function runTests(array $_tests_) {
-    Framework\TestModule::Initialize($this->_producer);
+    Framework\TestModulesKernel::Bootstrap($this->_producer, \TRUE);
 
     $tests_passed = \TRUE;
     $tests_count  = 0;
@@ -83,18 +84,17 @@ final class TestHarness {
 
     // Run the test suite.
     foreach ($_tests_ as $test) {
-      $loaded = \FALSE;
+      $loaded = \TRUE;
 
       $this->_producer->startup();
 
       try {
-        $loaded = \FALSE !== (include_once $test);
-      } catch (Framework\SkipTestProducerInterrupt $e) {
-        $loaded = \TRUE;
-      } catch (Framework\BailOutTestProducerInterrupt $e) {
-        $loaded = \TRUE;
+        Narvalo\DynaLoader::LoadFile($test);
+      } catch (Narvalo\RuntimeException $e) {
+        $loaded = \FALSE;
+      } catch (Framework\TestProducerInterrupt $e) {
+        ;
       } catch (\Exception $e) {
-        $loaded = \TRUE;
         $this->_errorCatcher->pushException($e);
       }
 

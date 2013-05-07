@@ -120,9 +120,11 @@ interface TestErrStream {
 // }}} #############################################################################################
 // {{{ TestProducer
 
-class SkipTestProducerInterrupt extends \Exception { }
+class TestProducerInterrupt extends \Exception { }
 
-class BailOutTestProducerInterrupt extends \Exception { }
+class SkipTestProducerInterrupt extends TestProducerInterrupt { }
+
+class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 /// \return boolean
 function is_strictly_positive_integer($_value_) {
@@ -484,36 +486,48 @@ EOL;
 // }}} #############################################################################################
 // {{{ TestModule
 
-class TestModuleException extends \Exception { }
+class TestModulesKernelException extends \Exception { }
+
+final class TestModulesKernel {
+  private static
+    $_SharedProducer,
+    $_Bootstrapped = \FALSE;
+
+  static function Bootstrap(TestProducer $_producer_, $_throwIfCalledTwice_ = \TRUE) {
+    if (self::$_Bootstrapped) {
+      if ($_throwIfCalledTwice_) {
+        throw new TestModulesKernelException('Kernel already initialized.');
+      } else {
+        return;
+      }
+    }
+
+    self::$_SharedProducer = $_producer_;
+    if ($_throwIfCalledTwice_) {
+      self::$_Bootstrapped = \TRUE;
+    }
+  }
+
+  static function GetSharedProducer() {
+    if (!self::$_Bootstrapped) {
+      throw new TestModulesKernelException('Before anything, you must initialize the kernel.');
+    }
+    return self::$_SharedProducer;
+  }
+}
 
 /// NB: TestModule is a Borg: you can create as many instances of any derived
 /// class and they will all share the same producer.
 class TestModule {
-  // All modules share the same producer.
-  private static $_SharedProducer;
   private $_producer;
 
   function __construct() {
-    $this->_producer = self::_GetSharedProducer();
-  }
-
-  // FIXME
-  static function Initialize(TestProducer $_producer_) {
-    if (\NULL !== self::$_SharedProducer) {
-      throw new TestModuleException(__CLASS__.' already initialized');
-    }
-    self::$_SharedProducer = $_producer_;
+    // All modules share the same producer.
+    $this->_producer = TestModulesKernel::GetSharedProducer();
   }
 
   function getProducer() {
     return $this->_producer;
-  }
-
-  private static function & _GetSharedProducer() {
-    if (\NULL === self::$_SharedProducer) {
-      throw new TestModuleException('First, you must initialize '.__CLASS__);
-    }
-    return self::$_SharedProducer;
   }
 }
 
