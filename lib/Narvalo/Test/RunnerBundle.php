@@ -11,6 +11,16 @@ use \Narvalo\Test\Runner\Internal as _;
 
 // {{{ TestRunner
 
+final class TestResult {
+  public
+    $passed,
+    $loaded,
+    //$bailedOut = \FALSE,
+    $hiddenErrorsCount = 0,
+    $failuresCount = 0,
+    $testsCount = 0;
+}
+
 class TestRunner {
   private
     $_errorCatcher,
@@ -19,139 +29,125 @@ class TestRunner {
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer     = $_producer_;
     $this->_errorCatcher = new _\RuntimeErrorCatcher();
+
+    $this->_initializeKernel(\TRUE);
   }
 
-  protected function getProducer_() {
-    return $this->_producer;
-  }
-
-  function runTest($_test_) {
-    Framework\TestModulesKernel::Bootstrap($this->_producer, \TRUE);
-
-    // Override default error handler.
-    $this->_errorCatcher->overrideErrorHandler();
-
-    // Run the test.
-    $loaded = \TRUE;
+  function runTest($_test_file_) {
+    Narvalo\Guard::NotEmpty($_test_file_, 'test_file');
 
     $this->_producer->startup();
 
+    // Override the default error handler.
+    $this->_errorCatcher->overrideErrorHandler();
+
     try {
-      Narvalo\DynaLoader::LoadFile($_test_);
-    } catch (Narvalo\RuntimeException $e) {
+      $loaded = Narvalo\DynaLoader::LoadFile($_test_file_);
+    } catch (Narvalo\FileNotFoundRuntimeException $e) {
       $loaded = \FALSE;
     } catch (Framework\TestProducerInterrupt $e) {
-      ;
+      $loaded = \TRUE;
     } catch (\Exception $e) {
+      // FIXME: Are exceptions thrown by tests correctly handled?
+      $loaded = \TRUE;
       $this->_errorCatcher->pushException($e);
     }
 
+    // Restore the default error handler.
+    $this->_errorCatcher->restoreErrorHandler();
+
     $this->_producer->shutdown($loaded);
 
-    // Restore default error handler.
-    $this->_errorCatcher->restoreErrorHandler();
-    $hidden_errors_count = $this->_errorCatcher->writeErrorsTo($this->_producer->getErrStream());
-    $this->_errorCatcher->reset();
+    // Write hidden errors to the error stream.
+    $hidden_errors_count
+      = $this->_errorCatcher->writeErrorsTo($this->_producer->getErrStream(), \TRUE);
 
-    return $hidden_errors_count;
+    $result = new TestResult();
+    $result->loaded = $loaded;
+    $result->passed = $loaded && $this->_producer->passed();
+    //$result->bailedOut = $this->_producer->bailedOut();
+    $result->hiddenErrorsCount = $hidden_errors_count;
+    $result->failuresCount = $this->_producer->getFailuresCount();
+    $result->testsCount = $this->_producer->getTestsCount();
+
+    // Reset the producer.
+    $this->_producer->reset();
+
+    return $result;
+  }
+
+  private function _initializeKernel($_throwIfCalledtwice_) {
+    Framework\TestModulesKernel::Bootstrap($this->_producer, $_throwIfCalledtwice_);
   }
 }
 
 // }}} #############################################################################################
 // {{{ TestHarness
 
-final class TestHarness {
-  private
-    $_errorCatcher,
-    $_producer;
+// TODO:
+// - scan and run (continuously or after scan completed)
+class TestHarness {
+  private $_runner;
 
-  function __construct() {
-    // No output at all.
-    $this->_producer = new Framework\TestProducer(
-      new _\NoopTestOutStream(), new _\NoopTestErrStream());
+  function __construct(Framework\TestErrStream $_errStream_ = \NULL) {
+    $errStream = $_errStream_ ?: new _\NoopTestErrStream();
+    $producer = new Framework\TestProducer(new _\NoopTestOutStream(), $errStream);
 
-    $this->_errorCatcher = new _\RuntimeErrorCatcher();
+    $this->_runner = new TestRunner($producer);
   }
 
-  function runTests(array $_tests_) {
-    Framework\TestModulesKernel::Bootstrap($this->_producer, \TRUE);
-
+  function runTests(array $_test_files_) {
     $tests_passed = \TRUE;
     $tests_count  = 0;
 
-    // Override default error handler.
-    $this->_errorCatcher->overrideErrorHandler();
-
     // Run the test suite.
-    foreach ($_tests_ as $test) {
-      $loaded = \TRUE;
+    foreach ($_test_files_ as $test_file) {
+      $result = $this->_runner->runTest($test_file);
 
-      $this->_producer->startup();
+      // FIXME: The remaining code should not be here.
 
-      try {
-        Narvalo\DynaLoader::LoadFile($test);
-      } catch (Narvalo\RuntimeException $e) {
-        $loaded = \FALSE;
-      } catch (Framework\TestProducerInterrupt $e) {
-        ;
-      } catch (\Exception $e) {
-        $this->_errorCatcher->pushException($e);
-      }
-
-      $this->_producer->shutdown($loaded);
-
-      $passed = $loaded && $this->_producer->passed();
-
-      if ($passed) {
+      if ($result->passed) {
         $status = 'ok';
       } else {
         $tests_passed = \FALSE;
 
-        if (!$loaded) {
+        if (!$result->loaded) {
           $status = 'NOT FOUND';
-        } else if ($this->_producer->bailedOut()) {
-          $status = 'BAIL OUT!';
+        /* } else if ($result->bailedOut) {
+          $status = 'BAIL OUT!'; */
         } else {
           $status = 'KO';
         }
       }
 
-      // Restore default error handler.
-      $this->_errorCatcher->restoreErrorHandler();
-      $hidden_errors_count = $this->_errorCatcher->getErrorsCount();
-
-      if ($hidden_errors_count > 0) {
+      if ($result->hiddenErrorsCount > 0) {
         // There are hidden errors. See diagnostics above
         $status .= ' DUBIOUS';
       }
 
-      if (($dotlen = 40 - \strlen($test)) > 0) {
-        $statusline = $test . \str_repeat('.', $dotlen) . ' ' . $status;
+      if (($dotlen = 40 - \strlen($test_file)) > 0) {
+        $statusline = $test_file . \str_repeat('.', $dotlen) . ' ' . $status;
       } else {
-        $statusline = $test . '... '. $status;
+        $statusline = $test_file . '... '. $status;
       }
 
       echo $statusline, \PHP_EOL;
 
-      if ($loaded && !$this->_producer->bailedOut() && !$this->_producer->passed()) {
+      if (!$result->passed) {
         echo \sprintf(
           'Failed %s/%s subtests%s',
-          $this->_producer->getFailuresCount(),
-          $this->_producer->getTestsCount(),
+          $result->failuresCount,
+          $result->testsCount,
           \PHP_EOL);
       }
 
-      $tests_count += $this->_producer->getTestsCount();
-
-      // Reset all.
-      $this->_errorCatcher->reset();
-      $this->_producer->reset();
+      $tests_count += $result->testsCount;
     }
 
     if ($tests_passed) {
       echo 'All tests successful.', \PHP_EOL;
     }
-    echo \sprintf('Files=%s, Tests=%s%s', \count($_tests_), $tests_count, \PHP_EOL);
+    echo \sprintf('Files=%s, Tests=%s%s', \count($_test_files_), $tests_count, \PHP_EOL);
     echo \sprintf('Result: %s%s', ($tests_passed ? 'PASS' : 'FAIL'), \PHP_EOL);
   }
 }
@@ -223,13 +219,16 @@ class RuntimeErrorCatcher {
     \array_push($this->_errors, 'Unexpected error: ' . $_ex_->getMessage());
   }
 
-  function writeErrorsTo(Framework\TestErrStream $_errStream_) {
+  function writeErrorsTo(Framework\TestErrStream $_errStream_, $_resetAfter_) {
     $count = $this->getErrorsCount();
     if ($count > 0) {
       for ($i = 0; $i < $count; $i++) {
         $_errStream_->write($this->_errors[$i]);
       }
       //\trigger_error('There are hidden errors.', \E_USER_WARNING);
+    }
+    if ($_resetAfter_) {
+      $this->reset();
     }
     return $count;
   }

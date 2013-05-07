@@ -29,7 +29,9 @@ class ArgumentException extends Exception {
   }
 }
 
-class RuntimeException extends ArgumentException { }
+class RuntimeException extends Exception { }
+
+class FileNotFoundRuntimeException extends RuntimeException { }
 
 class ArgumentNullException extends ArgumentException { }
 
@@ -187,7 +189,10 @@ final class DynaLoader {
   /// \throw InvalidOperationException
   static function LoadFile($_path_) {
     if (\FALSE === (include_once $_path_)) {
-      throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
+      throw new FileNotFoundRuntimeException(
+        \sprintf('Unable to include the file: "%s".', $_path_));
+    } else {
+      return \TRUE;
     }
   }
 

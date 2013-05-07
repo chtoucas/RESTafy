@@ -203,9 +203,9 @@ final class TapRunner extends Runner\TestRunner {
   }
 
   function runTest($_test_) {
-    $hidden_errors_count = parent::runTest($_test_);
+    $result = parent::runTest($_test_);
 
-    $exit_code = $hidden_errors_count > 0 ? self::FATAL_CODE : $this->getExitCode_();
+    $exit_code = $result->hiddenErrorsCount > 0 ? self::FATAL_CODE : $this->getExitCode_($result);
 
     $this->terminate_($exit_code);
   }
@@ -214,15 +214,13 @@ final class TapRunner extends Runner\TestRunner {
     exit($_code_);
   }
 
-  protected function getExitCode_() {
-    $producer = $this->getProducer_();
-
-    if ($producer->passed()) {
+  protected function getExitCode_(Runner\TestResult $_result_) {
+    if ($_result_->passed) {
       // All tests passed and no abnormal error.
       $code = self::SUCCESS_CODE;
-    } else if ($producer->bailedOut()) {
+    } else if ($_result_->bailedOut) {
       $code = self::FATAL_CODE;
-    } else if (($count = $producer->getFailuresCount()) > 0) {
+    } else if (($count = $_result_->failuresCount) > 0) {
       // There are failures.
       $code = $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
     } else {
