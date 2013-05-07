@@ -112,7 +112,7 @@ final class TestHarness {
         } else if ($this->_producer->bailedOut()) {
           $status = 'BAIL OUT!';
         } else {
-          $status = 'ko';
+          $status = 'KO';
         }
       }
 
