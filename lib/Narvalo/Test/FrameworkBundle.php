@@ -467,6 +467,7 @@ class TestProducer {
     $_todoReason    = '',
     // TODO stack
     $_todoStack     = array(),
+    $_ended         = \FALSE,
     //
     $_workflow;
 
@@ -514,6 +515,8 @@ class TestProducer {
     $this->_todoLevel  = 0;
     $this->_todoReason = '';
     $this->_todoStack  = array();
+    $this->_ended      = \FALSE;
+    // XXX: use reset()?
     $this->_workflow   = new TestWorkflow();
   }
 
@@ -525,6 +528,7 @@ class TestProducer {
     $this->_set = new _\EmptyTestSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
+    $this->_ended = \TRUE;
     self::_SkipInterrupt();
   }
 
@@ -532,10 +536,14 @@ class TestProducer {
     $this->_bailedOut = \TRUE;
     $this->_addBailOut($_reason_);
     $this->_addFooter();
+    $this->_ended = \TRUE;
     self::_BailOutInterrupt();
   }
 
   function shutdown($_loaded_) {
+    if ($this->_ended) {
+      return;
+    }
     if ($_loaded_) {
       $this->_postPlan();
       $this->_endTestSet();
@@ -569,8 +577,7 @@ class TestProducer {
       $test = new TodoTestCase($test, $this->_todoReason);
       $number = $this->_set->addTest($test);
       $this->_addTodoTestCase($test, $number);
-    }
-    else {
+    } else {
       $number = $this->_set->addTest($test);
       $this->_addTestCase($test, $number);
     }
@@ -584,8 +591,7 @@ class TestProducer {
         $diag = <<<EOL
 Failed $what at {$caller['file']} line {$caller['line']}.
 EOL;
-      }
-      else {
+      } else {
         $diag = <<<EOL
 Failed $what '$description'
 at {$caller['file']} line {$caller['line']}.
@@ -630,7 +636,7 @@ EOL;
     //  $this->bailOut('You can not end a TODO block if you did not start one before');
     //}
     $this->_endTodo();
-    $this->_todoReason = $this->inTodo() ? array_pop($this->_todoStack) : '';
+    $this->_todoReason = $this->inTodo() ? \array_pop($this->_todoStack) : '';
   }
 
   // FIXME: if the subtest exit at any time it will exit the whole test.

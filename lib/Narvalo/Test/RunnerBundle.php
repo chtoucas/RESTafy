@@ -38,18 +38,14 @@ class TestRunner {
       $loaded = \FALSE !== (include_once $_test_);
     } catch (Framework\SkipTestProducerInterrupt $e) {
       $loaded = \TRUE;
-      goto TEST_DONE;
     } catch (Framework\BailOutTestProducerInterrupt $e) {
       $loaded = \TRUE;
-      goto TEST_DONE;
     } catch (\Exception $e) {
       $loaded = \TRUE;
       $this->_errorCatcher->pushException($e);
     }
 
     $this->_producer->shutdown($loaded);
-
-    TEST_DONE: { }
 
     // Restore default error handler.
     $this->_errorCatcher->restoreErrorHandler();
@@ -95,18 +91,14 @@ final class TestHarness {
         $loaded = \FALSE !== (include_once $test);
       } catch (Framework\SkipTestProducerInterrupt $e) {
         $loaded = \TRUE;
-        goto TESTS_DONE;
       } catch (Framework\BailOutTestProducerInterrupt $e) {
         $loaded = \TRUE;
-        goto TESTS_DONE;
       } catch (\Exception $e) {
         $loaded = \TRUE;
         $this->_errorCatcher->pushException($e);
       }
 
       $this->_producer->shutdown($loaded);
-
-      TESTS_DONE: { }
 
       $passed = $loaded && $this->_producer->passed();
 
