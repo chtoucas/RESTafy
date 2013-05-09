@@ -2,7 +2,7 @@
 
 require_once 'Narvalo/Test/RunnerBundle.php';
 
-use Narvalo\Test\Runner;
+use \Narvalo\Test\Runner;
 
 $harness = new Runner\TestHarness();
 $harness->runTests(array(

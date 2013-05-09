@@ -4,7 +4,7 @@ namespace RESTafy;
 
 require_once 'NarvaloBundle.php';
 
-const VERSION = '%%VERSION%%';
+//const VERSION = '%%VERSION%%';
 
 // {{{ Core
 

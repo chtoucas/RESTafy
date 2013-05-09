@@ -6,14 +6,52 @@
 // - http://podwiki.hexten.net/TAP/TAP13.html?page=TAP13
 // - http://podwiki.hexten.net/TAP/TAP.html?page=TAP
 
+namespace Narvalo\Test\Tap\Internal;
+
+use \Narvalo\Test\Framework;
+
+require_once 'Narvalo\Test\FrameworkBundle.php';
+
+// {{{ TapStream
+
+class TapStream extends Framework\StreamWriter {
+  const EOL = "\n";
+
+  private $_indent = '';
+
+  function reset() {
+    $this->_indent = '';
+  }
+
+  function write($_value_) {
+    return parent::write($this->_indent . $_value_ . self::EOL);
+  }
+
+  protected function indent_() {
+    $this->_indent = '    ' . $this->_indent;
+  }
+
+  protected function unindent_() { $this->_indent = \substr($this->_indent, 4);
+  }
+
+  protected function formatMultiLine_($_prefix_, $_value_) {
+    $prefix = $this->_indent . $_prefix_;
+    $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
+
+    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value);
+  }
+}
+
+// }}} #############################################################################################
+
 namespace Narvalo\Test\Tap;
 
 require_once 'Narvalo\Test\FrameworkBundle.php';
 require_once 'Narvalo\Test\RunnerBundle.php';
 
-use Narvalo\Test\Framework;
-use Narvalo\Test\Runner;
-use Narvalo\Test\Tap\Internal as _;
+use \Narvalo\Test\Framework;
+use \Narvalo\Test\Runner;
+use \Narvalo\Test\Tap\Internal as _;
 
 define('CRLF_REGEX_PART',       '(?:\r|\n)+');
 // RegEx to find any combination of \r and \n in a string.
@@ -26,8 +64,7 @@ define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
 // {{{ TapOutStream
 
 class TapOutStream extends _\TapStream implements Framework\TestOutStream {
-  // FIXME: check the correct version in use.
-  const Version = '13';
+  const VERSION = '13';
 
   private $_verbose;
 
@@ -47,7 +84,7 @@ class TapOutStream extends _\TapStream implements Framework\TestOutStream {
   }
 
   function writeHeader() {
-    return $this->writeLine_('TAP version ' . self::Version);
+    return $this->write('TAP version ' . self::VERSION);
   }
 
   function writeFooter() {
@@ -55,23 +92,23 @@ class TapOutStream extends _\TapStream implements Framework\TestOutStream {
   }
 
   function writePlan($_num_of_tests_) {
-    return $this->writeLine_('1..' . $_num_of_tests_);
+    return $this->write('1..' . $_num_of_tests_);
   }
 
   function writeSkipAll($_reason_) {
-    return $this->writeLine_('1..0 skip ' . self::_FormatReason($_reason_));
+    return $this->write('1..0 skip ' . self::_FormatReason($_reason_));
   }
 
-  function writeTestCase(Framework\DefaultTestCase $_test_, $_number_) {
+  function writeTestCase(Framework\TestCase $_test_, $_number_) {
     $desc = self::_FormatDescription($_test_->getDescription());
     $line = \sprintf('%s %d - %s', $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc);
-    return $this->writeLine_($line);
+    return $this->write($line);
   }
 
   function writeTodoTestCase(Framework\TodoTestCase $_test_, $_number_) {
     $reason = self::_FormatReason($_test_->getReason());
     $line = \sprintf('ok %d # SKIP %s', $_number_, $reason);
-    return $this->writeLine_($line);
+    return $this->write($line);
   }
 
   function writeSkipTestCase(Framework\SkipTestCase $_test_, $_number_) {
@@ -79,26 +116,18 @@ class TapOutStream extends _\TapStream implements Framework\TestOutStream {
     $reason = self::_FormatReason($_test_->getReason());
     $line = \sprintf('%s %d - %s # TODO %s',
       $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc, $reason);
-    return $this->writeLine_($line);
+    return $this->write($line);
   }
 
   function writeBailOut($_reason_) {
-    return $this->rawWrite_('Bail out! ' . self::_FormatReason($_reason_) . self::EOL);
+    return $this->write('Bail out! ' . self::_FormatReason($_reason_));
   }
 
   function writeComment($_comment_) {
     if (!$this->_verbose) {
       return;
     }
-    return $this->write_( $this->formatMultiLine_('# ', $_comment_) );
-  }
-
-  protected function cleanup_($_disposing_) {
-    if (!$this->opened()) {
-      return;
-    }
-    // FIXME Close workflow
-    parent::cleanup_($_disposing_);
+    return $this->write($this->formatMultiLine_('# ', $_comment_));
   }
 
   private static function _FormatDescription($_desc_) {
@@ -123,19 +152,6 @@ class TapOutStream extends _\TapStream implements Framework\TestOutStream {
   }
 }
 
-class DefaultTapOutStream extends TapOutStream {
-  function __construct($_verbose_) {
-    // FIXME STDOUT
-    parent::__construct('php://stdout', $_verbose_);
-  }
-}
-
-class InMemoryTapOutStream extends TapOutStream {
-  function __construct($_verbose_) {
-    parent::__construct('php://memory', $_verbose_);
-  }
-}
-
 // }}} #############################################################################################
 // {{{ TapErrStream
 
@@ -151,27 +167,7 @@ class TapErrStream extends _\TapStream implements Framework\TestErrStream {
   }
 
   function write($_value_) {
-    return $this->write_( $this->formatMultiLine_('# ', $_value_) );
-  }
-
-  protected function cleanup_($_disposing_) {
-    if (!$this->opened()) {
-      return;
-    }
-    parent::cleanup_($_disposing_);
-  }
-}
-
-class DefaultTapErrStream extends TapErrStream {
-  function __construct() {
-    // FIXME STDERR
-    parent::__construct('php://stderr');
-  }
-}
-
-class InMemoryTapErrStream extends TapErrStream {
-  function __construct() {
-    parent::__construct('php://memory');
+    return parent::write($this->formatMultiLine_('# ', $_value_));
   }
 }
 
@@ -186,7 +182,7 @@ class TapProducer extends Framework\TestProducer {
 
 final class DefaultTapProducer extends TapProducer {
   function __construct() {
-    parent::__construct(new DefaultTapOutStream(\TRUE), new DefaultTapErrStream());
+    parent::__construct(new TapOutStream('php://stdout', \TRUE), new TapErrStream('php://stderr'));
   }
 }
 
@@ -205,117 +201,24 @@ final class TapRunner extends Runner\TestRunner {
   function runTest($_test_) {
     $result = parent::runTest($_test_);
 
-    $exit_code = $result->hiddenErrorsCount > 0 ? self::FATAL_CODE : $this->getExitCode_($result);
+    $exit_code = $this->getExitCode_($result);
 
-    $this->terminate_($exit_code);
-  }
-
-  protected function terminate_($_code_) {
-    exit($_code_);
+    exit($exit_code);
   }
 
   protected function getExitCode_(Runner\TestResult $_result_) {
-    if ($_result_->passed) {
-      // All tests passed and no abnormal error.
-      $code = self::SUCCESS_CODE;
+    if ($_result_->hiddenErrorsCount > 0) {
+      return self::FATAL_CODE;
+    } else if ($_result_->passed) {
+      return self::SUCCESS_CODE;
     } else if ($_result_->bailedOut) {
-      $code = self::FATAL_CODE;
+      return self::FATAL_CODE;
     } else if (($count = $_result_->failuresCount) > 0) {
-      // There are failures.
-      $code = $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
+      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
     } else {
       // Other kind of errors: extra tests, unattended interrupt.
-      $code = self::FATAL_CODE;
+      return self::FATAL_CODE;
     }
-
-    return $code;
-  }
-}
-
-// }}} #############################################################################################
-
-// {{{ Internal
-
-namespace Narvalo\Test\Tap\Internal;
-
-class TapStream {
-  const EOL = "\n";
-
-  private
-    $_handle,
-    $_indent = '',
-    $_opened = \FALSE;
-
-  function __construct($_path_) {
-    // Open the handle
-    $handle = \fopen($_path_, 'w');
-    if (\FALSE === $handle) {
-      throw new TestStreamException("Unable to open '{$_path_}' for writing");
-    }
-    $this->_opened = \TRUE;
-    $this->_handle = $handle;
-  }
-
-  function __destruct() {
-    $this->cleanup_(\FALSE);
-  }
-
-  function close() {
-    $this->cleanup_(\TRUE);
-  }
-
-  function opened() {
-    // XXX
-    return $this->_opened;
-  }
-
-  function reset() {
-    $this->_indent = '';
-  }
-
-  function canWrite() {
-    // XXX
-    return $this->_opened && 0 === \fwrite($this->_handle, '');
-  }
-
-  protected function cleanup_($_disposing_) {
-    if (!$this->_opened) {
-      return;
-    }
-    if (\TRUE === \fclose($this->_handle)) {
-      $this->_opened = \FALSE;
-    }
-  }
-
-  final protected function rawWrite_($_value_) {
-      return \fwrite($this->_handle, $_value_);
-  }
-
-  protected function write_($_value_) {
-    return \fwrite($this->_handle, $this->_indent . $_value_);
-  }
-
-  protected function writeLine_($_value_) {
-    return \fwrite($this->_handle, $this->_indent . $_value_ . self::EOL);
-  }
-
-  protected function indent_() {
-    $this->_indent = '    ' . $this->_indent;
-  }
-
-  protected function unindent_() {
-    $this->_indent = \substr($this->_indent, 4);
-  }
-
-  protected static function FormatLine_($_prefix_, $_value_) {
-    return $_prefix_ . \preg_replace(CRLF_REGEX, '', $_value_) . self::EOL;
-  }
-
-  protected function formatMultiLine_($_prefix_, $_value_) {
-    $prefix = self::EOL . $this->_indent . $_prefix_;
-    $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
-
-    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value) . self::EOL;
   }
 }
 

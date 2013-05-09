@@ -4,6 +4,8 @@ namespace Narvalo\Test;
 
 require_once 'Narvalo\Test\FrameworkBundle.php';
 
+use \Narvalo\Test\Framework;
+
 /// This class should get you up to speed.
 /// Once you are familiar with the TAP protocol, you should move
 /// to one of the other Test Modules.

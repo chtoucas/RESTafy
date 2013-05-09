@@ -2,7 +2,7 @@
 
 namespace Narvalo;
 
-const VERSION = '%%VERSION%%';
+//const VERSION = '%%VERSION%%';
 
 // {{{ Core
 

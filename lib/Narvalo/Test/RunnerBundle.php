@@ -15,7 +15,7 @@ final class TestResult {
   public
     $passed,
     $loaded,
-    //$bailedOut = \FALSE,
+    $bailedOut = \FALSE,
     $hiddenErrorsCount = 0,
     $failuresCount = 0,
     $testsCount = 0;
@@ -29,8 +29,8 @@ class TestRunner {
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer     = $_producer_;
     $this->_errorCatcher = new _\RuntimeErrorCatcher();
-
-    $this->_initializeKernel(\TRUE);
+    // FIXME
+    self::_InitializeKernel($_producer_, \TRUE);
   }
 
   function runTest($_test_file_) {
@@ -63,12 +63,12 @@ class TestRunner {
       = $this->_errorCatcher->writeErrorsTo($this->_producer->getErrStream(), \TRUE);
 
     $result = new TestResult();
-    $result->loaded = $loaded;
-    $result->passed = $loaded && $this->_producer->passed();
-    //$result->bailedOut = $this->_producer->bailedOut();
+    $result->loaded            = $loaded;
+    $result->passed            = $loaded && $this->_producer->passed();
+    $result->bailedOut         = $this->_producer->bailedOut();
     $result->hiddenErrorsCount = $hidden_errors_count;
-    $result->failuresCount = $this->_producer->getFailuresCount();
-    $result->testsCount = $this->_producer->getTestsCount();
+    $result->failuresCount     = $this->_producer->getFailuresCount();
+    $result->testsCount        = $this->_producer->getTestsCount();
 
     // Reset the producer.
     $this->_producer->reset();
@@ -76,8 +76,8 @@ class TestRunner {
     return $result;
   }
 
-  private function _initializeKernel($_throwIfCalledtwice_) {
-    Framework\TestModulesKernel::Bootstrap($this->_producer, $_throwIfCalledtwice_);
+  private static function _InitializeKernel($_producer_, $_throwIfCalledtwice_) {
+    Framework\TestModulesKernel::Bootstrap($_producer_, $_throwIfCalledtwice_);
   }
 }
 
@@ -112,9 +112,9 @@ class TestHarness {
         $tests_passed = \FALSE;
 
         if (!$result->loaded) {
-          $status = 'NOT FOUND';
-        /* } else if ($result->bailedOut) {
-          $status = 'BAIL OUT!'; */
+          $status = 'NOT FOUND!';
+        } else if ($result->bailedOut) {
+          $status = 'BAILED OUT!';
         } else {
           $status = 'KO';
         }
@@ -154,11 +154,11 @@ class TestHarness {
 
 // }}} #############################################################################################
 
-// {{{ Internal
-
 namespace Narvalo\Test\Runner\Internal;
 
 use \Narvalo\Test\Framework;
+
+// {{{ RuntimeErrorCatcher
 
 class RuntimeErrorCatcher {
   private
@@ -234,6 +234,9 @@ class RuntimeErrorCatcher {
   }
 }
 
+// }}} #############################################################################################
+// {{{ NoopStreams
+
 class NoopTestOutStream implements Framework\TestOutStream {
   function close() {
     ;
@@ -271,7 +274,7 @@ class NoopTestOutStream implements Framework\TestOutStream {
     ;
   }
 
-  function writeTestCase(Framework\DefaultTestCase $_test_, $_number_) {
+  function writeTestCase(Framework\TestCase $_test_, $_number_) {
     ;
   }
 

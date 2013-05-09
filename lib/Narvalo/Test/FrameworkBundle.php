@@ -67,7 +67,7 @@ class SkipTestCase extends AbstractTestCase {
 class TodoTestCase extends AbstractTestCase {
   private $_inner;
 
-  function __construct(DefaultTestCase $_inner_, $_reason_) {
+  function __construct(TestCase $_inner_, $_reason_) {
     parent::__construct($_reason_);
 
     $this->_inner  = $_inner_;
@@ -85,7 +85,7 @@ class TodoTestCase extends AbstractTestCase {
 // }}} #############################################################################################
 // {{{ TestStream's
 
-class TestStreamException extends \Exception { }
+class StreamWriterException extends Narvalo\Exception { }
 
 interface TestOutStream {
   function close();
@@ -99,7 +99,7 @@ interface TestOutStream {
   function writeFooter();
   function writePlan($_num_of_tests_);
   function writeSkipAll($_reason_);
-  function writeTestCase(DefaultTestCase $_test_, $_number_);
+  function writeTestCase(TestCase $_test_, $_number_);
   function writeTodoTestCase(TodoTestCase $_test_, $_number_);
   function writeSkipTestCase(SkipTestCase $_test_, $_number_);
   function writeBailOut($_reason_);
@@ -117,19 +117,77 @@ interface TestErrStream {
   function write($_value_);
 }
 
+class StreamWriter {
+  private
+    $_handle,
+    $_opened = \FALSE;
+
+  function __construct($_path_) {
+    // Open the handle
+    $handle = \fopen($_path_, 'w');
+    if (\FALSE === $handle) {
+      throw new StreamWriterException("Unable to open '{$_path_}' for writing");
+    }
+    $this->_opened = \TRUE;
+    $this->_handle = $handle;
+  }
+
+  function __destruct() {
+    $this->cleanup_(\FALSE);
+  }
+
+  function close() {
+    $this->cleanup_(\TRUE);
+  }
+
+  function opened() {
+    return $this->_opened;
+  }
+
+  function canWrite() {
+    return $this->_opened && 0 === \fwrite($this->_handle, '');
+  }
+
+  function write($_value_) {
+    return \fwrite($this->_handle, $_value_);
+  }
+
+  protected function cleanup_($_disposing_) {
+    if (!$this->_opened) {
+      return;
+    }
+    if (\TRUE === \fclose($this->_handle)) {
+      $this->_opened = \FALSE;
+    }
+  }
+}
+
+class StdOutStreamWriter extends StreamWriter {
+  function __construct() {
+    parent::__construct('php://stdout');
+  }
+}
+
+class StdErrStreamWriter extends StreamWriter {
+  function __construct() {
+    parent::__construct('php://stderr');
+  }
+}
+
+class MemoryStreamWriter extends StreamWriter {
+  function __construct() {
+    parent::__construct('php://memory');
+  }
+}
+
 // }}} #############################################################################################
 // {{{ TestProducer
 
-class TestProducerInterrupt extends \Exception { }
+class TestProducerInterrupt extends Narvalo\Exception { }
 
-class SkipTestProducerInterrupt extends TestProducerInterrupt { }
+class SkipAllTestProducerInterrupt extends TestProducerInterrupt { }
 
 class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
-
-/// \return boolean
-function is_strictly_positive_integer($_value_) {
-  return (int)$_value_ === $_value_ && $_value_ > 0;
-}
 
 class TestProducer {
   private
@@ -137,7 +195,7 @@ class TestProducer {
     $_errStream,
     // Out stream
     $_outStream,
-    /// TAP set
+    // TAP set
     $_set,
     // Bailed out?
     $_bailedOut     = \FALSE,
@@ -147,16 +205,17 @@ class TestProducer {
     $_todoReason    = '',
     // TODO stack
     $_todoStack     = array(),
-    $_ended         = \FALSE,
+    // Was the producer interrupted via a TestProducerInterrupt exception?
+    $_interrupted   = \FALSE,
     //
     $_workflow;
 
   function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
-    // NB: Until we make a plan, we use a dynamic TAP set.
-    $this->_set      = new _\DynamicTestSet();
-    $this->_workflow = new _\TestWorkflow();
+    // NB: Until we have a plan, we use a dynamic TAP set.
+    $this->_set       = new _\DynamicTestSet();
+    $this->_workflow  = new _\TestWorkflow();
   }
 
   function getOutStream() {
@@ -188,16 +247,15 @@ class TestProducer {
   }
 
   function reset() {
+    $this->_set         = new _\DynamicTestSet();
+    $this->_bailedOut   = \FALSE;
+    $this->_todoLevel   = 0;
+    $this->_todoReason  = '';
+    $this->_todoStack   = array();
+    $this->_interrupted = \FALSE;
     $this->_errStream->reset();
     $this->_outStream->reset();
-    $this->_set        = new _\DynamicTestSet();
-    $this->_bailedOut  = \FALSE;
-    $this->_todoLevel  = 0;
-    $this->_todoReason = '';
-    $this->_todoStack  = array();
-    $this->_ended      = \FALSE;
-    // XXX: use reset()?
-    $this->_workflow   = new _\TestWorkflow();
+    $this->_workflow->reset();
   }
 
   function startup() {
@@ -208,20 +266,20 @@ class TestProducer {
     $this->_set = new _\EmptyTestSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
-    $this->_ended = \TRUE;
-    self::_SkipInterrupt();
+    $this->_interrupted = \TRUE;
+    self::_SkipAllInterrupt();
   }
 
   function bailOut($_reason_) {
     $this->_bailedOut = \TRUE;
     $this->_addBailOut($_reason_);
     $this->_addFooter();
-    $this->_ended = \TRUE;
+    $this->_interrupted = \TRUE;
     self::_BailOutInterrupt();
   }
 
   function shutdown($_loaded_) {
-    if ($this->_ended) {
+    if ($this->_interrupted) {
       return;
     }
     if ($_loaded_) {
@@ -234,7 +292,7 @@ class TestProducer {
   }
 
   function plan($_how_many_) {
-    if (!is_strictly_positive_integer($_how_many_)) {
+    if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       // Invalid argument exception
       $this->bailOut('Number of tests must be a strictly positive integer. '
         . "You gave it '$_how_many_'.");
@@ -265,7 +323,7 @@ class TestProducer {
     if (!$test->passed()) {
       // if the test failed, display the source of the prob
       $what = $this->inTodo() ? '(TODO) test' : 'test';
-      $caller = $this->findCaller();
+      $caller = $this->_findCaller();
       $description = $test->getDescription();
       if (empty($description)) {
         $diag = <<<EOL
@@ -284,7 +342,7 @@ EOL;
   }
 
   function skip($_how_many_, $_reason_) {
-    if (!is_strictly_positive_integer($_how_many_)) {
+    if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       $errmsg = 'The number of skipped tests must be a strictly positive integer';
       if ($this->_set instanceof _\FixedSizeTestSet) {
         $this->bailOut($errmsg);
@@ -355,8 +413,7 @@ EOL;
   function diagnose($_diag_) {
     if ($this->inTodo()) {
       $this->_addComment($_diag_);
-    }
-    else {
+    } else {
       $this->_addError($_diag_);
     }
   }
@@ -369,15 +426,11 @@ EOL;
     $this->_addError($_errmsg_);
   }
 
-  function findCaller() {
+  private function _findCaller() {
     $calltree = \debug_backtrace();
     $file = $calltree['2']['file'];
     $line = $calltree['2']['line'];
     return array('file' => $file,  'line' => $line);
-  }
-
-  private function _notLoaded() {
-    $this->_workflow->notLoaded();
   }
 
   private function _postPlan() {
@@ -399,9 +452,18 @@ EOL;
     throw new BailOutTestProducerInterrupt();
   }
 
-  private static function _SkipInterrupt() {
+  private static function _SkipAllInterrupt() {
     // THIS IS BAD! but I do not see any other simple way to do it.
-    throw new SkipTestProducerInterrupt();
+    throw new SkipAllTestProducerInterrupt();
+  }
+
+  /// \return boolean
+  private static function _IsStrictlyPositiveInteger($_value_) {
+    return (int)$_value_ === $_value_ && $_value_ > 0;
+  }
+
+  private function _notLoaded() {
+    $this->_workflow->notLoaded();
   }
 
   private function _addHeader() {
@@ -452,7 +514,7 @@ EOL;
     $this->_outStream->writeSkipAll($_reason_);
   }
 
-  private function _addTestCase(DefaultTestCase $_test_, $_number_) {
+  private function _addTestCase(TestCase $_test_, $_number_) {
     $this->_workflow->enterTestCase();
     $this->_outStream->writeTestCase($_test_, $_number_);
   }
@@ -486,7 +548,7 @@ EOL;
 // }}} #############################################################################################
 // {{{ TestModule
 
-class TestModulesKernelException extends \Exception { }
+class TestModulesKernelException extends Narvalo\Exception { }
 
 final class TestModulesKernel {
   private static
@@ -535,6 +597,7 @@ class TestModule {
 
 namespace Narvalo\Test\Framework\Internal;
 
+use \Narvalo;
 use \Narvalo\Test\Framework;
 
 // {{{ TestSet's
@@ -668,7 +731,7 @@ class FixedSizeTestSet extends AbstractTestSet {
 // }}} #############################################################################################
 // {{{ TestWorkflow
 
-class TestWorkflowException extends \Exception { }
+class TestWorkflowException extends Narvalo\Exception { }
 
 final class TestWorkflow {
   const
