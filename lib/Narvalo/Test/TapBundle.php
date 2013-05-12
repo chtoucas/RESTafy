@@ -202,8 +202,12 @@ class TapHarnessOutStream extends Framework\StreamWriter implements Runner\TestH
       }
   }
 
-  function writeSummary() {
-    throw new \Exception();
+  function writeSummary($_passed_, $_suites_count_, $_tests_count_) {
+    if ($_passed_) {
+      $this->writeLine('All tests successful.');
+    }
+    $this->writeLine(\sprintf('Test suites=%s, Tests=%s', $_suites_count_, $_tests_count_));
+    $this->writeLine(\sprintf('Result: %s', ($_passed_ ? 'PASS' : 'FAIL')));
   }
 }
 

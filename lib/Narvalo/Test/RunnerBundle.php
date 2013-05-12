@@ -67,7 +67,7 @@ interface TestHarnessOutStream {
   function canWrite();
 
   function writeResult($_name_, Framework\TestResult $_result_);
-  function writeSummary();
+  function writeSummary($_passed_, $_suites_count_, $_tests_count_);
 }
 
 class TestHarness {
@@ -99,8 +99,6 @@ class TestHarness {
 
       $this->_outStream->writeResult($suite->getName(), $result);
 
-      // FIXME: The remaining code should not be here.
-
       if (!$result->passed) {
         $tests_passed = \FALSE;
       }
@@ -108,11 +106,7 @@ class TestHarness {
       $tests_count += $result->testsCount;
     }
 
-    if ($tests_passed) {
-      echo 'All tests successful.', \PHP_EOL;
-    }
-    echo \sprintf('Files=%s, Tests=%s%s', \count($_files_), $tests_count, \PHP_EOL);
-    echo \sprintf('Result: %s%s', ($tests_passed ? 'PASS' : 'FAIL'), \PHP_EOL);
+    $this->_outStream->writeSummary($tests_passed, \count($_files_), $tests_count);
   }
 }
 
