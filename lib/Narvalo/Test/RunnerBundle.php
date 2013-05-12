@@ -4,26 +4,13 @@ namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo\Test\FrameworkBundle.php';
+require_once 'Narvalo\Test\TestSuite.php';
 
 use \Narvalo;
+use \Narvalo\Test;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner\Internal as _;
 
-// {{{ FileTestSuite
-
-class FileTestSuite extends Framework\AbstractTestSuite {
-  private $_file;
-
-  function __construct($_file_) {
-    $this->_file = $_file_;
-  }
-
-  function execute() {
-    Narvalo\DynaLoader::LoadFile($this->_file);
-  }
-}
-
-// }}} #############################################################################################
 // {{{ TestRunner
 
 final class TestRunner {
@@ -38,35 +25,27 @@ final class TestRunner {
     //$this->_testCompletedHandlers = new \SplObjectStorage();
   }
 
-  function runTestSuite(Framework\TestSuite $_test_suite_) {
-    Narvalo\Guard::NotNull($_test_suite_, 'test_suite');
+  function run(Test\TestSuite $_suite_) {
+    Narvalo\Guard::NotNull($_suite_, 'suite');
 
     $this->_producer->startup();
     $this->_errorCatcher->start();
 
     try {
-      $_test_suite_->setup();
-      $_test_suite_->execute();
+      $_suite_->setup();
+      $_suite_->execute();
     } catch (Framework\TestProducerInterrupt $e) {
       ;
     } catch (\Exception $e) {
       $this->_producer->bailOutOnException($e);
     }
 
-    $_test_suite_->teardown();
+    $_suite_->teardown();
 
     $this->_errorCatcher->stop();
     return $this->_producer->shutdown();
 
     //$this->onTestCompleted($result);
-  }
-
-  function runTestFile($_test_file_) {
-    Narvalo\Guard::NotEmpty($_test_file_, 'test_file');
-
-    $test_suite = new FileTestSuite($_test_file_);
-
-    return $this->runTestSuite($test_suite);
   }
 
   //  function addTestCompletedHandler(\Closure $_handler_) {
@@ -83,12 +62,24 @@ final class TestRunner {
 // }}} #############################################################################################
 // {{{ TestHarness
 
-// TODO:
-// - scan and run (continuously or after scan completed)
-class TestHarness {
-  private $_runner;
+interface TestHarnessOutStream {
+  function close();
+  function canWrite();
 
-  function __construct(Framework\TestErrStream $_errStream_ = \NULL) {
+  function writeResult($_name_, Framework\TestResult $_result_);
+  function writeSummary();
+}
+
+class TestHarness {
+  private
+    $_outStream,
+    $_runner;
+
+  function __construct(
+    TestHarnessOutStream $_outStream_,
+    Framework\TestErrStream $_errStream_ = \NULL
+  ) {
+    $this->_outStream = $_outStream_;
     $errStream = $_errStream_ ?: new _\NoopTestErrStream();
     $producer = new Framework\TestProducer(new _\NoopTestOutStream(), $errStream);
     Framework\TestModulesKernel::Bootstrap($producer, \TRUE);
@@ -96,47 +87,22 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  function processFiles(array $_test_files_) {
+  function executeTestFiles(array $_files_) {
     $tests_passed = \TRUE;
     $tests_count  = 0;
 
     // Run the test suite.
-    foreach ($_test_files_ as $test_file) {
-      $result = $this->_runner->runTestFile($test_file);
+    foreach ($_files_ as $file) {
+      $suite = new Test\FileTestSuite($file);
+
+      $result = $this->_runner->run($suite);
+
+      $this->_outStream->writeResult($suite->getName(), $result);
 
       // FIXME: The remaining code should not be here.
 
-      if ($result->passed) {
-        $status = 'ok';
-      } else {
-        $tests_passed = \FALSE;
-
-        if ($result->bailedOut) {
-          $status = 'BAILED OUT!';
-        } else {
-          $status = 'KO';
-        }
-      }
-
-      if ($result->hiddenErrorsCount > 0) {
-        // There are hidden errors. See diagnostics above
-        $status .= ' DUBIOUS';
-      }
-
-      if (($dotlen = 40 - \strlen($test_file)) > 0) {
-        $statusline = $test_file . \str_repeat('.', $dotlen) . ' ' . $status;
-      } else {
-        $statusline = $test_file . '... '. $status;
-      }
-
-      echo $statusline, \PHP_EOL;
-
       if (!$result->passed) {
-        echo \sprintf(
-          'Failed %s/%s subtests%s',
-          $result->failuresCount,
-          $result->testsCount,
-          \PHP_EOL);
+        $tests_passed = \FALSE;
       }
 
       $tests_count += $result->testsCount;
@@ -145,7 +111,7 @@ class TestHarness {
     if ($tests_passed) {
       echo 'All tests successful.', \PHP_EOL;
     }
-    echo \sprintf('Files=%s, Tests=%s%s', \count($_test_files_), $tests_count, \PHP_EOL);
+    echo \sprintf('Files=%s, Tests=%s%s', \count($_files_), $tests_count, \PHP_EOL);
     echo \sprintf('Result: %s%s', ($tests_passed ? 'PASS' : 'FAIL'), \PHP_EOL);
   }
 }
@@ -187,7 +153,7 @@ class RuntimeErrorCatcher {
 
     \set_error_handler(
       function ($errno , $errstr, $errfile, $errline, $errcontext) use (&$errors) {
-        $this->_producer->recordHiddenError("Error at {$errfile} line {$errline}.\n$errstr");
+        $this->_producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
   }

@@ -1,11 +1,13 @@
 <?php
 
 require_once 'Narvalo/Test/RunnerBundle.php';
+require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo\Test\Runner;
+use \Narvalo\Test\Tap;
 
-$harness = new Runner\TestHarness();
-$harness->processFiles(array(
+$harness = new Runner\TestHarness(new Tap\TapHarnessOutStream('php://stdout'));
+$harness->executeTestFiles(array(
   't/i-do-not-exist.php',
   't/Narvalo/Test/more-bailout.php',
   't/Narvalo/Test/more-complex.php',

@@ -168,6 +168,47 @@ class TapErrStream extends TapStream implements Framework\TestErrStream {
 }
 
 // }}} #############################################################################################
+
+// {{{ TapHarnessOutStream
+
+class TapHarnessOutStream extends Framework\StreamWriter implements Runner\TestHarnessOutStream {
+  function writeResult($_name_, Framework\TestResult $_result_) {
+      if ($_result_->passed) {
+        $status = 'ok';
+      } else {
+        if ($_result_->bailedOut) {
+          $status = 'BAILED OUT!';
+        } else {
+          $status = 'KO';
+        }
+      }
+
+      if ($_result_->runtimeErrorCount > 0) {
+        // There are runtime errors. See diagnostics above.
+        $status .= ' DUBIOUS';
+      }
+
+      if (($dotlen = 40 - \strlen($_name_)) > 0) {
+        $statusLine = $_name_ . \str_repeat('.', $dotlen) . ' ' . $status;
+      } else {
+        $statusLine = $_name_ . '... '. $status;
+      }
+
+      $this->writeLine($statusLine);
+
+      if (!$_result_->passed) {
+        $this->writeLine(
+          \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
+      }
+  }
+
+  function writeSummary() {
+    throw new \Exception();
+  }
+}
+
+// }}} #############################################################################################
+
 // {{{ TapProducer
 
 class TapProducer extends Framework\TestProducer {
@@ -186,7 +227,7 @@ class TapProducer extends Framework\TestProducer {
   }
 
   protected function getExitCode_() {
-    if ($this->getHiddenErrorsCount() > 0) {
+    if ($this->getRuntimeErrorsCount() > 0) {
       return self::FATAL_CODE;
     } else if ($this->passed()) {
       return self::SUCCESS_CODE;

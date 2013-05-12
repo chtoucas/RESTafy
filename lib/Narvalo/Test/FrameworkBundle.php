@@ -83,31 +83,6 @@ class TodoTestCase extends AbstractTestCase {
 }
 
 // }}} #############################################################################################
-// {{{ TestSuite
-
-interface TestSuite {
-  function setup();
-  function execute();
-  function teardown();
-}
-
-abstract class AbstractTestSuite implements TestSuite {
-  protected function __construc() {
-    ;
-  }
-
-  abstract function execute();
-
-  function setup() {
-    ;
-  }
-
-  function teardown() {
-    ;
-  }
-}
-
-// }}} #############################################################################################
 // {{{ Streams
 
 class StreamWriterException extends Narvalo\Exception { }
@@ -177,6 +152,11 @@ class StreamWriter {
     return \fwrite($this->_handle, $_value_);
   }
 
+  function writeLine($_value_) {
+    // TODO: make the eol configurable.
+    return $this->write($_value_ . \PHP_EOL);
+  }
+
   protected function cleanup_($_disposing_) {
     if (!$this->_opened) {
       return;
@@ -187,23 +167,23 @@ class StreamWriter {
   }
 }
 
-class StdOutStreamWriter extends StreamWriter {
-  function __construct() {
-    parent::__construct('php://stdout');
-  }
-}
-
-class StdErrStreamWriter extends StreamWriter {
-  function __construct() {
-    parent::__construct('php://stderr');
-  }
-}
-
-class MemoryStreamWriter extends StreamWriter {
-  function __construct() {
-    parent::__construct('php://memory');
-  }
-}
+//class StdOutStreamWriter extends StreamWriter {
+//  function __construct() {
+//    parent::__construct('php://stdout');
+//  }
+//}
+//
+//class StdErrStreamWriter extends StreamWriter {
+//  function __construct() {
+//    parent::__construct('php://stderr');
+//  }
+//}
+//
+//class MemoryStreamWriter extends StreamWriter {
+//  function __construct() {
+//    parent::__construct('php://memory');
+//  }
+//}
 
 // }}} #############################################################################################
 // {{{ Test Producer
@@ -218,7 +198,7 @@ final class TestResult {
   public
     $passed = \FALSE,
     $bailedOut = \FALSE,
-    $hiddenErrorsCount = 0,
+    $runtimeErrorCount = 0,
     $failuresCount = 0,
     $testsCount = 0;
 }
@@ -236,7 +216,7 @@ class TestProducer {
     // Was the producer interrupted, ie did we throw a TestProducerInterrupt exception?
     $_interrupted       = \FALSE,
     $_bailedOut         = \FALSE,
-    $_hiddenErrorsCount = 0,
+    $_runtimeErrorsCount = 0,
     // TODO stack level
     $_todoLevel         = 0,
     // TODO reason
@@ -259,7 +239,7 @@ class TestProducer {
   }
 
   function passed() {
-    return 0 === $this->_hiddenErrorsCount && !$this->_bailedOut && $this->_set->passed();
+    return 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
   }
 
   function getTestsCount() {
@@ -270,8 +250,8 @@ class TestProducer {
     return $this->_set->getFailuresCount();
   }
 
-  function getHiddenErrorsCount() {
-    return $this->_hiddenErrorsCount;
+  function getRuntimeErrorsCount() {
+    return $this->_runtimeErrorsCount;
   }
 
   //
@@ -287,8 +267,8 @@ class TestProducer {
     $this->_bailOutInterrupt(\FALSE);
   }
 
-  function recordHiddenError($_error_) {
-    $this->_hiddenErrorsCount++;
+  function captureRuntimeError($_error_) {
+    $this->_runtimeErrorsCount++;
     $this->_addError($_error_);
   }
 
@@ -477,11 +457,11 @@ EOL;
 
   private function _createResult() {
     $result = new TestResult();
-    $result->passed            = $this->passed();
-    $result->bailedOut         = $this->_bailedOut;
-    $result->hiddenErrorsCount = $this->_hiddenErrorsCount;
-    $result->failuresCount     = $this->getFailuresCount();
-    $result->testsCount        = $this->getTestsCount();
+    $result->passed             = $this->passed();
+    $result->bailedOut          = $this->_bailedOut;
+    $result->runtimeErrorsCount = $this->_runtimeErrorsCount;
+    $result->failuresCount      = $this->getFailuresCount();
+    $result->testsCount         = $this->getTestsCount();
 
     return $result;
   }
@@ -512,7 +492,7 @@ EOL;
     $this->_todoLevel   = 0;
     $this->_todoReason  = '';
     $this->_todoStack   = array();
-    $this->_hiddenErrorsCount = 0;
+    $this->_runtimeErrorsCount = 0;
     $this->_interrupted = \FALSE;
     $this->_errStream->reset();
     $this->_outStream->reset();
