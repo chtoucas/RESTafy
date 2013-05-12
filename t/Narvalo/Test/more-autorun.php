@@ -1,19 +1,21 @@
 <?php
 
+exit('broken');
+
 require_once 'Narvalo/Test/More.php';
 require_once 'Narvalo/Test/TestSuite.php';
 
 use \Narvalo\Test;
 
-class MyMoreTestSuite extends Test\TestSuite {
+class MyMoreTestSuite extends Test\AbstractTestSuite {
   static $T;
 
-  static function SetUp() {
+  function setup() {
     self::$T = new Test\More();
     self::$T->plan(3);
   }
 
-  static function Tests() {
+  function execute() {
     self::Test1();
     self::Test2();
     self::Test3();

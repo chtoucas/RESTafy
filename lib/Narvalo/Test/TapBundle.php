@@ -6,12 +6,23 @@
 // - http://podwiki.hexten.net/TAP/TAP13.html?page=TAP13
 // - http://podwiki.hexten.net/TAP/TAP.html?page=TAP
 
-namespace Narvalo\Test\Tap\Internal;
-
-use \Narvalo\Test\Framework;
+namespace Narvalo\Test\Tap;
 
 require_once 'Narvalo\Test\FrameworkBundle.php';
+require_once 'Narvalo\Test\RunnerBundle.php';
 
+use \Narvalo\Test\Framework;
+use \Narvalo\Test\Runner;
+
+define('CRLF_REGEX_PART',       '(?:\r|\n)+');
+// RegEx to find any combination of \r and \n in a string.
+define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
+// RegEx to find any combination of \r and \n at the end of a string.
+define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
+// RegEx to find any combination of \r and \n inside a normalized string.
+define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
+
+// FIXME: this class should be internal.
 // {{{ TapStream
 
 class TapStream extends Framework\StreamWriter {
@@ -31,7 +42,8 @@ class TapStream extends Framework\StreamWriter {
     $this->_indent = '    ' . $this->_indent;
   }
 
-  protected function unindent_() { $this->_indent = \substr($this->_indent, 4);
+  protected function unindent_() {
+    $this->_indent = \substr($this->_indent, 4);
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
@@ -44,32 +56,16 @@ class TapStream extends Framework\StreamWriter {
 
 // }}} #############################################################################################
 
-namespace Narvalo\Test\Tap;
-
-require_once 'Narvalo\Test\FrameworkBundle.php';
-require_once 'Narvalo\Test\RunnerBundle.php';
-
-use \Narvalo\Test\Framework;
-use \Narvalo\Test\Runner;
-use \Narvalo\Test\Tap\Internal as _;
-
-define('CRLF_REGEX_PART',       '(?:\r|\n)+');
-// RegEx to find any combination of \r and \n in a string.
-define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
-// RegEx to find any combination of \r and \n at the end of a string.
-define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
-// RegEx to find any combination of \r and \n inside a normalized string.
-define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
-
 // {{{ TapOutStream
 
-class TapOutStream extends _\TapStream implements Framework\TestOutStream {
+class TapOutStream extends TapStream implements Framework\TestOutStream {
   const VERSION = '13';
 
   private $_verbose;
 
   function __construct($_path_, $_verbose_) {
     parent::__construct($_path_);
+
     $this->_verbose = $_verbose_;
   }
 
@@ -155,7 +151,7 @@ class TapOutStream extends _\TapStream implements Framework\TestOutStream {
 // }}} #############################################################################################
 // {{{ TapErrStream
 
-class TapErrStream extends _\TapStream implements Framework\TestErrStream {
+class TapErrStream extends TapStream implements Framework\TestErrStream {
   /// \return integer
   function startSubTest() {
     $this->indent_();
@@ -175,50 +171,39 @@ class TapErrStream extends _\TapStream implements Framework\TestErrStream {
 // {{{ TapProducer
 
 class TapProducer extends Framework\TestProducer {
+  const
+    SUCCESS_CODE = 0,
+    FATAL_CODE   = 255;
+
   function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
     parent::__construct($_outStream_, $_errStream_);
+  }
+
+  protected function shutdownCore_() {
+    $exit_code = $this->getExitCode_();
+
+    exit($exit_code);
+  }
+
+  protected function getExitCode_() {
+    if ($this->getHiddenErrorsCount() > 0) {
+      return self::FATAL_CODE;
+    } else if ($this->passed()) {
+      return self::SUCCESS_CODE;
+    } else if ($this->bailedOut()) {
+      return self::FATAL_CODE;
+    } else if (($count = $this->getFailuresCount()) > 0) {
+      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
+    } else {
+      // Other kind of errors: extra tests, unattended interrupt.
+      return self::FATAL_CODE;
+    }
   }
 }
 
 final class DefaultTapProducer extends TapProducer {
   function __construct() {
     parent::__construct(new TapOutStream('php://stdout', \TRUE), new TapErrStream('php://stderr'));
-  }
-}
-
-// }}} #############################################################################################
-// {{{ TapRunner
-
-final class TapRunner extends Runner\TestRunner {
-  const
-    SUCCESS_CODE = 0,
-    FATAL_CODE   = 255;
-
-  function __construct(TapProducer $_producer_ = \NULL) {
-    parent::__construct($_producer_ ?: new DefaultTapProducer());
-  }
-
-  function runTest($_test_) {
-    $result = parent::runTest($_test_);
-
-    $exit_code = $this->getExitCode_($result);
-
-    exit($exit_code);
-  }
-
-  protected function getExitCode_(Runner\TestResult $_result_) {
-    if ($_result_->hiddenErrorsCount > 0) {
-      return self::FATAL_CODE;
-    } else if ($_result_->passed) {
-      return self::SUCCESS_CODE;
-    } else if ($_result_->bailedOut) {
-      return self::FATAL_CODE;
-    } else if (($count = $_result_->failuresCount) > 0) {
-      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
-    } else {
-      // Other kind of errors: extra tests, unattended interrupt.
-      return self::FATAL_CODE;
-    }
   }
 }
 

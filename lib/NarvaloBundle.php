@@ -191,13 +191,15 @@ final class DynaLoader {
     if (\FALSE === (include_once $_path_)) {
       throw new FileNotFoundRuntimeException(
         \sprintf('Unable to include the file: "%s".', $_path_));
-    } else {
-      return \TRUE;
     }
   }
 
+  static function LoadBundle($_namespace_) {
+    self::LoadFile(self::_ToPath($_namespace_ . 'Bundle'));
+  }
+
   static function LoadType(TypeName $_typeName_) {
-    self::LoadFile( self::_GetTypePath($_typeName_) );
+    self::LoadFile(self::_GetTypePath($_typeName_));
   }
 
   private static function _GetTypePath(TypeName $_typeName_) {

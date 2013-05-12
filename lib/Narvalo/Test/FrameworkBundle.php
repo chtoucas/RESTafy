@@ -7,7 +7,7 @@ require_once 'NarvaloBundle.php';
 use \Narvalo;
 use \Narvalo\Test\Framework\Internal as _;
 
-// {{{ TestCase's
+// {{{ Test Cases
 
 interface TestCase {
   /// The test's description
@@ -83,7 +83,32 @@ class TodoTestCase extends AbstractTestCase {
 }
 
 // }}} #############################################################################################
-// {{{ TestStream's
+// {{{ TestSuite
+
+interface TestSuite {
+  function setup();
+  function execute();
+  function teardown();
+}
+
+abstract class AbstractTestSuite implements TestSuite {
+  protected function __construc() {
+    ;
+  }
+
+  abstract function execute();
+
+  function setup() {
+    ;
+  }
+
+  function teardown() {
+    ;
+  }
+}
+
+// }}} #############################################################################################
+// {{{ Streams
 
 class StreamWriterException extends Narvalo\Exception { }
 
@@ -181,7 +206,7 @@ class MemoryStreamWriter extends StreamWriter {
 }
 
 // }}} #############################################################################################
-// {{{ TestProducer
+// {{{ Test Producer
 
 class TestProducerInterrupt extends Narvalo\Exception { }
 
@@ -189,41 +214,52 @@ class SkipAllTestProducerInterrupt extends TestProducerInterrupt { }
 
 class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
+final class TestResult {
+  public
+    $passed = \FALSE,
+    $bailedOut = \FALSE,
+    $hiddenErrorsCount = 0,
+    $failuresCount = 0,
+    $testsCount = 0;
+}
+
 class TestProducer {
   private
-    // Error stream
+    // Error stream.
     $_errStream,
-    // Out stream
+    // Out stream.
     $_outStream,
-    // TAP set
+    // Test set.
     $_set,
-    // Bailed out?
-    $_bailedOut     = \FALSE,
+    // Test workflow.
+    $_workflow,
+    // Was the producer interrupted, ie did we throw a TestProducerInterrupt exception?
+    $_interrupted       = \FALSE,
+    $_bailedOut         = \FALSE,
+    $_hiddenErrorsCount = 0,
     // TODO stack level
-    $_todoLevel     = 0,
+    $_todoLevel         = 0,
     // TODO reason
-    $_todoReason    = '',
+    $_todoReason        = '',
     // TODO stack
-    $_todoStack     = array(),
-    // Was the producer interrupted via a TestProducerInterrupt exception?
-    $_interrupted   = \FALSE,
-    //
-    $_workflow;
+    $_todoStack         = array();
 
   function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
-    // NB: Until we have a plan, we use a dynamic TAP set.
+    // NB: Until we have a plan, we use a dynamic test set.
     $this->_set       = new _\DynamicTestSet();
     $this->_workflow  = new _\TestWorkflow();
   }
 
-  function getOutStream() {
-    return $this->_outStream;
+  // Properties.
+
+  function bailedOut() {
+    return $this->_bailedOut;
   }
 
-  function getErrStream() {
-    return $this->_errStream;
+  function passed() {
+    return 0 === $this->_hiddenErrorsCount && !$this->_bailedOut && $this->_set->passed();
   }
 
   function getTestsCount() {
@@ -234,61 +270,57 @@ class TestProducer {
     return $this->_set->getFailuresCount();
   }
 
-  function bailedOut() {
-    return $this->_bailedOut;
+  function getHiddenErrorsCount() {
+    return $this->_hiddenErrorsCount;
   }
 
-  function passed() {
-    return !$this->_bailedOut && $this->_set->passed();
-  }
-
-  function inTodo() {
-    return $this->_workflow->inTodo();
-  }
-
-  function reset() {
-    $this->_set         = new _\DynamicTestSet();
-    $this->_bailedOut   = \FALSE;
-    $this->_todoLevel   = 0;
-    $this->_todoReason  = '';
-    $this->_todoStack   = array();
-    $this->_interrupted = \FALSE;
-    $this->_errStream->reset();
-    $this->_outStream->reset();
-    $this->_workflow->reset();
-  }
+  //
 
   function startup() {
     $this->_addHeader();
   }
 
+  function bailOutOnException(\Exception $_ex_) {
+    $this->_bailedOut = \TRUE;
+    $this->_addBailOut($_ex_->getMessage());
+    $this->_addFooter();
+    $this->_bailOutInterrupt(\FALSE);
+  }
+
+  function recordHiddenError($_error_) {
+    $this->_hiddenErrorsCount++;
+    $this->_addError($_error_);
+  }
+
+  function shutdown() {
+    if (!$this->_interrupted) {
+      $this->_endTestSet();
+      $this->_addFooter();
+    }
+
+    $this->shutdownCore_();
+
+    $result = $this->_createResult();
+
+    $this->_reset();
+
+    return $result;
+  }
+
+  // Test methods.
+
   function skipAll($_reason_) {
     $this->_set = new _\EmptyTestSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
-    $this->_interrupted = \TRUE;
-    self::_SkipAllInterrupt();
+    $this->_skipAllInterrupt();
   }
 
   function bailOut($_reason_) {
     $this->_bailedOut = \TRUE;
     $this->_addBailOut($_reason_);
     $this->_addFooter();
-    $this->_interrupted = \TRUE;
-    self::_BailOutInterrupt();
-  }
-
-  function shutdown($_loaded_) {
-    if ($this->_interrupted) {
-      return;
-    }
-    if ($_loaded_) {
-      $this->_postPlan();
-      $this->_endTestSet();
-      $this->_addFooter();
-    } else {
-      $this->_notLoaded();
-    }
+    $this->_bailOutInterrupt();
   }
 
   function plan($_how_many_) {
@@ -311,7 +343,7 @@ class TestProducer {
   /// \return TRUE if test passed, FALSE otherwise
   function assert($_test_, $_description_) {
     $test = new DefaultTestCase($_description_, \TRUE === $_test_);
-    if ($this->inTodo()) {
+    if ($this->_inTodo()) {
       $test = new TodoTestCase($test, $this->_todoReason);
       $number = $this->_set->addTest($test);
       $this->_addTodoTestCase($test, $number);
@@ -322,8 +354,8 @@ class TestProducer {
 
     if (!$test->passed()) {
       // if the test failed, display the source of the prob
-      $what = $this->inTodo() ? '(TODO) test' : 'test';
-      $caller = $this->_findCaller();
+      $what = $this->_inTodo() ? '(TODO) test' : 'test';
+      $caller = self::_FindCaller();
       $description = $test->getDescription();
       if (empty($description)) {
         $diag = <<<EOL
@@ -350,7 +382,7 @@ EOL;
         $this->Warn($errmsg); return;
       }
     }
-    if ($this->inTodo()) {
+    if ($this->_inTodo()) {
       $this->bailOut('You can not interlace a SKIP directive with a TODO block');
     }
     $test = new SkipTestCase($_reason_);
@@ -361,7 +393,7 @@ EOL;
   }
 
   function startTodo($_reason_) {
-    if ($this->inTodo()) {
+    if ($this->_inTodo()) {
       // Keep the upper-level TODO in memory
       \array_push($this->_todoStack, $this->_todoReason);
     }
@@ -374,7 +406,7 @@ EOL;
     //  $this->bailOut('You can not end a TODO block if you did not start one before');
     //}
     $this->_endTodo();
-    $this->_todoReason = $this->inTodo() ? \array_pop($this->_todoStack) : '';
+    $this->_todoReason = $this->_inTodo() ? \array_pop($this->_todoStack) : '';
   }
 
   // FIXME: if the subtest exit at any time it will exit the whole test.
@@ -387,7 +419,6 @@ EOL;
     // Execute the tests.
     $_code_($_m_);
     //
-    $this->_postPlan();
     $this->_endTestSet();
     // Restore outputs.
     $this->_endsubTest();
@@ -411,7 +442,7 @@ EOL;
   }
 
   function diagnose($_diag_) {
-    if ($this->inTodo()) {
+    if ($this->_inTodo()) {
       $this->_addComment($_diag_);
     } else {
       $this->_addError($_diag_);
@@ -426,11 +457,37 @@ EOL;
     $this->_addError($_errmsg_);
   }
 
-  private function _findCaller() {
+  protected function shutdownCore_() {
+    ;
+  }
+
+  // Utilities.
+
+  private static function _FindCaller() {
     $calltree = \debug_backtrace();
     $file = $calltree['2']['file'];
     $line = $calltree['2']['line'];
     return array('file' => $file,  'line' => $line);
+  }
+
+  /// \return boolean
+  private static function _IsStrictlyPositiveInteger($_value_) {
+    return (int)$_value_ === $_value_ && $_value_ > 0;
+  }
+
+  private function _createResult() {
+    $result = new TestResult();
+    $result->passed            = $this->passed();
+    $result->bailedOut         = $this->_bailedOut;
+    $result->hiddenErrorsCount = $this->_hiddenErrorsCount;
+    $result->failuresCount     = $this->getFailuresCount();
+    $result->testsCount        = $this->getTestsCount();
+
+    return $result;
+  }
+
+  private function _inTodo() {
+    return $this->_workflow->inTodo();
   }
 
   private function _postPlan() {
@@ -443,28 +500,48 @@ EOL;
   }
 
   private function _endTestSet() {
+    $this->_postPlan();
+
     // Print helpful messages if something went wrong.
     $this->_set->close($this->_errStream);
   }
 
-  private static function _BailOutInterrupt() {
-    // THIS IS BAD! but I do not see any other simple way to do it.
-    throw new BailOutTestProducerInterrupt();
+  private function _reset() {
+    $this->_set         = new _\DynamicTestSet();
+    $this->_bailedOut   = \FALSE;
+    $this->_todoLevel   = 0;
+    $this->_todoReason  = '';
+    $this->_todoStack   = array();
+    $this->_hiddenErrorsCount = 0;
+    $this->_interrupted = \FALSE;
+    $this->_errStream->reset();
+    $this->_outStream->reset();
+    $this->_workflow->reset();
   }
 
-  private static function _SkipAllInterrupt() {
+  // Producer interrupts.
+
+  private function _interrupt() {
+    $this->_interrupted = \TRUE;
+    // THIS IS BAD! but I do not see any other simple way to do it.
+    throw new TestProducerInterrupt();
+  }
+
+  private function _bailOutInterrupt($_throw_ = \TRUE) {
+    $this->_interrupted = \TRUE;
+    // THIS IS BAD! but I do not see any other simple way to do it.
+    if ($_throw_) {
+      throw new BailOutTestProducerInterrupt();
+    }
+  }
+
+  private function _skipAllInterrupt() {
+    $this->_interrupted = \TRUE;
     // THIS IS BAD! but I do not see any other simple way to do it.
     throw new SkipAllTestProducerInterrupt();
   }
 
-  /// \return boolean
-  private static function _IsStrictlyPositiveInteger($_value_) {
-    return (int)$_value_ === $_value_ && $_value_ > 0;
-  }
-
-  private function _notLoaded() {
-    $this->_workflow->notLoaded();
-  }
+  // Core methods.
 
   private function _addHeader() {
     $this->_workflow->enterHeader();
@@ -476,28 +553,24 @@ EOL;
     $this->_outStream->writeFooter();
   }
 
-  /// \return integer
   private function _startSubTest() {
     $this->_workflow->startSubTest();
     $this->_outStream->startSubTest();
     $this->_errStream->startSubTest();
   }
 
-  /// \return void
   private function _endSubTest() {
     $this->_workflow->endSubTest();
     $this->_outStream->endSubTest();
     $this->_errStream->endSubTest();
   }
 
-  /// \return integer
   private function _startTodo() {
     $this->_workflow->startTodo();
     //$this->_outStream->startTodo();
     //$this->_errStream->startTodo();
   }
 
-  /// \return void
   private function _endTodo() {
     $this->_workflow->endTodo();
     //$this->_outStream->endTodo();
@@ -546,7 +619,7 @@ EOL;
 }
 
 // }}} #############################################################################################
-// {{{ TestModule
+// {{{ Test Module
 
 class TestModulesKernelException extends Narvalo\Exception { }
 
@@ -580,15 +653,14 @@ final class TestModulesKernel {
 
 /// NB: TestModule is a Borg: you can create as many instances of any derived
 /// class and they will all share the same producer.
-class TestModule {
+trait TestModule {
   private $_producer;
 
-  function __construct() {
-    // All modules share the same producer.
-    $this->_producer = TestModulesKernel::GetSharedProducer();
-  }
-
   function getProducer() {
+    if (\NULL === $this->_producer) {
+      // All modules share the same producer.
+      $this->_producer = TestModulesKernel::GetSharedProducer();
+    }
     return $this->_producer;
   }
 }
@@ -600,11 +672,11 @@ namespace Narvalo\Test\Framework\Internal;
 use \Narvalo;
 use \Narvalo\Test\Framework;
 
-// {{{ TestSet's
+// {{{ Test Sets
 
 abstract class AbstractTestSet {
   private
-  // Number of failed tests.
+    // Number of failed tests.
     $_failuresCount = 0,
     // List of tests.
     $_tests = array();
@@ -699,7 +771,8 @@ class FixedSizeTestSet extends AbstractTestSet {
 
   function passed() {
     // We actually run tests, they all passed and there are no extras tests.
-    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0
+    return 0 === $this->getFailuresCount()
+      && 0 !== $this->getTestsCount()
       && 0 === $this->getExtrasCount();
   }
 
@@ -729,7 +802,7 @@ class FixedSizeTestSet extends AbstractTestSet {
 }
 
 // }}} #############################################################################################
-// {{{ TestWorkflow
+// {{{ Test Workflow
 
 class TestWorkflowException extends Narvalo\Exception { }
 
@@ -802,16 +875,6 @@ final class TestWorkflow {
     }
   }
 
-  function notLoaded() {
-    if (self::HEADER === $this->_state) {
-      // Allowed state.
-      $this->_state = self::END;
-    } else {
-      // Invalid state.
-      throw new TestWorkflowException('The header must come first. Invalid workflow state: ' . $this->_state);
-    }
-  }
-
   function enterFooter() {
     // Check workflow's state.
     switch ($this->_state) {
@@ -820,12 +883,14 @@ final class TestWorkflow {
     case self::BODY_PLAN:
     case self::PLAN_BODY:
     case self::PLAN_NOBODY:
+      // XXX
+    case self::HEADER:
       break;
       // Invalid state.
     case self::END:
       throw new TestWorkflowException('Workflow already ended.');
-    case self::HEADER:
-      throw new TestWorkflowException('The workflow will end prematurely.');
+//    case self::HEADER:
+//      throw new TestWorkflowException('The workflow will end prematurely.');
     default:
       throw new TestWorkflowException('The workflow will end in an invalid state: ' . $this->_state);
     }

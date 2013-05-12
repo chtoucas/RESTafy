@@ -6,7 +6,9 @@ require_once 'Narvalo\Test\FrameworkBundle.php';
 
 use \Narvalo\Test\Framework;
 
-class More extends Framework\TestModule {
+class More {
+  use Framework\TestModule;
+
   function plan($_how_many_) {
     return $this->getProducer()->plan($_how_many_);
   }
