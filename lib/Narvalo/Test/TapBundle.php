@@ -273,8 +273,12 @@ final class TapHarnessStream
       }
       $this->writeLine_(
         \sprintf(
-          'Test suites=%s, Tests=%s, Failures=%s',
+          'Suites=%s, Failures=%s',
           $_summary_->suitesCount,
+          $_summary_->failedSuitesCount));
+      $this->writeLine_(
+        \sprintf(
+          'Tests=%s, Failures=%s',
           $_summary_->testsCount,
           $_summary_->failuresCount));
       $this->writeLine_(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
