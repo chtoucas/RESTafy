@@ -14,13 +14,13 @@ require_once 'Narvalo\Test\RunnerBundle.php';
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
 
-define('CRLF_REGEX_PART',       '(?:\r|\n)+');
+define('_CRLF_REGEX_PART',       '(?:\r|\n)+');
 // RegEx to find any combination of \r and \n in a string.
-define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
+define('_CRLF_REGEX',            '{' . _CRLF_REGEX_PART . '}');
 // RegEx to find any combination of \r and \n at the end of a string.
-define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
+define('_TRAILING_CRLF_REGEX',   '{' . _CRLF_REGEX_PART . '\z}s');
 // RegEx to find any combination of \r and \n inside a normalized string.
-define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
+define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 
 // TAP streams.
 // #################################################################################################
@@ -49,9 +49,9 @@ class TapStream extends Framework\FileStreamWriter {
 
   protected function formatMultiLine_($_prefix_, $_value_) {
     $prefix = \PHP_EOL . $this->_indent . $_prefix_;
-    $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
+    $value = \preg_replace(_TRAILING_CRLF_REGEX, '', $_value_);
 
-    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $_value_);
+    return $_prefix_ . \preg_replace(_MULTILINE_CRLF_REGEX, $prefix, $_value_);
   }
 
   protected function _indent() {
@@ -127,7 +127,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 
   private static function _FormatDescription($_desc_) {
     // Escape EOL.
-    $desc = \preg_replace(CRLF_REGEX, '¤', $_desc_);
+    $desc = \preg_replace(_CRLF_REGEX, '¤', $_desc_);
     // Escape leading unsafe chars.
     $desc = \preg_replace('{^[\d\s]+}', '¤', $desc);
     // Escape #.
@@ -139,7 +139,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 
   private static function _FormatReason($_reason_) {
-    $reason = \preg_replace(CRLF_REGEX, '¤', $_reason_);
+    $reason = \preg_replace(_CRLF_REGEX, '¤', $_reason_);
     if ($reason != $_reason_) {
       \trigger_error("The reason '$_reason_' contains invalid chars.", \E_USER_NOTICE);
     }
@@ -158,7 +158,7 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// TAP producer.
+// TAP producers.
 // #################################################################################################
 
 // {{{ TapProducer
@@ -206,7 +206,7 @@ final class DefaultTapProducer extends TapProducer {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// TAP runner.
+// TAP runners.
 // #################################################################################################
 
 // {{{ TapRunner
@@ -228,7 +228,7 @@ class DefaultTapRunner extends TapRunner {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// TAP harness.
+// TAP harnesses.
 // #################################################################################################
 
 // {{{ TapHarnessStream

@@ -132,7 +132,7 @@ namespace Narvalo\Test\Runner\Internal;
 
 use \Narvalo\Test\Framework;
 
-// Runtime error catcher.
+// Utilities.
 // #################################################################################################
 
 // {{{ RuntimeErrorCatcher
