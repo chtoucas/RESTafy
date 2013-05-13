@@ -22,6 +22,9 @@ define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
 // RegEx to find any combination of \r and \n inside a normalized string.
 define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
 
+// TAP streams.
+// #################################################################################################
+
 // FIXME: TapStream should be internal.
 // {{{ TapStream
 
@@ -54,7 +57,7 @@ class TapStream extends Framework\FileStreamWriter {
   }
 }
 
-// }}} #############################################################################################
+// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ TapOutStream
 
@@ -148,7 +151,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 }
 
-// }}} #############################################################################################
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ TapErrStream
 
 final class TapErrStream extends TapStream implements Framework\TestErrStream {
@@ -165,7 +168,80 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
   }
 }
 
-// }}} #############################################################################################
+// }}} ---------------------------------------------------------------------------------------------
+
+// TAP producer.
+// #################################################################################################
+
+// {{{ TapProducer
+
+class TapProducer extends Framework\TestProducer {
+  const
+    SUCCESS_CODE = 0,
+    FATAL_CODE   = 255;
+
+  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
+    parent::__construct($_outStream_, $_errStream_);
+  }
+
+  protected function shutdownCore_() {
+    $exit_code = $this->getExitCode_();
+
+    exit($exit_code);
+  }
+
+  protected function getExitCode_() {
+    if ($this->getRuntimeErrorsCount() > 0) {
+      return self::FATAL_CODE;
+    } else if ($this->passed()) {
+      return self::SUCCESS_CODE;
+    } else if ($this->bailedOut()) {
+      return self::FATAL_CODE;
+    } else if (($count = $this->getFailuresCount()) > 0) {
+      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
+    } else {
+      // Other kind of errors: extra tests, unattended interrupt.
+      return self::FATAL_CODE;
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ DefaultTapProducer
+
+final class DefaultTapProducer extends TapProducer {
+  function __construct($_verbose_) {
+    parent::__construct(
+      new TapOutStream('php://stdout', $_verbose_), new TapErrStream('php://stderr'));
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// TAP runner.
+// #################################################################################################
+
+// {{{ TapRunner
+
+class TapRunner extends Runner\TestRunner {
+  function __construct(TapProducer $_producer_) {
+    parent::__construct($_producer_);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ DefaultTapRunner
+
+class DefaultTapRunner extends TapRunner {
+  function __construct($_verbose_) {
+    parent::__construct(new DefaultTapProducer($_verbose_));
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// TAP harness.
+// #################################################################################################
 
 // {{{ TapHarnessStream
 
@@ -215,70 +291,6 @@ final class TapHarnessStream
 
 // }}}
 
-// {{{ TapProducer
-
-class TapProducer extends Framework\TestProducer {
-  const
-    SUCCESS_CODE = 0,
-    FATAL_CODE   = 255;
-
-  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
-    parent::__construct($_outStream_, $_errStream_);
-  }
-
-  protected function shutdownCore_() {
-    $exit_code = $this->getExitCode_();
-
-    exit($exit_code);
-  }
-
-  protected function getExitCode_() {
-    if ($this->getRuntimeErrorsCount() > 0) {
-      return self::FATAL_CODE;
-    } else if ($this->passed()) {
-      return self::SUCCESS_CODE;
-    } else if ($this->bailedOut()) {
-      return self::FATAL_CODE;
-    } else if (($count = $this->getFailuresCount()) > 0) {
-      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
-    } else {
-      // Other kind of errors: extra tests, unattended interrupt.
-      return self::FATAL_CODE;
-    }
-  }
-}
-
-// }}} #############################################################################################
-// {{{ DefaultTapProducer
-
-final class DefaultTapProducer extends TapProducer {
-  function __construct($_verbose_) {
-    parent::__construct(
-      new TapOutStream('php://stdout', $_verbose_), new TapErrStream('php://stderr'));
-  }
-}
-
-// }}} #############################################################################################
-
-// {{{ TapRunner
-
-class TapRunner extends Runner\TestRunner {
-  function __construct(TapProducer $_producer_) {
-    parent::__construct($_producer_);
-  }
-}
-
-// }}} #############################################################################################
-// {{{ DefaultTapRunner
-
-class DefaultTapRunner extends TapRunner {
-  function __construct($_verbose_) {
-    parent::__construct(new DefaultTapProducer($_verbose_));
-  }
-}
-
-// }}} #############################################################################################
-
 // {{{ TapHarness
 
 class TapHarness extends Runner\TestHarness {
@@ -287,7 +299,7 @@ class TapHarness extends Runner\TestHarness {
   }
 }
 
-// }}} #############################################################################################
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ DefaultTapHarness
 
 final class DefaultTapHarness extends Runner\TestHarness {
@@ -296,6 +308,6 @@ final class DefaultTapHarness extends Runner\TestHarness {
   }
 }
 
-// }}} #############################################################################################
+// }}} ---------------------------------------------------------------------------------------------
 
 // EOF
