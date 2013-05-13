@@ -85,8 +85,10 @@ class TestHarness {
     $tests_passed = \TRUE;
     $tests_count  = 0;
 
-    foreach ($_files_ as $file) {
-      $suite = new Suites\FileTestSuite($file);
+    $count = \count($_files_);
+
+    for ($i = 0; $i < $count; $i++) {
+      $suite = new Suites\FileTestSuite($_files_[$i]);
 
       $result = $this->_runner->run($suite);
 
