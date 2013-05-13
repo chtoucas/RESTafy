@@ -1,6 +1,8 @@
 <?php
 // FIXME: plenty of things to be fixed.
 
+exit('Currently broken, please check the Test subfolder.');
+
 namespace Narvalo\Test;
 
 use \Narvalo\Test\Internal as _;

@@ -1,17 +1,23 @@
 <?php
 
-namespace Narvalo\Test;
+namespace Narvalo\Test\Suites;
 
 require_once 'NarvaloBundle.php';
 
 use \Narvalo;
 
+// {{{ TestSuite
+
 interface TestSuite {
   function getName();
+
   function setup();
   function execute();
   function teardown();
 }
+
+// }}} #############################################################################################
+// {{{ AbstractTestSuite
 
 abstract class AbstractTestSuite implements TestSuite {
   protected function __construct() {
@@ -31,6 +37,9 @@ abstract class AbstractTestSuite implements TestSuite {
   }
 }
 
+// }}} #############################################################################################
+// {{{ FileTestSuite
+
 class FileTestSuite extends AbstractTestSuite {
   private $_file;
 
@@ -46,5 +55,7 @@ class FileTestSuite extends AbstractTestSuite {
     Narvalo\DynaLoader::LoadFile($this->_file);
   }
 }
+
+// }}}
 
 // EOF

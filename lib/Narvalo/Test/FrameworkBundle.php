@@ -7,7 +7,7 @@ require_once 'NarvaloBundle.php';
 use \Narvalo;
 use \Narvalo\Test\Framework\Internal as _;
 
-// {{{ Test Cases
+// {{{ TestCase
 
 interface TestCase {
   /// The test's description
@@ -19,7 +19,10 @@ interface TestCase {
   function passed();
 }
 
-class DefaultTestCase implements TestCase {
+// }}} #############################################################################################
+// {{{ DefaultTestCase
+
+final class DefaultTestCase implements TestCase {
   private
     $_description,
     $_passed;
@@ -38,6 +41,9 @@ class DefaultTestCase implements TestCase {
   }
 }
 
+// }}} #############################################################################################
+// {{{ AbstractTestCase
+
 abstract class AbstractTestCase implements TestCase {
   private $_reason;
 
@@ -50,7 +56,10 @@ abstract class AbstractTestCase implements TestCase {
   }
 }
 
-class SkipTestCase extends AbstractTestCase {
+// }}} #############################################################################################
+// {{{ SkipTestCase
+
+final class SkipTestCase extends AbstractTestCase {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
@@ -64,7 +73,10 @@ class SkipTestCase extends AbstractTestCase {
   }
 }
 
-class TodoTestCase extends AbstractTestCase {
+// }}} #############################################################################################
+// {{{ TodoTestCase
+
+final class TodoTestCase extends AbstractTestCase {
   private $_inner;
 
   function __construct(TestCase $_inner_, $_reason_) {
@@ -83,9 +95,13 @@ class TodoTestCase extends AbstractTestCase {
 }
 
 // }}} #############################################################################################
-// {{{ Streams
 
-class StreamWriterException extends Narvalo\Exception { }
+// {{{ FileStreamWriterException
+
+class FileStreamWriterException extends Narvalo\Exception { }
+
+// }}} #############################################################################################
+// {{{ TestOutStream
 
 interface TestOutStream {
   function close();
@@ -106,6 +122,9 @@ interface TestOutStream {
   function writeComment($_comment_);
 }
 
+// }}} #############################################################################################
+// {{{ TestErrStream
+
 interface TestErrStream {
   function close();
   function reset();
@@ -117,7 +136,10 @@ interface TestErrStream {
   function write($_value_);
 }
 
-class StreamWriter {
+// }}} #############################################################################################
+// {{{ FileStreamWriter
+
+class FileStreamWriter {
   private
     $_handle,
     $_opened = \FALSE;
@@ -126,7 +148,7 @@ class StreamWriter {
     // Open the handle
     $handle = \fopen($_path_, 'w');
     if (\FALSE === $handle) {
-      throw new StreamWriterException("Unable to open '{$_path_}' for writing");
+      throw new FileStreamWriterException("Unable to open '{$_path_}' for writing");
     }
     $this->_opened = \TRUE;
     $this->_handle = $handle;
@@ -167,32 +189,9 @@ class StreamWriter {
   }
 }
 
-//class StdOutStreamWriter extends StreamWriter {
-//  function __construct() {
-//    parent::__construct('php://stdout');
-//  }
-//}
-//
-//class StdErrStreamWriter extends StreamWriter {
-//  function __construct() {
-//    parent::__construct('php://stderr');
-//  }
-//}
-//
-//class MemoryStreamWriter extends StreamWriter {
-//  function __construct() {
-//    parent::__construct('php://memory');
-//  }
-//}
-
 // }}} #############################################################################################
-// {{{ Test Producer
 
-class TestProducerInterrupt extends Narvalo\Exception { }
-
-class SkipAllTestProducerInterrupt extends TestProducerInterrupt { }
-
-class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
+// {{{ TestResult
 
 final class TestResult {
   public
@@ -202,6 +201,25 @@ final class TestResult {
     $failuresCount = 0,
     $testsCount = 0;
 }
+
+// }}} #############################################################################################
+
+// {{{ TestProducerInterrupt
+
+class TestProducerInterrupt extends Narvalo\Exception { }
+
+// }}} #############################################################################################
+// {{{ SkipAllTestProducerInterrupt
+
+class SkipAllTestProducerInterrupt extends TestProducerInterrupt { }
+
+// }}} #############################################################################################
+// {{{ BailOutTestProducerInterrupt
+
+class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
+
+// }}} #############################################################################################
+// {{{ TestProducer
 
 class TestProducer {
   private
@@ -599,9 +617,13 @@ EOL;
 }
 
 // }}} #############################################################################################
-// {{{ Test Module
+
+// {{{ TestModulesKernelException
 
 class TestModulesKernelException extends Narvalo\Exception { }
+
+// }}} #############################################################################################
+// {{{ TestModulesKernel
 
 final class TestModulesKernel {
   private static
@@ -631,6 +653,9 @@ final class TestModulesKernel {
   }
 }
 
+// }}} #############################################################################################
+// {{{ TestModule
+
 /// NB: TestModule is a Borg: you can create as many instances of any derived
 /// class and they will all share the same producer.
 trait TestModule {
@@ -652,7 +677,7 @@ namespace Narvalo\Test\Framework\Internal;
 use \Narvalo;
 use \Narvalo\Test\Framework;
 
-// {{{ Test Sets
+// {{{ AbstractTestSet
 
 abstract class AbstractTestSet {
   private
@@ -687,7 +712,10 @@ abstract class AbstractTestSet {
   }
 }
 
-class EmptyTestSet extends AbstractTestSet {
+// }}} #############################################################################################
+// {{{ EmptyTestSet
+
+final class EmptyTestSet extends AbstractTestSet {
   function __construct() {
     ;
   }
@@ -705,7 +733,10 @@ class EmptyTestSet extends AbstractTestSet {
   }
 }
 
-class DynamicTestSet extends AbstractTestSet {
+// }}} #############################################################################################
+// {{{ DynamicTestSet
+
+final class DynamicTestSet extends AbstractTestSet {
   function __construct() {
     ;
   }
@@ -732,7 +763,10 @@ class DynamicTestSet extends AbstractTestSet {
   }
 }
 
-class FixedSizeTestSet extends AbstractTestSet {
+// }}} #############################################################################################
+// {{{ FixedSizeTestSet
+
+final class FixedSizeTestSet extends AbstractTestSet {
   // Number of expected tests.
   private $_length;
 
@@ -782,9 +816,13 @@ class FixedSizeTestSet extends AbstractTestSet {
 }
 
 // }}} #############################################################################################
-// {{{ Test Workflow
+
+// {{{ TestWorkflowException
 
 class TestWorkflowException extends Narvalo\Exception { }
+
+// }}} #############################################################################################
+// {{{ TestWorkflow
 
 final class TestWorkflow {
   const
@@ -869,8 +907,8 @@ final class TestWorkflow {
       // Invalid state.
     case self::END:
       throw new TestWorkflowException('Workflow already ended.');
-//    case self::HEADER:
-//      throw new TestWorkflowException('The workflow will end prematurely.');
+      //    case self::HEADER:
+      //      throw new TestWorkflowException('The workflow will end prematurely.');
     default:
       throw new TestWorkflowException('The workflow will end in an invalid state: ' . $this->_state);
     }

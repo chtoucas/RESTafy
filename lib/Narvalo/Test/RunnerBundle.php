@@ -4,28 +4,29 @@ namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo\Test\FrameworkBundle.php';
-require_once 'Narvalo\Test\TestSuite.php';
+require_once 'Narvalo\Test\SuitesBundle.php';
 
 use \Narvalo;
-use \Narvalo\Test;
 use \Narvalo\Test\Framework;
+use \Narvalo\Test\Suites;
 use \Narvalo\Test\Runner\Internal as _;
 
 // {{{ TestRunner
 
-final class TestRunner {
+class TestRunner {
   private
     $_errorCatcher,
     $_producer;
-  //$_testCompletedHandlers;
 
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer     = $_producer_;
     $this->_errorCatcher = new _\RuntimeErrorCatcher($_producer_);
-    //$this->_testCompletedHandlers = new \SplObjectStorage();
+
+    // FIXME
+    Framework\TestModulesKernel::Bootstrap($_producer_, \TRUE);
   }
 
-  function run(Test\TestSuite $_suite_) {
+  function run(Suites\TestSuite $_suite_) {
     Narvalo\Guard::NotNull($_suite_, 'suite');
 
     $this->_producer->startup();
@@ -44,23 +45,12 @@ final class TestRunner {
 
     $this->_errorCatcher->stop();
     return $this->_producer->shutdown();
-
-    //$this->onTestCompleted($result);
   }
-
-  //  function addTestCompletedHandler(\Closure $_handler_) {
-  //    $this->_testCompletedHandlers->attach($_handler_);
-  //  }
-  //
-  //  function onTestCompleted(TestResult $_result_) {
-  //    foreach ($this->_testCompletedHandlers as $handler) {
-  //      $handler($this, $_result_);
-  //    }
-  //  }
 }
 
 // }}} #############################################################################################
-// {{{ TestHarness
+
+// {{{ TestHarnessOutStream
 
 interface TestHarnessOutStream {
   function close();
@@ -69,6 +59,9 @@ interface TestHarnessOutStream {
   function writeResult($_name_, Framework\TestResult $_result_);
   function writeSummary($_passed_, $_suites_count_, $_tests_count_);
 }
+
+// }}} #############################################################################################
+// {{{ TestHarness
 
 class TestHarness {
   private
@@ -80,9 +73,10 @@ class TestHarness {
     Framework\TestErrStream $_errStream_ = \NULL
   ) {
     $this->_outStream = $_outStream_;
-    $errStream = $_errStream_ ?: new _\NoopTestErrStream();
-    $producer = new Framework\TestProducer(new _\NoopTestOutStream(), $errStream);
-    Framework\TestModulesKernel::Bootstrap($producer, \TRUE);
+
+    $producer = new Framework\TestProducer(
+      new _\NoopTestOutStream(),
+      $_errStream_ ?: new _\NoopTestErrStream());
 
     $this->_runner = new TestRunner($producer);
   }
@@ -91,9 +85,8 @@ class TestHarness {
     $tests_passed = \TRUE;
     $tests_count  = 0;
 
-    // Run the test suite.
     foreach ($_files_ as $file) {
-      $suite = new Test\FileTestSuite($file);
+      $suite = new Suites\FileTestSuite($file);
 
       $result = $this->_runner->run($suite);
 
@@ -118,7 +111,7 @@ use \Narvalo\Test\Framework;
 
 // {{{ RuntimeErrorCatcher
 
-class RuntimeErrorCatcher {
+final class RuntimeErrorCatcher {
   private
     // PHP display_errors on/off.
     //$_phpDisplayErrors,
@@ -161,9 +154,9 @@ class RuntimeErrorCatcher {
 }
 
 // }}} #############################################################################################
-// {{{ NoopStreams
+// {{{ NoopTestOutStream
 
-class NoopTestOutStream implements Framework\TestOutStream {
+final class NoopTestOutStream implements Framework\TestOutStream {
   function close() {
     ;
   }
@@ -221,7 +214,10 @@ class NoopTestOutStream implements Framework\TestOutStream {
   }
 }
 
-class NoopTestErrStream implements Framework\TestErrStream {
+// }}} #############################################################################################
+// {{{ NoopTestErrStream
+
+final class NoopTestErrStream implements Framework\TestErrStream {
   function close() {
     ;
   }
