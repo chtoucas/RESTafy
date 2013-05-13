@@ -5,6 +5,7 @@ Narvalo\Test
 * Test the Test.
 * Comments & doc.
 * Review all FIXME & TODO.
+* reset() on start or on end???
 * Rewrite Test.php to use the test framework.
   Ultimate goal: ability to use prove or our own TestHarness.
 * Currently, one can not create a new test module inside a subtest.

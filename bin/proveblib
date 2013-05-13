@@ -13,7 +13,7 @@ fi
 
 rm -f ${PROJECT_DIR}/test.log
 
-prove -r --ext=.phpt --exec 'php -n -c ./etc/blib.ini -f' t/
+prove -r --ext=.php --exec 'php -n -c ./etc/blib.ini -f' t/
 
 cd - > /dev/null
 

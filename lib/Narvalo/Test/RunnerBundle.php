@@ -83,7 +83,11 @@ interface TestHarnessStream {
 class TestHarness {
   private
     $_stream,
-    $_runner;
+    $_runner,
+    $_passed        = \FALSE,
+    $_suitesCount   = 0,
+    $_testsCount    = 0,
+    $_failuresCount = 0;
 
   function __construct(TestHarnessStream $_stream_, Framework\TestErrStream $_errStream_ = \NULL) {
     $this->_stream = $_stream_;
@@ -95,34 +99,61 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  function executeTestFiles(array $_files_) {
-    $passed         = \TRUE;
-    $tests_count    = 0;
-    $failures_count = 0;
-    $suites_count   = \count($_files_);
+  function scanDirectoryAndExecute($_directory_, $_filter_ = '/^.+\.phpt$/i') {
+    $it = new \RegexIterator(
+      new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($_directory_)),
+      $_filter_,
+      \RecursiveRegexIterator::GET_MATCH);
 
-    for ($i = 0; $i < $suites_count; $i++) {
-      $suite = new Suites\FileTestSuite($_files_[$i]);
-
-      $result = $this->_runner->run($suite);
-
-      $this->_stream->writeResult($suite->getName(), $result);
-
-      if ($passed && !$result->passed) {
-        $passed = \FALSE;
-      }
-
-      $tests_count    += $result->testsCount;
-      $failures_count += $result->failuresCount;
+    foreach ($it as $path => $_) {
+      $this->execute_(new Suites\FileTestSuite($path));
     }
 
-    $summary = new TestHarnessSummary();
-    $summary->passed        = $passed;
-    $summary->suitesCount   = $suites_count;
-    $summary->testsCount    = $tests_count;
-    $summary->failuresCount = $failures_count;
+    $this->_stream->writeSummary($this->createSummary_());
 
-    $this->_stream->writeSummary($summary);
+    $this->reset_();
+  }
+
+  function executeFiles(array $_files_) {
+    for ($i = 0, $count = \count($_files_); $i < $count; $i++) {
+      $this->execute_(new Suites\FileTestSuite($_files_[$i]));
+    }
+
+    $this->_stream->writeSummary($this->createSummary_());
+
+    $this->reset_();
+  }
+
+  protected function reset_() {
+    $this->_passed        = \FALSE;
+    $this->_suitesCount   = 0;
+    $this->_testsCount    = 0;
+    $this->_failuresCount = 0;
+  }
+
+  protected function createSummary_() {
+    $summary = new TestHarnessSummary();
+    $summary->passed        = $this->_passed;
+    $summary->suitesCount   = $this->_suitesCount;
+    $summary->testsCount    = $this->_testsCount;
+    $summary->failuresCount = $this->_failuresCount;
+
+    return $summary;
+  }
+
+  protected function execute_(Suites\TestSuite $_suite_) {
+    $this->_suitesCount++;
+
+    $result = $this->_runner->run($_suite_);
+
+    $this->_stream->writeResult($_suite_->getName(), $result);
+
+    if ($this->_passed && !$result->passed) {
+      $this->_passed = \FALSE;
+    }
+
+    $this->_testsCount    += $result->testsCount;
+    $this->_failuresCount += $result->failuresCount;
   }
 }
 
