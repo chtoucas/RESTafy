@@ -251,7 +251,7 @@ final class TapHarnessStream
         }
       }
 
-      if ($_result_->runtimeErrorCount > 0) {
+      if ($_result_->runtimeErrorsCount > 0) {
         // There are runtime errors. See diagnostics above.
         $status .= ' DUBIOUS';
       }
@@ -270,12 +270,13 @@ final class TapHarnessStream
       }
     }
 
-    function writeSummary($_passed_, $_suites_count_, $_tests_count_) {
-      if ($_passed_) {
+    function writeSummary(Runner\TestHarnessSummary $_summary_) {
+      if ($_summary_->passed) {
         $this->writeLine('All tests successful.');
       }
-      $this->writeLine(\sprintf('Test suites=%s, Tests=%s', $_suites_count_, $_tests_count_));
-      $this->writeLine(\sprintf('Result: %s', ($_passed_ ? 'PASS' : 'FAIL')));
+      $this->writeLine(
+        \sprintf('Test suites=%s, Tests=%s', $_summary_->suitesCount, $_summary_->testsCount));
+      $this->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
     }
   }
 

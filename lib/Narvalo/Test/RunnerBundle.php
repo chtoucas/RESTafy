@@ -50,6 +50,17 @@ class TestRunner {
 
 // }}} #############################################################################################
 
+// {{{ TestHarnessSummary
+
+class TestHarnessSummary {
+  public
+    $passed        = \FALSE,
+    $suitesCount   = 0,
+    $testsCount    = 0,
+    $failuresCount = 0;
+}
+
+// }}} #############################################################################################
 // {{{ TestHarnessStream
 
 interface TestHarnessStream {
@@ -57,8 +68,7 @@ interface TestHarnessStream {
   function canWrite();
 
   function writeResult($_name_, Framework\TestResult $_result_);
-  // TODO: add failed count.
-  function writeSummary($_passed_, $_suites_count_, $_tests_count_);
+  function writeSummary(TestHarnessSummary $_summary_);
 }
 
 // }}} #############################################################################################
@@ -80,26 +90,33 @@ class TestHarness {
   }
 
   function executeTestFiles(array $_files_) {
-    $tests_passed = \TRUE;
-    $tests_count  = 0;
+    $passed         = \TRUE;
+    $tests_count    = 0;
+    $failures_count = 0;
+    $suites_count   = \count($_files_);
 
-    $count = \count($_files_);
-
-    for ($i = 0; $i < $count; $i++) {
+    for ($i = 0; $i < $suites_count; $i++) {
       $suite = new Suites\FileTestSuite($_files_[$i]);
 
       $result = $this->_runner->run($suite);
 
       $this->_stream->writeResult($suite->getName(), $result);
 
-      if (!$result->passed) {
-        $tests_passed = \FALSE;
+      if ($passed && !$result->passed) {
+        $passed = \FALSE;
       }
 
-      $tests_count += $result->testsCount;
+      $tests_count    += $result->testsCount;
+      $failures_count += $result->failuresCount;
     }
 
-    $this->_stream->writeSummary($tests_passed, \count($_files_), $tests_count);
+    $summary = new TestHarnessSummary();
+    $summary->passed        = $passed;
+    $summary->suitesCount   = $suites_count;
+    $summary->testsCount    = $tests_count;
+    $summary->failuresCount = $failures_count;
+
+    $this->_stream->writeSummary($summary);
   }
 }
 

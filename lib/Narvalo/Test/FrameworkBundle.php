@@ -194,11 +194,11 @@ class FileStreamWriter {
 
 final class TestResult {
   public
-    $passed = \FALSE,
-    $bailedOut = \FALSE,
-    $runtimeErrorCount = 0,
-    $failuresCount = 0,
-    $testsCount = 0;
+    $passed             = \FALSE,
+    $bailedOut          = \FALSE,
+    $runtimeErrorsCount = 0,
+    $failuresCount      = 0,
+    $testsCount         = 0;
 }
 
 // }}} #############################################################################################
