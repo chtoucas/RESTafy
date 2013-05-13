@@ -366,7 +366,8 @@ class TestProducer {
       $description = $test->getDescription();
       if (empty($description)) {
         $diag = <<<EOL
-Failed $what at {$caller['file']} line {$caller['line']}.
+Failed $what
+at {$caller['file']} line {$caller['line']}.
 EOL;
       } else {
         $diag = <<<EOL
@@ -417,14 +418,15 @@ EOL;
   }
 
   // FIXME: if the subtest exit at any time it will exit the whole test.
-  function subTest(TestModule $_m_, $_code_, $_description_) {
+  function subTest(\Closure $_fun_, $_description_) {
+  //function subTest($_m_, \Closure $_fun_, $_description_) {
     // Switch to a new TestSet.
     $set = $this->_set;
     $this->_set = new _\DynamicTestSet();
     // Notify outputs.
     $this->_startSubTest();
-    // Execute the tests.
-    $_code_($_m_);
+    // Execute the subtests.
+    $_fun_();
     //
     $this->_endTestSet();
     // Restore outputs.
@@ -627,61 +629,57 @@ EOL;
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Test modules.
+// Test kernel.
 // #################################################################################################
 
-// {{{ TestModulesKernelException
+// {{{ TestKernelException
 
-class TestModulesKernelException extends Narvalo\Exception { }
+class TestKernelException extends Narvalo\Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TestModulesKernel
+// {{{ TestKernel
 
-final class TestModulesKernel {
+final class TestKernel {
   private static
     $_SharedProducer,
     $_Bootstrapped = \FALSE;
 
-  static function Bootstrap(TestProducer $_producer_, $_throwIfCalledTwice_ = \TRUE) {
+  static function Bootstrap(TestProducer $_producer_) {
     if (self::$_Bootstrapped) {
-      if ($_throwIfCalledTwice_) {
-        throw new TestModulesKernelException('Kernel already initialized.');
-      } else {
-        return;
-      }
+      throw new TestKernelException('Kernel already initialized.');
     }
 
     self::$_SharedProducer = $_producer_;
-    if ($_throwIfCalledTwice_) {
-      self::$_Bootstrapped = \TRUE;
-    }
+    self::$_Bootstrapped = \TRUE;
   }
 
   static function GetSharedProducer() {
     if (!self::$_Bootstrapped) {
-      throw new TestModulesKernelException('Before anything, you must initialize the kernel.');
+      throw new TestKernelException('Before anything, you must initialize the kernel.');
     }
     return self::$_SharedProducer;
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TestModule
+// {{{ TestProducerAccessor
 
-/// NB: TestModule is a Borg: you can create as many instances of any derived
-/// class and they will all share the same producer.
-trait TestModule {
+/// NB: you can create as many instances of any derived class
+/// and they will all share the same producer.
+trait TestProducerAccessor {
   private $_producer;
 
   function getProducer() {
     if (\NULL === $this->_producer) {
       // All modules share the same producer.
-      $this->_producer = TestModulesKernel::GetSharedProducer();
+      $this->_producer = TestKernel::GetSharedProducer();
     }
     return $this->_producer;
   }
 }
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // }}} ---------------------------------------------------------------------------------------------
 
@@ -882,8 +880,11 @@ final class TestWorkflow {
       // XXX reset() or no test at all
       break;
     default:
-      \trigger_error('The workflow will end in an invalid state: ' . $this->_state,
-        \E_USER_WARNING);
+      // XXX: is it wise to throw during GC.
+      throw new TestWorkflowException(
+        'The workflow will end in an invalid state: ' . $this->_state);
+      //\trigger_error('The workflow will end in an invalid state: ' . $this->_state,
+      //  \E_USER_WARNING);
     }
     $this->_disposed = \TRUE;
   }

@@ -48,10 +48,10 @@ class TapStream extends Framework\FileStreamWriter {
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
-    $prefix = $this->_indent . $_prefix_;
+    $prefix = \PHP_EOL . $this->_indent . $_prefix_;
     $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
 
-    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value);
+    return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $_value_);
   }
 
   protected function _indent() {

@@ -10,7 +10,7 @@ use \Narvalo\Test\Framework;
 /// Once you are familiar with the TAP protocol, you should move
 /// to one of the other Test Modules.
 class Simple {
-  use Framework\TestModule;
+  use Framework\TestProducerAccessor;
 
   function __construct($_how_many_) {
     $this->getProducer()->plan($_how_many_);

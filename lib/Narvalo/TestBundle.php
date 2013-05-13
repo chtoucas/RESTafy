@@ -187,7 +187,6 @@ function like($_got_, $_pattern_, $_name_ = '') {
   _\check_plan();
 
   $passed = ok(\preg_match($_pattern_, $_got_), $_name_);
-  $passed = ok(\preg_match($_pattern_, $_got_), $_name_);
 
   if (!$passed) {
     _\diag("                 '$_got_'");

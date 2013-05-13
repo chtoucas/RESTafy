@@ -26,7 +26,7 @@ class TestRunner {
     $this->_errorCatcher = new _\RuntimeErrorCatcher($_producer_);
 
     // FIXME
-    Framework\TestModulesKernel::Bootstrap($_producer_, \TRUE);
+    Framework\TestKernel::Bootstrap($_producer_);
   }
 
   function run(Suites\TestSuite $_suite_) {
@@ -140,7 +140,9 @@ use \Narvalo\Test\Framework;
 final class RuntimeErrorCatcher {
   private
     // PHP display_errors on/off.
-    //$_phpDisplayErrors,
+    $_phpDisplayErrors,
+    // PHP display_startup_errors on/off.
+    $_phpDisplayStartupErrors,
     // PHP error reporting level.
     $_phpErrorReporting,
     $_producer;
@@ -151,11 +153,17 @@ final class RuntimeErrorCatcher {
 
   function start() {
     // One way or another, we want to see all errors.
-    //$this->_phpDisplayErrors  = ini_get('display_errors');
+    $this->_phpDisplayStartupErrors = \ini_get('display_startup_errors');
+    $this->_phpDisplayErrors = \ini_get('display_errors');
     $this->_phpErrorReporting = \ini_get('error_reporting');
 
-    //ini_set('display_errors', 'Off');
-    \error_reporting(E_ALL | E_STRICT);
+    //\ini_set('ignore_repeated_source', '1');
+    //\ini_set('ignore_repeated_errors', '1');
+    //\ini_set('report_memleaks', '1');
+    //\ini_set('html_errors', '0');
+    \ini_set('display_startup_errors', '1');
+    \ini_set('display_errors', '1');
+    \error_reporting(\E_ALL);
 
     // Beware we can not catch all errors.
     // See: http://php.net/manual/en/function.set-error-handler.php
@@ -163,18 +171,21 @@ final class RuntimeErrorCatcher {
     // function: E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
     // E_COMPILE_ERROR, E_COMPILE_WARNING, and most of E_STRICT raised in
     // the file where set_error_handler() is called.
+    $producer = $this->_producer;
 
     \set_error_handler(
-      function ($errno , $errstr, $errfile, $errline, $errcontext) use (&$errors) {
-        $this->_producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
+      function($errno , $errstr, $errfile, $errline, $errcontext) use ($producer) {
+        $producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
   }
 
   function stop() {
+    // Restore error handler.
     \restore_error_handler();
     // Restore PHP settings.
-    //ini_set('display_errors', $this->_phpDisplayErrors);
+    \ini_set('display_startup_errors', $this->_phpDisplayStartupErrors);
+    \ini_set('display_errors', $this->_phpDisplayErrors);
     \error_reporting($this->_phpErrorReporting);
   }
 }
