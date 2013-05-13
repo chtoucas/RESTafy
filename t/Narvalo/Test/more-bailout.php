@@ -8,7 +8,7 @@ $t = new Test\More();
 
 $t->plan(2);
 
-$t->assert(TRUE, 'OK');
+$t->assert(\TRUE, 'OK');
 
 $t->bailOut('Premature exit');
 

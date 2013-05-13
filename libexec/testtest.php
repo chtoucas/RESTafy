@@ -17,6 +17,7 @@ $file = 't/arvalo/Test/more-bailout.php';
 $file = 't/Narvalo/Test/more-complex.php';
 //$file = 't/Narvalo/Test/more-throw.php';
 //$file = 't/Narvalo/Test/more-autorun.php';
+$file = 't/i-do-not-exist.php';
 
 $runner->run(new Suites\FileTestSuite($file));
 
