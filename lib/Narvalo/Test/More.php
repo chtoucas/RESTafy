@@ -112,12 +112,10 @@ class More {
   }
 
   function canInclude($_library_, $_description_) {
-    // FIXME:
-    // - what about includes that return FALSE?
-    // - include once or not ?
+    // FIXME: What about includes that return FALSE?
+    // FIXME: Include once or not?
     // We turn off error reporting otherwise we will have duplicate errors.
-    // We eval the code otherwise the include call may abort the whole
-    // script.
+    // We eval the code otherwise the include call may abort the whole script.
     $errlevel = \ini_get('error_reporting');
     \error_reporting(0);
     $test = eval('return (\FALSE !== (include_once $_library_))');
@@ -136,20 +134,20 @@ class More {
   }
 
   function hasMethod($_class_, $_method_, $_description_) {
-    // FIXME: check that the class exists
+    // FIXME: Check that the class exists?
     $rc = new \ReflectionClass($_class_);
     return $this->getProducer()->assert($rc->hasMethod($_method_), $_description_);
   }
 
   function implementsInterface($_class_, $_interface_, $_description_) {
-    // FIXME: __autoload
+    // FIXME: __autoload?
     // check that we do have an interface by reflection or via interface_exists()
     $rc = new \ReflectionClass($_class_);
     return $this->getProducer()->assert($rc->implementsInterface($_interface_), $_description_);
   }
 
   function isInstanceOf($_object_, $_class_, $_description_) {
-    // FIXME: __autoload
+    // FIXME: __autoload?
     return $this->getProducer()->assert($_object_ instanceof $_class_, $_description_);
   }
 

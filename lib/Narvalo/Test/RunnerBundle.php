@@ -25,7 +25,7 @@ class TestRunner {
     $this->_producer     = $_producer_;
     $this->_errorCatcher = new _\RuntimeErrorCatcher($_producer_);
 
-    // FIXME
+    // FIXME: Find a better way to initialize TestKernel.
     Framework\TestKernel::Bootstrap($_producer_);
   }
 

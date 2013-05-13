@@ -91,7 +91,7 @@ class TypeName {
   private static
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
     $_TypeNameRegex = "/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/",
-    // TODO: check this.
+    // TODO: Check the namespace regex.
     $_NamespaceNameRegex = "/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$/";
 
   private
@@ -267,7 +267,7 @@ final class Guard {
 
 // {{{ ReadOnlyDictionary
 
-// TODO: not really ReadOnly, since the derived class can access the private property.
+// TODO: Not really ReadOnly, since the derived class can access the private property.
 trait ReadOnlyDictionary {
   private $_store = array();
 
@@ -353,7 +353,7 @@ trait Singleton {
 //  }
 //}
 
-// TODO: extends \ArrayObject.
+// TODO: Should extend \ArrayObject?
 class DictionaryBorg {
   use Dictionary;
 

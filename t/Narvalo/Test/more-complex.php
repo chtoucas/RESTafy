@@ -18,8 +18,8 @@ $t->fail('Failing test');
 
 TODO: {
   $t->startTodo('Sample todo tests');
-  $t->pass('Passing test marked as TODO');
-  $t->fail('Failing test marked as TODO');
+  $t->pass('Passing test marked as TO-DO');
+  $t->fail('Failing test marked as TO-DO');
   $t->endTodo();
 }
 

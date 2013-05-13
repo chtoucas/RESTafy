@@ -391,7 +391,7 @@ EOL;
       }
     }
     if ($this->_inTodo()) {
-      $this->bailOut('You can not interlace a SKIP directive with a TODO block');
+      $this->bailOut('You can not interlace a SKIP directive with a TO-DO block');
     }
     $test = new SkipTestCase($_reason_);
     for ($i = 1; $i <= $_how_many_; $i++) {
@@ -417,7 +417,7 @@ EOL;
     $this->_todoReason = $this->_inTodo() ? \array_pop($this->_todoStack) : '';
   }
 
-  // FIXME: if the subtest exit at any time it will exit the whole test.
+  // FIXME: If the subtest exit, it will stop the whole test.
   function subTest(\Closure $_fun_, $_description_) {
   //function subTest($_m_, \Closure $_fun_, $_description_) {
     // Switch to a new TestSet.
@@ -939,7 +939,7 @@ final class TestWorkflow {
     }
     // Check TO-DO' level
     if (0 !== $this->_todoLevel) {
-      throw new TestWorkflowException('There is still an opened TODO in the workflow: ' . $this->_subTestLevel);
+      throw new TestWorkflowException('There is still an opened TO-DO in the workflow: ' . $this->_subTestLevel);
     }
     $this->_state = self::END;
   }
@@ -966,7 +966,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
     }
-    // FIXME reset TO-DO level?
+    // FIXME: Reset TO-DO level?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::HEADER;
     return ++$this->_subTestLevel;
@@ -974,7 +974,7 @@ final class TestWorkflow {
 
   /// \return void
   function endSubTest() {
-    // FIXME: valid states
+    // FIXME: Valid states.
     if (0 === $this->_subTestLevel) {
       throw new TestWorkflowException('You can not end a subtest if you did not start one before');
     }
@@ -992,15 +992,15 @@ final class TestWorkflow {
       break;
       // Invalid state.
     case self::START:
-      throw new TestWorkflowException('Unable to start a TODO: missing header');
+      throw new TestWorkflowException('Unable to start a TO-DO: missing header');
     case self::END:
-      throw new TestWorkflowException('Unable to start a TODO: workflow ended');
+      throw new TestWorkflowException('Unable to start a TO-DO: workflow ended');
     case self::BODY_PLAN:
-      throw new TestWorkflowException('Unable to start a TODO: you already end your tests with a plan');
+      throw new TestWorkflowException('Unable to start a TO-DO: you already end your tests with a plan');
     case self::PLAN_NOBODY:
-      throw new TestWorkflowException('You can not start a TODO and skip all tests at the same time');
+      throw new TestWorkflowException('You can not start a TO-DO and skip all tests at the same time');
     case self::BAILOUT:
-      throw new TestWorkflowException('You can not start a TODO after bailing out');
+      throw new TestWorkflowException('You can not start a TO-DO after bailing out');
     default:
       throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
     }
@@ -1008,9 +1008,9 @@ final class TestWorkflow {
   }
 
   function endTodo() {
-    // FIXME valid states
+    // FIXME: Valid states.
     if (0 === $this->_todoLevel) {
-      throw new TestWorkflowException('You can not end a TODO if you did not start one before');
+      throw new TestWorkflowException('You can not end a TO-DO if you did not start one before');
     }
     $this->_todoLevel--;
   }

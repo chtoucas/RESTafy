@@ -1,7 +1,5 @@
 <?php
-// FIXME: plenty of things to be fixed.
-
-exit('Currently broken, please check the Test subfolder.');
+// FIXME: Currently broken, complete rewrite in the pipe.
 
 namespace Narvalo\Test;
 
@@ -81,7 +79,7 @@ function ok($_test_, $_name_ = '') {
   }
 
   if (\FALSE !== ($todo = _\test_todo())) {
-    // flag the test as a TODO
+    // flag the test as a TO-DO
     $todo->seen++;
     $name .= " # TODO {$todo->why}";
   }
@@ -302,7 +300,7 @@ function fail($_name_ = '') {
 }
 
 function panic() {
-  // TODO:
+  // TODO: panic() not implemented.
 
   _\check_plan();
 }
@@ -320,7 +318,7 @@ function require_ok($_library_) {
 }
 
 function dl_ok($_extension_) {
-  // TODO: check availability of dynamicly loaded extensions.
+  // TODO: Check availability of dynamicly loaded extensions.
 
   _\check_plan();
 
@@ -328,7 +326,7 @@ function dl_ok($_extension_) {
 }
 
 function is_deeply() {
-  // TODO:
+  // TODO: is_deeply() not implemented.
 
   _\check_plan();
 }
