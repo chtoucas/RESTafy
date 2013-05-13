@@ -60,11 +60,11 @@ class TestRunner {
 
 class TestHarnessSummary {
   public
-    $passed           = \FALSE,
-    $suitesCount      = 0,
+    $passed            = \FALSE,
+    $suitesCount       = 0,
     $failedSuitesCount = 0,
-    $testsCount       = 0,
-    $failuresCount    = 0;
+    $testsCount        = 0,
+    $failedTestsCount  = 0;
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ class TestHarness {
       $this->execute_(new Suites\FileTestSuite($path));
     }
 
-    $summary = $this->_getSummary();
+    $summary = $this->getSummary_();
     $this->_stream->writeSummary($summary);
 
     $this->reset_();
@@ -120,7 +120,7 @@ class TestHarness {
       $this->execute_(new Suites\FileTestSuite($_files_[$i]));
     }
 
-    $summary = $this->_getSummary();
+    $summary = $this->getSummary_();
     $this->_stream->writeSummary($summary);
 
     $this->reset_();
@@ -144,10 +144,10 @@ class TestHarness {
 
     $this->_summary->failedSuitesCount += $result->passed ? 0 : 1;
     $this->_summary->testsCount        += $result->testsCount;
-    $this->_summary->failuresCount     += $result->failuresCount;
+    $this->_summary->failedTestsCount  += $result->failuresCount;
   }
 
-  private function _getSummary() {
+  protected function getSummary_() {
     return clone $this->_summary;
   }
 }

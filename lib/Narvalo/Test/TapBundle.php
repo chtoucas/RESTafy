@@ -263,7 +263,7 @@ final class TapHarnessStream
 
       if (!$_result_->passed) {
         $this->writeLine_(
-          \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
+          \sprintf('Failed %s/%s subtests', $_result_->failedTestsCount, $_result_->testsCount));
       }
     }
 
@@ -280,7 +280,7 @@ final class TapHarnessStream
         \sprintf(
           'Tests=%s, Failures=%s',
           $_summary_->testsCount,
-          $_summary_->failuresCount));
+          $_summary_->failedTestsCount));
       $this->writeLine_(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
     }
   }
