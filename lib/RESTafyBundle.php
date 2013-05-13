@@ -6,15 +6,20 @@ require_once 'NarvaloBundle.php';
 
 //const VERSION = '%%VERSION%%';
 
-// {{{ Core
+// Core classes.
 
 const HTTP_EOL = "\n";
+
+// {{{ HttpVersion
 
 final class HttpVersion {
   const
     V_1_0 = '1.0',
     V_1_1 = '1.1';
 }
+
+// }}} #############################################################################################
+// {{{ HttpVerb
 
 final class HttpVerb {
   const
@@ -24,6 +29,9 @@ final class HttpVerb {
     DELETE = 'DELETE',
     HEAD   = 'HEAD';
 }
+
+// }}} #############################################################################################
+// {{{ DebugLevel
 
 final class DebugLevel {
   const
@@ -47,6 +55,9 @@ final class DebugLevel {
     return self::JAVASCRIPT | self::STYLESHEET;
   }
 }
+
+// }}} #############################################################################################
+// {{{ HttpError
 
 final class HttpError {
   const
@@ -128,11 +139,17 @@ final class HttpError {
 }
 
 // }}} #############################################################################################
+
+// Addressing.
+
 // {{{ Addr
 
 interface Addr {
   function getUrl();
 }
+
+// }}} #############################################################################################
+// {{{ Url
 
 final class Url {
   private
@@ -150,7 +167,10 @@ final class Url {
 }
 
 // }}} #############################################################################################
-// {{{ Assets
+
+// Assets.
+
+// {{{ AssetProvider
 
 interface AssetProvider {
   /// \return string
@@ -162,6 +182,9 @@ interface AssetProvider {
   /// \return string
   function getStyleUrl($_relativePath_);
 }
+
+// }}} #############################################################################################
+// {{{ SimpleAssetProvider
 
 class SimpleAssetProvider implements AssetProvider {
   function getImageUrl($_relativePath_) {
@@ -176,6 +199,9 @@ class SimpleAssetProvider implements AssetProvider {
     return \sprintf('/assets/css/%s', $_relativePath_);
   }
 }
+
+// }}} #############################################################################################
+// {{{ DefaultAssetProviderParams
 
 class DefaultAssetProviderParams {
   private
@@ -201,6 +227,9 @@ class DefaultAssetProviderParams {
     return $this->_styleVersion;
   }
 }
+
+// }}} #############################################################################################
+// {{{ DefaultAssetProvider
 
 class DefaultAssetProvider implements AssetProvider {
   private $_params;
@@ -230,6 +259,9 @@ class DefaultAssetProvider implements AssetProvider {
   }
 }
 
+// }}} #############################################################################################
+// {{{ AssetManager
+
 final class AssetManager {
   private static $_Provider;
 
@@ -256,6 +288,9 @@ final class AssetManager {
 }
 
 // }}} #############################################################################################
+
+// HTML helpers.
+
 // {{{ HtmlHelper
 
 final class HtmlHelper {
@@ -285,6 +320,9 @@ final class HtmlHelper {
     return self::Tag('a', $_inner_, $_attrs_);
   }
 }
+
+// }}} #############################################################################################
+// {{{ AssetHelper
 
 final class AssetHelper {
   static function Image($_path_, array $_attrs_ = array()) {
@@ -333,7 +371,10 @@ final class AssetHelper {
 }
 
 // }}} #############################################################################################
-// {{{ View
+
+// Views.
+
+// {{{ Broken
 
 //class ViewException extends Exception { }
 //
@@ -428,7 +469,10 @@ final class AssetHelper {
 //}
 
 // }}} #############################################################################################
-// {{{ Action & Controller
+
+// Actions & Controllers.
+
+// {{{ Broken
 
 //class ActionException extends Exception { }
 //

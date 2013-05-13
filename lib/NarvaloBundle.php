@@ -4,13 +4,18 @@ namespace Narvalo;
 
 //const VERSION = '%%VERSION%%';
 
-// {{{ Core
+// Core classes.
+
+// {{{ Exception
 
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
     parent::__construct($_message_, 0, $_innerException_);
   }
 }
+
+// }}} #############################################################################################
+// {{{ ArgumentException
 
 class ArgumentException extends Exception {
   private $_paramName;
@@ -29,15 +34,34 @@ class ArgumentException extends Exception {
   }
 }
 
+// }}} #############################################################################################
+// {{{ RuntimeException
+
 class RuntimeException extends Exception { }
+
+// }}} #############################################################################################
+// {{{ FileNotFoundRuntimeException
 
 class FileNotFoundRuntimeException extends RuntimeException { }
 
+// }}} #############################################################################################
+// {{{ ArgumentNullException
+
 class ArgumentNullException extends ArgumentException { }
+
+// }}} #############################################################################################
+// {{{ InvalidOperationException
 
 class InvalidOperationException extends Exception { }
 
+// }}} #############################################################################################
+// {{{ KeyNotFoundException
+
 class KeyNotFoundException extends Exception { }
+
+// }}} #############################################################################################
+
+// {{{ ObjectType
 
 final class ObjectType {
   const
@@ -54,6 +78,9 @@ final class ObjectType {
     OBJECT     = 12,
     RESOURCE   = 13;
 }
+
+// }}} #############################################################################################
+// {{{ TypeName
 
 class TypeName {
   const
@@ -102,6 +129,9 @@ class TypeName {
     return $this->_namespace . self::DELIMITER . $this->_name;
   }
 }
+
+// }}} #############################################################################################
+// {{{ Type
 
 final class Type {
   /// \brief Return the datatype of $_value_
@@ -181,6 +211,9 @@ final class Type {
   }
 }
 
+// }}} #############################################################################################
+// {{{ DynaLoader
+
 final class DynaLoader {
   const FILE_EXTENSION = '.php';
 
@@ -211,6 +244,10 @@ final class DynaLoader {
   }
 }
 
+// }}} #############################################################################################
+
+// {{{ Guard
+
 final class Guard {
   static function NotEmpty($_value_, $_paramName_) {
     if (empty($_value_)) {
@@ -224,6 +261,10 @@ final class Guard {
     }
   }
 }
+
+// }}} #############################################################################################
+
+// {{{ ReadOnlyDictionary
 
 // TODO: not really ReadOnly, since the derived class can access the private property.
 trait ReadOnlyDictionary {
@@ -247,6 +288,9 @@ trait ReadOnlyDictionary {
   }
 }
 
+// }}} #############################################################################################
+// {{{ Dictionary
+
 trait Dictionary {
   use ReadOnlyDictionary;
 
@@ -261,6 +305,9 @@ trait Dictionary {
 }
 
 // }}} #############################################################################################
+
+// Singleton pattern.
+
 // {{{ Singleton
 
 trait Singleton {
@@ -286,6 +333,9 @@ trait Singleton {
 }
 
 // }}} #############################################################################################
+
+// Borg pattern.
+
 // {{{ Borg
 
 //class Borg {
@@ -315,11 +365,17 @@ class DictionaryBorg {
 }
 
 // }}} #############################################################################################
+
+// Observer pattern.
+
 // {{{ Observer
 
 interface Observer {
   function update(Observable $_observable_);
 }
+
+// }}} #############################################################################################
+// {{{ Observable
 
 class Observable {
   private $_observers;
@@ -344,7 +400,10 @@ class Observable {
 }
 
 // }}} #############################################################################################
-// {{{ Provider
+
+// Provider.
+
+// {{{ ProviderSection
 
 class ProviderSection {
   private
@@ -365,6 +424,9 @@ class ProviderSection {
   }
 }
 
+// }}} #############################################################################################
+// {{{ ProviderHelper
+
 final class ProviderHelper {
   static function InstantiateProvider(ProviderSection $_section_) {
     $providerClass = $_section_->getProviderClass();
@@ -380,13 +442,22 @@ final class ProviderHelper {
 }
 
 // }}} #############################################################################################
-// {{{ Configuration
+
+// Configuration.
+
+// {{{ ConfigurationException
 
 class ConfigurationException extends Exception { }
+
+// }}} #############################################################################################
+// {{{ Configuration
 
 interface Configuration {
   function GetSection($_sectionName_);
 }
+
+// }}} #############################################################################################
+// {{{ ConfigurationManager
 
 final class ConfigurationManager {
   private static
@@ -410,7 +481,10 @@ final class ConfigurationManager {
 }
 
 // }}} #############################################################################################
-// {{{ Miscs
+
+// Miscs.
+
+// {{{ Broken
 
 //class Slice implements \Iterator {
 //  private
@@ -526,12 +600,21 @@ final class ConfigurationManager {
 //}
 
 // }}} #############################################################################################
-// {{{ Diagnostics
+
+// Diagnostics.
+
+// {{{ Broken
 
 // }}} #############################################################################################
-// {{{ Container
+
+// DI container.
+
+// {{{ ContainerException
 
 class ContainerException extends Exception { }
+
+// }}} #############################################################################################
+// {{{ ContainerBuilder
 
 class ContainerBuilder {
   function build() {
@@ -543,6 +626,9 @@ class ContainerBuilder {
   }
 }
 
+// }}} #############################################################################################
+// {{{ Container
+
 class Container {
   function resolve() {
     throw new NotImplementedException();
@@ -550,7 +636,10 @@ class Container {
 }
 
 // }}} #############################################################################################
-// {{{ Caching
+
+// Caching.
+
+// {{{ Cache
 
 interface Cache {
   /// \brief Return TRUE if cache exists, FALSE otherwise
@@ -588,9 +677,15 @@ interface Cache {
 }
 
 // }}} #############################################################################################
-// {{{ Persistence
+
+// Persistence.
+
+// {{{ DBIException
 
 class DBIException extends Exception { }
+
+// }}} #############################################################################################
+// {{{ DBI
 
 interface DBI {
   function open();

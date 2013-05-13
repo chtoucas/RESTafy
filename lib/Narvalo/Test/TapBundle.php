@@ -22,6 +22,7 @@ define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
 // RegEx to find any combination of \r and \n inside a normalized string.
 define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
 
+// FIXME: TapStream should be internal.
 // {{{ TapStream
 
 class TapStream extends Framework\FileStreamWriter {
@@ -54,6 +55,7 @@ class TapStream extends Framework\FileStreamWriter {
 }
 
 // }}} #############################################################################################
+
 // {{{ TapOutStream
 
 final class TapOutStream extends TapStream implements Framework\TestOutStream {
