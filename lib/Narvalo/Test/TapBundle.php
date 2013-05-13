@@ -29,24 +29,22 @@ define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
 // {{{ TapStream
 
 class TapStream extends Framework\FileStreamWriter {
-  const EOL = "\n";
-
   private $_indent = '';
 
   function reset() {
     $this->_indent = '';
   }
 
-  function write($_value_) {
-    return parent::write($this->_indent . $_value_ . self::EOL);
+  function startSubTest() {
+    $this->_indent();
   }
 
-  protected function indent_() {
-    $this->_indent = '    ' . $this->_indent;
+  function endSubTest() {
+    $this->_unindent();
   }
 
-  protected function unindent_() {
-    $this->_indent = \substr($this->_indent, 4);
+  protected function writeTapLine_($_value_) {
+    return $this->writeLine_($this->_indent . $_value_);
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
@@ -54,6 +52,14 @@ class TapStream extends Framework\FileStreamWriter {
     $value = \preg_replace(TRAILING_CRLF_REGEX, '', $_value_);
 
     return $_prefix_ . \preg_replace(MULTILINE_CRLF_REGEX, $prefix, $value);
+  }
+
+  protected function _indent() {
+    $this->_indent = '    ' . $this->_indent;
+  }
+
+  protected function _unindent() {
+    $this->_indent = \substr($this->_indent, 4);
   }
 }
 
@@ -72,18 +78,8 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
     $this->_verbose = $_verbose_;
   }
 
-  /// \return integer
-  function startSubTest() {
-    $this->indent_();
-  }
-
-  /// \return void
-  function endSubTest() {
-    $this->unindent_();
-  }
-
   function writeHeader() {
-    return $this->write('TAP version ' . self::VERSION);
+    return $this->writeTapLine_('TAP version ' . self::VERSION);
   }
 
   function writeFooter() {
@@ -91,23 +87,23 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 
   function writePlan($_num_of_tests_) {
-    return $this->write('1..' . $_num_of_tests_);
+    return $this->writeTapLine_('1..' . $_num_of_tests_);
   }
 
   function writeSkipAll($_reason_) {
-    return $this->write('1..0 skip ' . self::_FormatReason($_reason_));
+    return $this->writeTapLine_('1..0 skip ' . self::_FormatReason($_reason_));
   }
 
   function writeTestCase(Framework\TestCase $_test_, $_number_) {
     $desc = self::_FormatDescription($_test_->getDescription());
     $line = \sprintf('%s %d - %s', $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc);
-    return $this->write($line);
+    return $this->writeTapLine_($line);
   }
 
   function writeTodoTestCase(Framework\TodoTestCase $_test_, $_number_) {
     $reason = self::_FormatReason($_test_->getReason());
     $line = \sprintf('ok %d # SKIP %s', $_number_, $reason);
-    return $this->write($line);
+    return $this->writeTapLine_($line);
   }
 
   function writeSkipTestCase(Framework\SkipTestCase $_test_, $_number_) {
@@ -115,18 +111,18 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
     $reason = self::_FormatReason($_test_->getReason());
     $line = \sprintf('%s %d - %s # TODO %s',
       $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc, $reason);
-    return $this->write($line);
+    return $this->writeTapLine_($line);
   }
 
   function writeBailOut($_reason_) {
-    return $this->write('Bail out! ' . self::_FormatReason($_reason_));
+    return $this->writeTapLine_('Bail out! ' . self::_FormatReason($_reason_));
   }
 
   function writeComment($_comment_) {
     if (!$this->_verbose) {
       return;
     }
-    return $this->write($this->formatMultiLine_('# ', $_comment_));
+    return $this->writeTapLine_($this->formatMultiLine_('# ', $_comment_));
   }
 
   private static function _FormatDescription($_desc_) {
@@ -155,16 +151,8 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 // {{{ TapErrStream
 
 final class TapErrStream extends TapStream implements Framework\TestErrStream {
-  function startSubTest() {
-    $this->indent_();
-  }
-
-  function endSubTest() {
-    $this->unindent_();
-  }
-
   function write($_value_) {
-    return parent::write($this->formatMultiLine_('# ', $_value_));
+    return $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
   }
 }
 
@@ -271,21 +259,25 @@ final class TapHarnessStream
         $statusLine = $_name_ . '... '. $status;
       }
 
-      $this->writeLine($statusLine);
+      $this->writeLine_($statusLine);
 
       if (!$_result_->passed) {
-        $this->writeLine(
+        $this->writeLine_(
           \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
       }
     }
 
     function writeSummary(Runner\TestHarnessSummary $_summary_) {
       if ($_summary_->passed) {
-        $this->writeLine('All tests successful.');
+        $this->writeLine_('All tests successful.');
       }
-      $this->writeLine(
-        \sprintf('Test suites=%s, Tests=%s', $_summary_->suitesCount, $_summary_->testsCount));
-      $this->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
+      $this->writeLine_(
+        \sprintf(
+          'Test suites=%s, Tests=%s, Failures=%s',
+          $_summary_->suitesCount,
+          $_summary_->testsCount,
+          $_summary_->failuresCount));
+      $this->writeLine_(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
     }
   }
 

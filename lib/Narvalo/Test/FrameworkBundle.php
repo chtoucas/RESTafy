@@ -107,6 +107,7 @@ final class TodoTestCase extends AbstractTestCase {
 class FileStreamWriterException extends Narvalo\Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ TestOutStream
 
 interface TestOutStream {
@@ -176,12 +177,12 @@ class FileStreamWriter {
     return $this->_opened && 0 === \fwrite($this->_handle, '');
   }
 
-  function write($_value_) {
+  protected function write_($_value_) {
     return \fwrite($this->_handle, $_value_);
   }
 
-  function writeLine($_value_) {
-    return $this->write($_value_ . \PHP_EOL);
+  protected function writeLine_($_value_) {
+    return $this->write_($_value_ . \PHP_EOL);
   }
 
   protected function cleanup_($_disposing_) {
@@ -199,19 +200,6 @@ class FileStreamWriter {
 // Test producer.
 // #################################################################################################
 
-// {{{ TestResult
-
-final class TestResult {
-  public
-    $passed             = \FALSE,
-    $bailedOut          = \FALSE,
-    $runtimeErrorsCount = 0,
-    $failuresCount      = 0,
-    $testsCount         = 0;
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // {{{ TestProducerInterrupt
 
 class TestProducerInterrupt extends Narvalo\Exception { }
@@ -225,6 +213,19 @@ class SkipAllTestProducerInterrupt extends TestProducerInterrupt { }
 // {{{ BailOutTestProducerInterrupt
 
 class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ TestResult
+
+final class TestResult {
+  public
+    $passed             = \FALSE,
+    $bailedOut          = \FALSE,
+    $runtimeErrorsCount = 0,
+    $failuresCount      = 0,
+    $testsCount         = 0;
+}
 
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TestProducer
@@ -634,6 +635,7 @@ EOL;
 class TestModulesKernelException extends Narvalo\Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ TestModulesKernel
 
 final class TestModulesKernel {
@@ -839,6 +841,7 @@ final class FixedSizeTestSet extends AbstractTestSet {
 class TestWorkflowException extends Narvalo\Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ TestWorkflow
 
 final class TestWorkflow {

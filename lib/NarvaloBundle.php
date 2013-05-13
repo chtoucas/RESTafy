@@ -456,6 +456,7 @@ final class ProviderHelper {
 class ConfigurationException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ Configuration
 
 interface Configuration {
@@ -623,6 +624,7 @@ final class ConfigurationManager {
 class ContainerException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ ContainerBuilder
 
 class ContainerBuilder {
@@ -696,6 +698,7 @@ interface Cache {
 class DBIException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ DBI
 
 interface DBI {
