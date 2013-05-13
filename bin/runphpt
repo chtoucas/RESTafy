@@ -11,7 +11,7 @@ fi
 
 cd ${PROJECT_DIR}
 
-php -n -c ./etc/php.ini -f "$1"
+php -n -c ./etc/phpt.ini -f "$1"
 
 cd - > /dev/null
 

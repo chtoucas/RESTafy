@@ -13,3 +13,14 @@ Narvalo\Test
 * Add to More.php methods to check exception thrown.
 * Create a xUnit-like TestSuite.
 
+Narvalo
+=======
+
+* Not yet working on it.
+
+RESTafy
+=======
+
+* Not yet working on it.
+
+

@@ -140,11 +140,11 @@ use \Narvalo\Test\Framework;
 final class RuntimeErrorCatcher {
   private
     // PHP display_errors on/off.
-    $_phpDisplayErrors,
+    //$_phpDisplayErrors,
     // PHP display_startup_errors on/off.
-    $_phpDisplayStartupErrors,
+    //$_phpDisplayStartupErrors,
     // PHP error reporting level.
-    $_phpErrorReporting,
+    //$_phpErrorReporting,
     $_producer;
 
   function __construct(Framework\TestProducer $_producer_) {
@@ -153,17 +153,17 @@ final class RuntimeErrorCatcher {
 
   function start() {
     // One way or another, we want to see all errors.
-    $this->_phpDisplayStartupErrors = \ini_get('display_startup_errors');
-    $this->_phpDisplayErrors = \ini_get('display_errors');
-    $this->_phpErrorReporting = \ini_get('error_reporting');
+    //$this->_phpDisplayStartupErrors = \ini_get('display_startup_errors');
+    //$this->_phpDisplayErrors = \ini_get('display_errors');
+    //$this->_phpErrorReporting = \ini_get('error_reporting');
 
     //\ini_set('ignore_repeated_source', '1');
     //\ini_set('ignore_repeated_errors', '1');
     //\ini_set('report_memleaks', '1');
     //\ini_set('html_errors', '0');
-    \ini_set('display_startup_errors', '1');
-    \ini_set('display_errors', '1');
-    \error_reporting(\E_ALL);
+    //\ini_set('display_startup_errors', '0');
+    //\ini_set('display_errors', '1');
+    //\error_reporting(\E_ALL);
 
     // Beware we can not catch all errors.
     // See: http://php.net/manual/en/function.set-error-handler.php
@@ -184,9 +184,9 @@ final class RuntimeErrorCatcher {
     // Restore error handler.
     \restore_error_handler();
     // Restore PHP settings.
-    \ini_set('display_startup_errors', $this->_phpDisplayStartupErrors);
-    \ini_set('display_errors', $this->_phpDisplayErrors);
-    \error_reporting($this->_phpErrorReporting);
+    //\ini_set('display_startup_errors', $this->_phpDisplayStartupErrors);
+    //\ini_set('display_errors', $this->_phpDisplayErrors);
+    //\error_reporting($this->_phpErrorReporting);
   }
 }
 

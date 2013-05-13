@@ -1,6 +1,7 @@
 <?php
 
 require_once 'NarvaloBundle.php';
+require_once 'Narvalo\TestBundle.php';
 
 use Narvalo\Test as t;
 use Narvalo\Singleton;
