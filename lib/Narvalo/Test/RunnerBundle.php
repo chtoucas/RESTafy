@@ -50,13 +50,14 @@ class TestRunner {
 
 // }}} #############################################################################################
 
-// {{{ TestHarnessOutStream
+// {{{ TestHarnessStream
 
-interface TestHarnessOutStream {
+interface TestHarnessStream {
   function close();
   function canWrite();
 
   function writeResult($_name_, Framework\TestResult $_result_);
+  // TODO: add failed count.
   function writeSummary($_passed_, $_suites_count_, $_tests_count_);
 }
 
@@ -65,14 +66,11 @@ interface TestHarnessOutStream {
 
 class TestHarness {
   private
-    $_outStream,
+    $_stream,
     $_runner;
 
-  function __construct(
-    TestHarnessOutStream $_outStream_,
-    Framework\TestErrStream $_errStream_ = \NULL
-  ) {
-    $this->_outStream = $_outStream_;
+  function __construct(TestHarnessStream $_stream_, Framework\TestErrStream $_errStream_ = \NULL) {
+    $this->_stream = $_stream_;
 
     $producer = new Framework\TestProducer(
       new _\NoopTestOutStream(),
@@ -92,7 +90,7 @@ class TestHarness {
 
       $result = $this->_runner->run($suite);
 
-      $this->_outStream->writeResult($suite->getName(), $result);
+      $this->_stream->writeResult($suite->getName(), $result);
 
       if (!$result->passed) {
         $tests_passed = \FALSE;
@@ -101,7 +99,7 @@ class TestHarness {
       $tests_count += $result->testsCount;
     }
 
-    $this->_outStream->writeSummary($tests_passed, \count($_files_), $tests_count);
+    $this->_stream->writeSummary($tests_passed, \count($_files_), $tests_count);
   }
 }
 

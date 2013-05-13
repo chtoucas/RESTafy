@@ -337,7 +337,7 @@ class Observable {
   }
 
   function notify() {
-    for ($i = 0, $count = \count($this->_observers); $i < $count, $i++) {
+    for ($i = 0, $count = \count($this->_observers); $i < $count; $i++) {
       $this->_observers[$i]->update($this);
     }
   }

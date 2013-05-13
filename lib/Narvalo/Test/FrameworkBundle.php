@@ -175,7 +175,6 @@ class FileStreamWriter {
   }
 
   function writeLine($_value_) {
-    // TODO: make the eol configurable.
     return $this->write($_value_ . \PHP_EOL);
   }
 
@@ -235,11 +234,11 @@ class TestProducer {
     $_interrupted       = \FALSE,
     $_bailedOut         = \FALSE,
     $_runtimeErrorsCount = 0,
-    // TODO stack level
+    // TO-DO stack level
     $_todoLevel         = 0,
-    // TODO reason
+    // TO-DO reason
     $_todoReason        = '',
-    // TODO stack
+    // TO-DO stack
     $_todoStack         = array();
 
   function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
@@ -392,7 +391,7 @@ EOL;
 
   function startTodo($_reason_) {
     if ($this->_inTodo()) {
-      // Keep the upper-level TODO in memory
+      // Keep the upper-level TO-DO in memory
       \array_push($this->_todoStack, $this->_todoReason);
     }
     $this->_todoReason = $_reason_;
@@ -401,7 +400,7 @@ EOL;
 
   function endTodo() {
     //if (!$this->inTodo()) {
-    //  $this->bailOut('You can not end a TODO block if you did not start one before');
+    //  $this->bailOut('You can not end a TO-DO block if you did not start one before');
     //}
     $this->_endTodo();
     $this->_todoReason = $this->_inTodo() ? \array_pop($this->_todoStack) : '';
@@ -842,7 +841,7 @@ final class TestWorkflow {
     $_state        = self::START,
     $_subStates    = array(),
     $_subTestLevel = 0,
-    // TODO stack level
+    // TO-DO stack level
     $_todoLevel    = 0;
 
   function __destruct() {
@@ -916,7 +915,7 @@ final class TestWorkflow {
     if (0 !== $this->_subTestLevel) {
       throw new TestWorkflowException('There is still an opened subtest in the workflow: ' . $this->_subTestLevel);
     }
-    // Check TODO' level
+    // Check TO-DO' level
     if (0 !== $this->_todoLevel) {
       throw new TestWorkflowException('There is still an opened TODO in the workflow: ' . $this->_subTestLevel);
     }
@@ -945,7 +944,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
     }
-    // FIXME reset TODO level?
+    // FIXME reset TO-DO level?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::HEADER;
     return ++$this->_subTestLevel;

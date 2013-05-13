@@ -70,7 +70,7 @@ final class TapRunner extends Runner\TestRunner {
 
 final class TapHarness extends Runner\TestHarness {
   function __construct() {
-    parent::__construct(new _\TapHarnessOutStream());
+    parent::__construct(new _\TapHarnessStream());
   }
 }
 
@@ -230,11 +230,11 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 // }}} #############################################################################################
 
-// {{{ TapHarnessOutStream
+// {{{ TapHarnessStream
 
-final class TapHarnessOutStream
+final class TapHarnessStream
   extends Framework\FileStreamWriter
-  implements Runner\TestHarnessOutStream
+  implements Runner\TestHarnessStream
   {
     function __construct() {
       parent::__construct('php://stdout');
