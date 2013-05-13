@@ -6,7 +6,7 @@ require_once 'Narvalo/Test/TapBundle.php';
 use \Narvalo\Test\Suites;
 use \Narvalo\Test\Tap;
 
-$runner = new Tap\TapRunner(\TRUE);
+$runner = new Tap\DefaultTapRunner(\TRUE);
 
 $file = 't/arvalo/Test/more-bailout.php';
 //$file = 't/Narvalo/Test/simple-inline.php';

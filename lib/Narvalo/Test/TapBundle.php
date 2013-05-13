@@ -13,7 +13,6 @@ require_once 'Narvalo\Test\RunnerBundle.php';
 
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
-use \Narvalo\Test\Tap\Internal as _;
 
 define('CRLF_REGEX_PART',       '(?:\r|\n)+');
 // RegEx to find any combination of \r and \n in a string.
@@ -22,64 +21,6 @@ define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
 define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
 // RegEx to find any combination of \r and \n inside a normalized string.
 define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
-
-// {{{ TapProducer
-
-final class TapProducer extends Framework\TestProducer {
-  const
-    SUCCESS_CODE = 0,
-    FATAL_CODE   = 255;
-
-  function __construct($_verbose_) {
-    parent::__construct(new _\TapOutStream($_verbose_), new _\TapErrStream());
-  }
-
-  protected function shutdownCore_() {
-    $exit_code = $this->getExitCode_();
-
-    exit($exit_code);
-  }
-
-  protected function getExitCode_() {
-    if ($this->getRuntimeErrorsCount() > 0) {
-      return self::FATAL_CODE;
-    } else if ($this->passed()) {
-      return self::SUCCESS_CODE;
-    } else if ($this->bailedOut()) {
-      return self::FATAL_CODE;
-    } else if (($count = $this->getFailuresCount()) > 0) {
-      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
-    } else {
-      // Other kind of errors: extra tests, unattended interrupt.
-      return self::FATAL_CODE;
-    }
-  }
-}
-
-// }}} #############################################################################################
-// {{{ TapRunner
-
-final class TapRunner extends Runner\TestRunner {
-  function __construct($_verbose_) {
-    parent::__construct(new TapProducer($_verbose_));
-  }
-}
-
-// }}} #############################################################################################
-// {{{ TapHarness
-
-final class TapHarness extends Runner\TestHarness {
-  function __construct() {
-    parent::__construct(new _\TapHarnessStream());
-  }
-}
-
-// }}} #############################################################################################
-
-namespace Narvalo\Test\Tap\Internal;
-
-use \Narvalo\Test\Framework;
-use \Narvalo\Test\Runner;
 
 // {{{ TapStream
 
@@ -120,8 +61,8 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 
   private $_verbose;
 
-  function __construct($_verbose_) {
-    parent::__construct('php://stdout');
+  function __construct($_path_, $_verbose_) {
+    parent::__construct($_path_);
 
     $this->_verbose = $_verbose_;
   }
@@ -209,16 +150,10 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 // {{{ TapErrStream
 
 final class TapErrStream extends TapStream implements Framework\TestErrStream {
-  function __construct() {
-    parent::__construct('php://stderr');
-  }
-
-  /// \return integer
   function startSubTest() {
     $this->indent_();
   }
 
-  /// \return void
   function endSubTest() {
     $this->unindent_();
   }
@@ -236,10 +171,6 @@ final class TapHarnessStream
   extends Framework\FileStreamWriter
   implements Runner\TestHarnessStream
   {
-    function __construct() {
-      parent::__construct('php://stdout');
-    }
-
     function writeResult($_name_, Framework\TestResult $_result_) {
       if ($_result_->passed) {
         $status = 'ok';
@@ -279,6 +210,89 @@ final class TapHarnessStream
       $this->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
     }
   }
+
+// }}}
+
+// {{{ TapProducer
+
+class TapProducer extends Framework\TestProducer {
+  const
+    SUCCESS_CODE = 0,
+    FATAL_CODE   = 255;
+
+  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
+    parent::__construct($_outStream_, $_errStream_);
+  }
+
+  protected function shutdownCore_() {
+    $exit_code = $this->getExitCode_();
+
+    exit($exit_code);
+  }
+
+  protected function getExitCode_() {
+    if ($this->getRuntimeErrorsCount() > 0) {
+      return self::FATAL_CODE;
+    } else if ($this->passed()) {
+      return self::SUCCESS_CODE;
+    } else if ($this->bailedOut()) {
+      return self::FATAL_CODE;
+    } else if (($count = $this->getFailuresCount()) > 0) {
+      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
+    } else {
+      // Other kind of errors: extra tests, unattended interrupt.
+      return self::FATAL_CODE;
+    }
+  }
+}
+
+// }}} #############################################################################################
+// {{{ DefaultTapProducer
+
+final class DefaultTapProducer extends TapProducer {
+  function __construct($_verbose_) {
+    parent::__construct(
+      new TapOutStream('php://stdout', $_verbose_), new TapErrStream('php://stderr'));
+  }
+}
+
+// }}} #############################################################################################
+
+// {{{ TapRunner
+
+class TapRunner extends Runner\TestRunner {
+  function __construct(TapProducer $_producer_) {
+    parent::__construct($_producer_);
+  }
+}
+
+// }}} #############################################################################################
+// {{{ DefaultTapRunner
+
+class DefaultTapRunner extends TapRunner {
+  function __construct($_verbose_) {
+    parent::__construct(new DefaultTapProducer($_verbose_));
+  }
+}
+
+// }}} #############################################################################################
+
+// {{{ TapHarness
+
+class TapHarness extends Runner\TestHarness {
+  function __construct(TapHarnessStream $_stream_) {
+    parent::__construct($_stream_);
+  }
+}
+
+// }}} #############################################################################################
+// {{{ DefaultTapHarness
+
+final class DefaultTapHarness extends Runner\TestHarness {
+  function __construct() {
+    parent::__construct(new TapHarnessStream('php://stdout'));
+  }
+}
 
 // }}} #############################################################################################
 

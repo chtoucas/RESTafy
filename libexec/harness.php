@@ -4,7 +4,7 @@ require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo\Test\Tap;
 
-$harness = new Tap\TapHarness();
+$harness = new Tap\DefaultTapHarness();
 $harness->executeTestFiles(array(
   't/i-do-not-exist.php',
   't/Narvalo/Test/more-bailout.php',
