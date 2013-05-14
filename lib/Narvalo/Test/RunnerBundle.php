@@ -81,15 +81,33 @@ interface TestHarnessStream {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TestHarness
 
+abstract class FileRegexFilter extends \RecursiveRegexIterator {
+  protected $regex;
+  public function __construct(\RecursiveIterator $it, $regex) {
+    $this->regex = $regex;
+    parent::__construct($it, $regex);
+  }
+}
+
+class FilenameFilter extends FileRegexFilter {
+  public function accept() {
+    return !$this->isFile() || \preg_match($this->regex, $this->getFilename());
+  }
+}
+
+class DirnameFilter extends FileRegexFilter {
+  public function accept() {
+    return !$this->isDir() || \preg_match($this->regex, $this->getFilename());
+  }
+}
+
 class TestHarness {
   private
     $_stream,
-    $_runner,
-    $_summary;
+    $_runner;
 
   function __construct(TestHarnessStream $_stream_, Framework\TestErrStream $_errStream_ = \NULL) {
     $this->_stream = $_stream_;
-    $this->_summary = new TestHarnessSummary();
 
     $producer = new Framework\TestProducer(
       new _\NoopTestOutStream(),
@@ -98,57 +116,56 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  function scanDirectoryAndExecute($_directory_, $_filter_ = '/^.+\.phpt$/i') {
-    $it = new \RegexIterator(
-      new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($_directory_)),
-      $_filter_,
-      \RecursiveRegexIterator::GET_MATCH);
+  // TODO: Use an iterator of TestSuite.
+  function execute(\Iterator $_it_) {
+    $summary = new TestHarnessSummary();
 
-    foreach ($it as $path => $_) {
-      $this->execute_(new Suites\FileTestSuite($path));
+    foreach ($_it_ as $path) {
+      $suite = new Suites\FileTestSuite($path);
+
+      $result = $this->_runner->run($suite);
+
+      $this->_stream->writeResult($suite->getName(), $result);
+
+      if ($summary->passed && !$result->passed) {
+        $summary->passed = \FALSE;
+      }
+
+      $summary->suitesCount++;
+      $summary->failedSuitesCount += $result->passed ? 0 : 1;
+      $summary->testsCount        += $result->testsCount;
+      $summary->failedTestsCount  += $result->failuresCount;
     }
 
-    $summary = $this->getSummary_();
     $this->_stream->writeSummary($summary);
-
-    $this->reset_();
     return $summary;
+  }
+
+  function scanDirectoryAndExecute($_directory_, $_filter_ = '/^.+\.phpt$/i') {
+    // http://stackoverflow.com/questions/3321547/help-using-regexiterator-in-php
+    $directory = new \RecursiveDirectoryIterator($_directory_);
+    //$it = new FilenameFilter($directory, '/\.(?:phpt)$/');
+    $it = new FilenameFilter($directory, $_filter_);
+
+    /* $it = new \RecursiveRegexIterator(
+      //new \RecursiveIteratorIterator(
+      new \RecursiveDirectoryIterator($_directory_),
+      //),
+      $_filter_,
+      \RecursiveRegexIterator::GET_MATCH);
+     */
+
+    foreach (new \RecursiveIteratorIterator($it) as $file_info) {
+      echo $file_info->getFilename(), "\n";
+    }
+
+    exit();
+
+    return $this->execute($it);
   }
 
   function executeTestFiles(array $_files_) {
-    for ($i = 0, $count = \count($_files_); $i < $count; $i++) {
-      $this->execute_(new Suites\FileTestSuite($_files_[$i]));
-    }
-
-    $summary = $this->getSummary_();
-    $this->_stream->writeSummary($summary);
-
-    $this->reset_();
-    return $summary;
-  }
-
-  protected function reset_() {
-    $this->_summary = new TestHarnessSummary();
-  }
-
-  protected function execute_(Suites\TestSuite $_suite_) {
-    $this->_summary->suitesCount++;
-
-    $result = $this->_runner->run($_suite_);
-
-    $this->_stream->writeResult($_suite_->getName(), $result);
-
-    if ($this->_summary->passed && !$result->passed) {
-      $this->_summary->passed = \FALSE;
-    }
-
-    $this->_summary->failedSuitesCount += $result->passed ? 0 : 1;
-    $this->_summary->testsCount        += $result->testsCount;
-    $this->_summary->failedTestsCount  += $result->failuresCount;
-  }
-
-  protected function getSummary_() {
-    return clone $this->_summary;
+    return $this->execute(new \ArrayIterator($_files_));
   }
 }
 
