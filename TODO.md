@@ -13,6 +13,7 @@ Narvalo\Test
 * Failed include directive produce two error messages.
 * Add to More.php methods to check exception thrown.
 * Create a xUnit-like TestSuite.
+* BUG: if we run the harness twice in a row, it fails.
 
 Narvalo
 =======

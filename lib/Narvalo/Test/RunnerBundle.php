@@ -81,26 +81,6 @@ interface TestHarnessStream {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TestHarness
 
-abstract class FileRegexFilter extends \RecursiveRegexIterator {
-  protected $regex;
-  public function __construct(\RecursiveIterator $it, $regex) {
-    $this->regex = $regex;
-    parent::__construct($it, $regex);
-  }
-}
-
-class FilenameFilter extends FileRegexFilter {
-  public function accept() {
-    return !$this->isFile() || \preg_match($this->regex, $this->getFilename());
-  }
-}
-
-class DirnameFilter extends FileRegexFilter {
-  public function accept() {
-    return !$this->isDir() || \preg_match($this->regex, $this->getFilename());
-  }
-}
-
 class TestHarness {
   private
     $_stream,
@@ -116,13 +96,10 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  // TODO: Use an iterator of TestSuite.
-  function execute(\Iterator $_it_) {
+  function executeTestSuites(Suites\TestSuiteIterator $_it_) {
     $summary = new TestHarnessSummary();
 
-    foreach ($_it_ as $path) {
-      $suite = new Suites\FileTestSuite($path);
-
+    foreach ($_it_ as $suite) {
       $result = $this->_runner->run($suite);
 
       $this->_stream->writeResult($suite->getName(), $result);
@@ -141,31 +118,16 @@ class TestHarness {
     return $summary;
   }
 
-  function scanDirectoryAndExecute($_directory_, $_filter_ = '/^.+\.phpt$/i') {
-    // http://stackoverflow.com/questions/3321547/help-using-regexiterator-in-php
-    $directory = new \RecursiveDirectoryIterator($_directory_);
-    //$it = new FilenameFilter($directory, '/\.(?:phpt)$/');
-    $it = new FilenameFilter($directory, $_filter_);
+  function executeTestFiles(array $_paths_) {
+    $it = Suites\TestSuiteIteratorFactory::CreateFromPaths($_paths_);
 
-    /* $it = new \RecursiveRegexIterator(
-      //new \RecursiveIteratorIterator(
-      new \RecursiveDirectoryIterator($_directory_),
-      //),
-      $_filter_,
-      \RecursiveRegexIterator::GET_MATCH);
-     */
-
-    foreach (new \RecursiveIteratorIterator($it) as $file_info) {
-      echo $file_info->getFilename(), "\n";
-    }
-
-    exit();
-
-    return $this->execute($it);
+    return $this->executeTestSuites($it);
   }
 
-  function executeTestFiles(array $_files_) {
-    return $this->execute(new \ArrayIterator($_files_));
+  function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
+    $it = Suites\TestSuiteIteratorFactory::CreateFromDirectory($_directory_, $_file_ext_);
+
+    return $this->executeTestSuites($it);
   }
 }
 
@@ -174,6 +136,7 @@ class TestHarness {
 namespace Narvalo\Test\Runner\Internal;
 
 use \Narvalo\Test\Framework;
+use \Narvalo\Test\Suites;
 
 // Utilities.
 // #################################################################################################
