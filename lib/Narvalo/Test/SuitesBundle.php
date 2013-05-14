@@ -81,9 +81,8 @@ interface TestSuiteIterator extends \Iterator {
 final class TestSuiteIteratorFactory {
   static function CreateFromDirectory($_directory_, $_file_ext_) {
     $it  = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
-    $regex = '{^.+\.' . $_file_ext_ . '$}i';
 
-    return new TestSuiteIteratorFromDirectory($it, $regex);
+    return new TestSuiteIteratorFromDirectory($it, '{\.' . $_file_ext_ . '$}i');
   }
 
   static function CreateFromPaths(array $_paths_) {
