@@ -71,7 +71,7 @@ class FileTestSuite extends AbstractTestSuite {
 
 // {{{ TestSuiteIterator
 
-// FIXME: This is really a bad design.
+// FIXME: This is really a bad design, generics please!!!!
 interface TestSuiteIterator extends \Iterator {
 }
 
