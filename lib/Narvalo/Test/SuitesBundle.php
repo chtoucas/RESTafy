@@ -129,7 +129,7 @@ namespace Narvalo\Test\Suites\Internal;
 class FilenameFilterIterator extends \RecursiveRegexIterator  {
   protected $regex_;
 
-  function __construct(\RecursiveIterator $_it_, $_regex_) {
+  function __construct(\RecursiveDirectoryIterator $_it_, $_regex_) {
     parent::__construct($_it_, $_regex_);
 
     $this->regex_ = $_regex_;
