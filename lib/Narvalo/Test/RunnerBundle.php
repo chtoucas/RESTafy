@@ -144,33 +144,13 @@ use \Narvalo\Test\Suites;
 // {{{ RuntimeErrorCatcher
 
 final class RuntimeErrorCatcher {
-  private
-    // PHP display_errors on/off.
-    //$_phpDisplayErrors,
-    // PHP display_startup_errors on/off.
-    //$_phpDisplayStartupErrors,
-    // PHP error reporting level.
-    //$_phpErrorReporting,
-    $_producer;
+  private $_producer;
 
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer = $_producer_;
   }
 
   function start() {
-    // One way or another, we want to see all errors.
-    //$this->_phpDisplayStartupErrors = \ini_get('display_startup_errors');
-    //$this->_phpDisplayErrors = \ini_get('display_errors');
-    //$this->_phpErrorReporting = \ini_get('error_reporting');
-
-    //\ini_set('ignore_repeated_source', '1');
-    //\ini_set('ignore_repeated_errors', '1');
-    //\ini_set('report_memleaks', '1');
-    //\ini_set('html_errors', '0');
-    //\ini_set('display_startup_errors', '0');
-    //\ini_set('display_errors', '1');
-    //\error_reporting(\E_ALL);
-
     // Beware we can not catch all errors.
     // See: http://php.net/manual/en/function.set-error-handler.php
     // The following error types cannot be handled with a user defined
@@ -179,6 +159,7 @@ final class RuntimeErrorCatcher {
     // the file where set_error_handler() is called.
     $producer = $this->_producer;
 
+    // Override the error handler.
     \set_error_handler(
       function($errno , $errstr, $errfile, $errline, $errcontext) use ($producer) {
         $producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
@@ -187,12 +168,8 @@ final class RuntimeErrorCatcher {
   }
 
   function stop() {
-    // Restore error handler.
+    // Restore the error handler.
     \restore_error_handler();
-    // Restore PHP settings.
-    //\ini_set('display_startup_errors', $this->_phpDisplayStartupErrors);
-    //\ini_set('display_errors', $this->_phpDisplayErrors);
-    //\error_reporting($this->_phpErrorReporting);
   }
 }
 
