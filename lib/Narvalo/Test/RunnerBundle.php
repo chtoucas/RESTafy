@@ -94,18 +94,19 @@ class TestHarness {
   }
 
   function executeSets(array $_sets_) {
-    return $this->_execute(new \ArrayIterator($_sets_));
+    return $this->execute_(new \ArrayIterator($_sets_));
   }
 
   function executeFiles(array $_paths_) {
-    return $this->_execute(new Sets\FileTestSetIterator($_paths_));
+    return $this->execute_(new Sets\FileTestSetIterator($_paths_));
   }
 
   function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
-    return $this->_execute(Sets\InDirectoryFileTestSetIterator::FromPath($_directory_, $_file_ext_));
+    return $this->execute_(
+      Sets\InDirectoryFileTestSetIterator::FromPath($_directory_, $_file_ext_));
   }
 
-  private function _execute(\Iterator $_it_) {
+  protected function execute_(\Iterator $_it_) {
     $summary = new TestHarnessSummary();
 
     foreach ($_it_ as $set) {
@@ -149,10 +150,10 @@ final class RuntimeErrorCatcher {
   }
 
   function start() {
-    // Beware we can not catch all errors.
-    // See: http://php.net/manual/en/function.set-error-handler.php
-    // The following error types cannot be handled with a user defined
-    // function: E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
+    // Beware one can not catch all errors.
+    // Cf. http://php.net/manual/en/function.set-error-handler.php
+    // The following error types cannot be handled with a user defined function:
+    // E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
     // E_COMPILE_ERROR, E_COMPILE_WARNING, and most of E_STRICT raised in
     // the file where set_error_handler() is called.
     $producer = $this->_producer;

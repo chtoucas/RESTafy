@@ -26,22 +26,27 @@ interface TestSet {
 // {{{ TestSuite
 
 class TestSuite implements TestSet {
-  protected function __construct() {
-    ;
+  private static $_MethodNamesToExclude;
+  private
+    $_name,
+    $_testMethods;
+
+  final function __construct() {
+    $this->_selfInspect();
   }
 
-  function getName() {
-    throw new Narvalo\NotImplementedException();
+  final function getName() {
+    return $this->_name;
   }
 
-  function run() {
-    setup();
-    run_();
-    teardown();
-  }
+  final function run() {
+    $this->setup();
 
-  function run_() {
-    throw new Narvalo\NotImplementedException();
+    foreach ($this->_testMethods as $method) {
+      $method->invoke($this);
+    }
+
+    $this->teardown();
   }
 
   // Fixtures.
@@ -52,6 +57,34 @@ class TestSuite implements TestSet {
 
   function teardown() {
     ;
+  }
+
+  private static function & _GetMethodNamesToExclude() {
+    if (NULL === self::$_MethodNamesToExclude) {
+      $rfl = new \ReflectionClass(__CLASS__);
+
+      self::$_MethodNamesToExclude
+        = \array_flip(\array_map(
+          function($_method_) { return $_method_->getName(); },
+          $rfl->getMethods()
+        ));
+    }
+
+    return self::$_MethodNamesToExclude;
+  }
+
+  private function _selfInspect() {
+    $rfl = new \ReflectionObject($this);
+
+    $this->_name = $rfl->getName();
+
+    $names_to_exclude =& self::_GetMethodNamesToExclude();
+
+    $this->_testMethods = \array_filter(
+      $rfl->getMethods(),
+      function($_method_) use ($names_to_exclude) {
+        return !\array_key_exists($_method_->getName(), $names_to_exclude);
+      });
   }
 }
 
