@@ -7,8 +7,8 @@ require_once 'NarvaloBundle.php';
 use \Narvalo;
 use \Narvalo\Test\Suites\Internal as _;
 
-// Core classes.
-// #################################################################################################
+// Core classes
+// =================================================================================================
 
 // {{{ TestSuite
 
@@ -43,9 +43,6 @@ abstract class AbstractTestSuite implements TestSuite {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Custom test suites.
-// #################################################################################################
-
 // {{{ FileTestSuite
 
 class FileTestSuite extends AbstractTestSuite {
@@ -66,12 +63,12 @@ class FileTestSuite extends AbstractTestSuite {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Iterators.
-// #################################################################################################
+// Iterators
+// =================================================================================================
 
 // {{{ TestSuiteIterator
 
-// FIXME: This is really a bad design, generics please!!!!
+// FIXME: This is really a bad design!!!!
 interface TestSuiteIterator extends \Iterator {
 }
 
@@ -121,6 +118,8 @@ class TestSuiteIteratorFromDirectory
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+
+// #################################################################################################
 
 namespace Narvalo\Test\Suites\Internal;
 

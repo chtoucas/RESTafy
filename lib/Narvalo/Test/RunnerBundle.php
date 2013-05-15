@@ -11,8 +11,8 @@ use \Narvalo\Test\Framework;
 use \Narvalo\Test\Suites;
 use \Narvalo\Test\Runner\Internal as _;
 
-// Test runner.
-// #################################################################################################
+// Test runner
+// =================================================================================================
 
 // {{{ TestRunner
 
@@ -53,8 +53,8 @@ class TestRunner {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Test harness.
-// #################################################################################################
+// Test harness
+// =================================================================================================
 
 // {{{ TestHarnessSummary
 
@@ -96,7 +96,7 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  function executeTestSuites(Suites\TestSuiteIterator $_it_) {
+  function execute(Suites\TestSuiteIterator $_it_) {
     $summary = new TestHarnessSummary();
 
     foreach ($_it_ as $suite) {
@@ -121,25 +121,31 @@ class TestHarness {
   function executeTestFiles(array $_paths_) {
     $it = Suites\TestSuiteIteratorFactory::CreateFromPaths($_paths_);
 
-    return $this->executeTestSuites($it);
+    return $this->execute($it);
   }
 
-  function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
+  function executeTestSuites(array $_suites_) {
+    return new \ArrayIterator($_suites_);
+  }
+
+  function scanDirectoryAndExecuteTests($_directory_, $_file_ext_ = 'phpt') {
     $it = Suites\TestSuiteIteratorFactory::CreateFromDirectory($_directory_, $_file_ext_);
 
-    return $this->executeTestSuites($it);
+    return $this->execute($it);
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+
+// #################################################################################################
 
 namespace Narvalo\Test\Runner\Internal;
 
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Suites;
 
-// Utilities.
-// #################################################################################################
+// Utilities
+// =================================================================================================
 
 // {{{ RuntimeErrorCatcher
 
@@ -175,8 +181,8 @@ final class RuntimeErrorCatcher {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Noop streams.
-// #################################################################################################
+// Noop streams
+// =================================================================================================
 
 // {{{ NoopTestOutStream
 
