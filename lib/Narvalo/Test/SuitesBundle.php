@@ -69,8 +69,7 @@ class FileTestSuite extends AbstractTestSuite {
 // {{{ TestSuiteIterator
 
 // FIXME: This is really a bad design!!!!
-interface TestSuiteIterator extends \Iterator {
-}
+interface TestSuiteIterator extends \Iterator { }
 
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TestSuiteIteratorFactory
@@ -79,7 +78,7 @@ final class TestSuiteIteratorFactory {
   static function CreateFromDirectory($_directory_, $_file_ext_) {
     $it  = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
 
-    return new TestSuiteIteratorFromDirectory($it, '{\.' . $_file_ext_ . '$}i');
+    return new TestSuiteIteratorFromDirectory($it, $_file_ext_);
   }
 
   static function CreateFromPaths(array $_paths_) {
@@ -108,8 +107,8 @@ class TestSuiteIteratorFromDirectory
   extends \RecursiveIteratorIterator
   implements TestSuiteIterator
 {
-  function __construct(\RecursiveDirectoryIterator $_it_, $_regex_) {
-    parent::__construct(new _\FilenameFilterIterator($_it_, $_regex_));
+  function __construct(\RecursiveDirectoryIterator $_it_, $_file_ext_) {
+    parent::__construct(new _\RecursiveFileExtensionFilterIterator($_it_, $_file_ext_));
   }
 
   function current() {
@@ -123,21 +122,32 @@ class TestSuiteIteratorFromDirectory
 
 namespace Narvalo\Test\Suites\Internal;
 
-// {{{ FilenameFilterIterator
+// {{{ RecursiveFileExtensionFilterIterator
 
-class FilenameFilterIterator extends \RecursiveRegexIterator  {
-  protected $regex_;
+class RecursiveFileExtensionFilterIterator extends \RecursiveFilterIterator {
+  private
+    $_fileExt,
+    $_length;
 
-  function __construct(\RecursiveDirectoryIterator $_it_, $_regex_) {
-    parent::__construct($_it_, $_regex_);
+  function __construct(\RecursiveDirectoryIterator $_it_, $_file_ext_) {
+    parent::__construct($_it_);
 
-    $this->regex_ = $_regex_;
+    $this->_fileExt = $_file_ext_;
+    $this->_length  = \strlen($_file_ext_);
   }
 
   function accept() {
     $current = $this->getInnerIterator()->current();
 
-    return !$current->isFile() || \preg_match($this->regex_, $current->getFilename());
+    return $this->hasChildren() || !$current->isFile() || $this->_match($current->getFilename());
+  }
+
+  function getChildren() {
+    return new self($this->getInnerIterator()->getChildren(), $this->_fileExt);
+  }
+
+  private function _match($_value_) {
+    return \substr($_value_, - $this->_length) === $this->_fileExt;
   }
 }
 
