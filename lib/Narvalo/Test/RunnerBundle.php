@@ -83,11 +83,15 @@ class TestHarness {
     $_stream,
     $_runner;
 
-  function __construct(TestHarnessStream $_stream_, Framework\TestErrStream $_errStream_ = \NULL) {
+  function __construct(
+    TestHarnessStream $_stream_,
+    Framework\TestOutStream $_outStream_ = \NULL,
+    Framework\TestErrStream $_errStream_ = \NULL
+  ) {
     $this->_stream = $_stream_;
 
     $producer = new Framework\TestProducer(
-      new _\NoopTestOutStream(),
+      $_outStream_ ?: new _\NoopTestOutStream(),
       $_errStream_ ?: new _\NoopTestErrStream());
 
     $this->_runner = new TestRunner($producer);
@@ -101,9 +105,9 @@ class TestHarness {
     return $this->execute_(new Sets\FileTestSetIterator($_paths_));
   }
 
-  function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
+  function scanDirectoryAndExecute($_path_, $_file_ext_ = 'phpt') {
     return $this->execute_(
-      Sets\InDirectoryFileTestSetIterator::FromPath($_directory_, $_file_ext_));
+      Sets\InDirectoryFileTestSetIterator::FromPath($_path_, $_file_ext_));
   }
 
   protected function execute_(\Iterator $_it_) {

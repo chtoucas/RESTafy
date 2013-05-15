@@ -26,11 +26,9 @@ interface TestSet {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// xUnit-like test set
-// =================================================================================================
-
 // {{{ TestSuite
 
+/// \brief xUnit-like test set
 class TestSuite implements TestSet {
   private static $_MethodNamesToExclude;
   private
@@ -146,8 +144,10 @@ class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
     parent::__construct(new _\RecursiveFileExtensionFilterIterator($_it_, $_file_ext_));
   }
 
-  static function FromPath($_directory_, $_file_ext_) {
-    $it = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
+  static function FromPath($_path, $_file_ext_) {
+    $it = new \RecursiveDirectoryIterator(
+      $_path,
+      \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS);
 
     return new self($it, $_file_ext_);
   }
