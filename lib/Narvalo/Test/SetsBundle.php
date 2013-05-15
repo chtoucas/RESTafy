@@ -1,36 +1,57 @@
 <?php
 
-namespace Narvalo\Test\Suites;
+namespace Narvalo\Test\Sets;
 
 require_once 'NarvaloBundle.php';
 
 use \Narvalo;
-use \Narvalo\Test\Suites\Internal as _;
+use \Narvalo\Test\Sets\Internal as _;
 
 // Core classes
 // =================================================================================================
 
-// {{{ TestSuite
+// {{{ TestSet
 
-interface TestSuite {
+interface TestSet {
   function getName();
 
-  function setup();
-  function execute();
-  function teardown();
+  function run();
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ AbstractTestSuite
 
-abstract class AbstractTestSuite implements TestSuite {
+// {{{ TestSetIterator
+
+// FIXME: This is really a bad design!!!!
+interface TestSetIterator extends \Iterator { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// xUnit-like test set
+// =================================================================================================
+
+// {{{ TestSuite
+
+class TestSuite implements TestSet {
   protected function __construct() {
     ;
   }
 
-  abstract function execute();
+  function getName() {
+    throw new Narvalo\NotImplementedException();
+  }
 
-  abstract function getName();
+  function run() {
+    setup();
+    run_();
+    teardown();
+  }
+
+  function run_() {
+    throw new Narvalo\NotImplementedException();
+  }
+
+  // Fixtures.
 
   function setup() {
     ;
@@ -43,9 +64,12 @@ abstract class AbstractTestSuite implements TestSuite {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ FileTestSuite
+// File-based test set
+// =================================================================================================
 
-class FileTestSuite extends AbstractTestSuite {
+// {{{ FileTestSet
+
+class FileTestSet implements TestSet {
   private $_path;
 
   function __construct($_path_) {
@@ -56,63 +80,41 @@ class FileTestSuite extends AbstractTestSuite {
     return $this->_path;
   }
 
-  function execute() {
+  function run() {
     Narvalo\DynaLoader::LoadFile($this->_path);
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Iterators
-// =================================================================================================
+// {{{ FileTestSetIterator
 
-// {{{ TestSuiteIterator
-
-// FIXME: This is really a bad design!!!!
-interface TestSuiteIterator extends \Iterator { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TestSuiteIteratorFactory
-
-final class TestSuiteIteratorFactory {
-  static function CreateFromDirectory($_directory_, $_file_ext_) {
-    $it  = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
-
-    return new TestSuiteIteratorFromDirectory($it, $_file_ext_);
-  }
-
-  static function CreateFromPaths(array $_paths_) {
-    return new TestSuiteIteratorFromPaths($_paths_);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TestSuiteIteratorFromPaths
-
-class TestSuiteIteratorFromPaths extends \IteratorIterator implements TestSuiteIterator {
+class FileTestSetIterator extends \IteratorIterator implements TestSetIterator {
   function __construct(array $_paths_) {
     parent::__construct(new \ArrayIterator($_paths_));
   }
 
   function current() {
-    return new FileTestSuite(parent::current());
+    return new FileTestSet(parent::current());
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TestSuiteIteratorFromDirectory
+// {{{ InDirectoryFileTestSetIterator
 
-class TestSuiteIteratorFromDirectory
-  extends \RecursiveIteratorIterator
-  implements TestSuiteIterator
-{
+class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator implements TestSetIterator {
   function __construct(\RecursiveDirectoryIterator $_it_, $_file_ext_) {
     parent::__construct(new _\RecursiveFileExtensionFilterIterator($_it_, $_file_ext_));
   }
 
+  static function FromPath($_directory_, $_file_ext_) {
+    $it  = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
+
+    return new self($it, $_file_ext_);
+  }
+
   function current() {
-    return new FileTestSuite(parent::current()->getPathname());
+    return new FileTestSet(parent::current()->getPathname());
   }
 }
 
@@ -120,20 +122,20 @@ class TestSuiteIteratorFromDirectory
 
 // #################################################################################################
 
-namespace Narvalo\Test\Suites\Internal;
+namespace Narvalo\Test\Sets\Internal;
 
 // {{{ RecursiveFileExtensionFilterIterator
 
 class RecursiveFileExtensionFilterIterator extends \RecursiveFilterIterator {
   private
     $_fileExt,
-    $_length;
+    $_fileExtLength;
 
   function __construct(\RecursiveDirectoryIterator $_it_, $_file_ext_) {
     parent::__construct($_it_);
 
-    $this->_fileExt = $_file_ext_;
-    $this->_length  = \strlen($_file_ext_);
+    $this->_fileExt       = $_file_ext_;
+    $this->_fileExtLength = \strlen($_file_ext_);
   }
 
   function accept() {
@@ -147,7 +149,7 @@ class RecursiveFileExtensionFilterIterator extends \RecursiveFilterIterator {
   }
 
   private function _match($_value_) {
-    return \substr($_value_, - $this->_length) === $this->_fileExt;
+    return \substr($_value_, - $this->_fileExtLength) === $this->_fileExt;
   }
 }
 

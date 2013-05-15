@@ -4,11 +4,11 @@ namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo\Test\FrameworkBundle.php';
-require_once 'Narvalo\Test\SuitesBundle.php';
+require_once 'Narvalo\Test\SetsBundle.php';
 
 use \Narvalo;
 use \Narvalo\Test\Framework;
-use \Narvalo\Test\Suites;
+use \Narvalo\Test\Sets;
 use \Narvalo\Test\Runner\Internal as _;
 
 // Test runner
@@ -29,22 +29,19 @@ class TestRunner {
     Framework\TestKernel::Bootstrap($_producer_);
   }
 
-  function run(Suites\TestSuite $_suite_) {
-    Narvalo\Guard::NotNull($_suite_, 'suite');
+  function run(Sets\TestSet $_set_) {
+    Narvalo\Guard::NotNull($_set_, 'set');
 
     $this->_producer->startup();
     $this->_errorCatcher->start();
 
     try {
-      $_suite_->setup();
-      $_suite_->execute();
+      $_set_->run();
     } catch (Framework\TestProducerInterrupt $e) {
       ;
     } catch (\Exception $e) {
       $this->_producer->bailOutOnException($e);
     }
-
-    $_suite_->teardown();
 
     $this->_errorCatcher->stop();
     return $this->_producer->shutdown();
@@ -60,11 +57,11 @@ class TestRunner {
 
 class TestHarnessSummary {
   public
-    $passed            = \FALSE,
-    $suitesCount       = 0,
-    $failedSuitesCount = 0,
-    $testsCount        = 0,
-    $failedTestsCount  = 0;
+    $passed           = \FALSE,
+    $setsCount        = 0,
+    $failedSetsCount  = 0,
+    $testsCount       = 0,
+    $failedTestsCount = 0;
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -74,7 +71,7 @@ interface TestHarnessStream {
   function close();
   function canWrite();
 
-  function writeResult($_name_, Framework\TestResult $_result_);
+  function writeResult($_name_, Framework\TestSetResult $_result_);
   function writeSummary(TestHarnessSummary $_summary_);
 }
 
@@ -96,42 +93,38 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  function execute(Suites\TestSuiteIterator $_it_) {
+  function execute(Sets\TestSetIterator $_it_) {
     $summary = new TestHarnessSummary();
 
-    foreach ($_it_ as $suite) {
-      $result = $this->_runner->run($suite);
+    foreach ($_it_ as $set) {
+      $result = $this->_runner->run($set);
 
-      $this->_stream->writeResult($suite->getName(), $result);
+      $this->_stream->writeResult($set->getName(), $result);
 
       if ($summary->passed && !$result->passed) {
         $summary->passed = \FALSE;
       }
 
-      $summary->suitesCount++;
-      $summary->failedSuitesCount += $result->passed ? 0 : 1;
-      $summary->testsCount        += $result->testsCount;
-      $summary->failedTestsCount  += $result->failuresCount;
+      $summary->setsCount++;
+      $summary->failedSetsCount  += $result->passed ? 0 : 1;
+      $summary->testsCount       += $result->testsCount;
+      $summary->failedTestsCount += $result->failuresCount;
     }
 
     $this->_stream->writeSummary($summary);
     return $summary;
   }
 
-  function executeTestFiles(array $_paths_) {
-    $it = Suites\TestSuiteIteratorFactory::CreateFromPaths($_paths_);
-
-    return $this->execute($it);
+  function executeSets(array $_sets_) {
+    return $this->execute(new \ArrayIterator($_sets_));
   }
 
-  function executeTestSuites(array $_suites_) {
-    return new \ArrayIterator($_suites_);
+  function executeFiles(array $_paths_) {
+    return $this->execute(new Sets\FileTestSetIterator($_paths_));
   }
 
-  function scanDirectoryAndExecuteTests($_directory_, $_file_ext_ = 'phpt') {
-    $it = Suites\TestSuiteIteratorFactory::CreateFromDirectory($_directory_, $_file_ext_);
-
-    return $this->execute($it);
+  function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
+    return $this->execute(Sets\InDirectoryFileTestSetIterator::FromPath($_directory_, $_file_ext_));
   }
 }
 
@@ -142,7 +135,6 @@ class TestHarness {
 namespace Narvalo\Test\Runner\Internal;
 
 use \Narvalo\Test\Framework;
-use \Narvalo\Test\Suites;
 
 // Utilities
 // =================================================================================================
@@ -223,15 +215,15 @@ final class NoopTestOutStream implements Framework\TestOutStream {
     ;
   }
 
-  function writeTestCase(Framework\TestCase $_test_, $_number_) {
+  function writeTestCaseResult(Framework\TestCaseResult $_test_, $_number_) {
     ;
   }
 
-  function writeTodoTestCase(Framework\TodoTestCase $_test_, $_number_) {
+  function writeTodoTestCaseResult(Framework\TodoTestCaseResult $_test_, $_number_) {
     ;
   }
 
-  function writeSkipTestCase(Framework\SkipTestCase $_test_, $_number_) {
+  function writeSkipTestCaseResult(Framework\SkipTestCaseResult $_test_, $_number_) {
     ;
   }
 

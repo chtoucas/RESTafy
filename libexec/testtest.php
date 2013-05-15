@@ -1,9 +1,9 @@
 <?php
 
-require_once 'Narvalo/Test/SuitesBundle.php';
+require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
-use \Narvalo\Test\Suites;
+use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
 $runner = new Tap\DefaultTapRunner(\TRUE);
@@ -19,6 +19,6 @@ $file = 't/Narvalo/Test/more-complex.php';
 //$file = 't/Narvalo/Test/more-autorun.php';
 $file = 't/i-do-not-exist.php';
 
-$runner->run(new Suites\FileTestSuite($file));
+$runner->run(new Sets\FileTestSet($file));
 
 // EOF

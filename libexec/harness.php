@@ -6,10 +6,11 @@ use \Narvalo\Test\Tap;
 
 $harness = new Tap\DefaultTapHarness();
 
-$harness->scanDirectoryAndExecuteTests('t');
+$harness->scanDirectoryAndExecute('t');
+
 exit();
 
-$harness->executeTestFiles(array(
+$harness->executeFiles(array(
   't/Narvalo/Test/more-noplan.phpt',
   't/Narvalo/Test/more-plan.phpt',
 ));

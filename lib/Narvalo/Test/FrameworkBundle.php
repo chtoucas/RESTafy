@@ -7,12 +7,12 @@ require_once 'NarvaloBundle.php';
 use \Narvalo;
 use \Narvalo\Test\Framework\Internal as _;
 
-// Test cases
+// Test results
 // =================================================================================================
 
-// {{{ TestCase
+// {{{ TestCaseResult
 
-interface TestCase {
+interface TestCaseResult {
   /// The test's description
   /// \return string
   function getDescription();
@@ -23,9 +23,9 @@ interface TestCase {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTestCase
+// {{{ DefaultTestCaseResult
 
-final class DefaultTestCase implements TestCase {
+final class DefaultTestCaseResult implements TestCaseResult {
   private
     $_description,
     $_passed;
@@ -45,9 +45,9 @@ final class DefaultTestCase implements TestCase {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ AbstractTestCase
+// {{{ AbstractTestCaseResult
 
-abstract class AbstractTestCase implements TestCase {
+abstract class AbstractTestCaseResult implements TestCaseResult {
   private $_reason;
 
   protected function __construct($_reason_) {
@@ -60,9 +60,9 @@ abstract class AbstractTestCase implements TestCase {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipTestCase
+// {{{ SkipTestCaseResult
 
-final class SkipTestCase extends AbstractTestCase {
+final class SkipTestCaseResult extends AbstractTestCaseResult {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
@@ -77,12 +77,12 @@ final class SkipTestCase extends AbstractTestCase {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TodoTestCase
+// {{{ TodoTestCaseResult
 
-final class TodoTestCase extends AbstractTestCase {
+final class TodoTestCaseResult extends AbstractTestCaseResult {
   private $_inner;
 
-  function __construct(TestCase $_inner_, $_reason_) {
+  function __construct(TestCaseResult $_inner_, $_reason_) {
     parent::__construct($_reason_);
 
     $this->_inner  = $_inner_;
@@ -95,6 +95,19 @@ final class TodoTestCase extends AbstractTestCase {
   function passed() {
     return $this->_inner->passed();
   }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ TestSetResult
+
+final class TestSetResult {
+  public
+    $passed             = \FALSE,
+    $bailedOut          = \FALSE,
+    $runtimeErrorsCount = 0,
+    $failuresCount      = 0,
+    $testsCount         = 0;
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -122,9 +135,9 @@ interface TestOutStream {
   function writeFooter();
   function writePlan($_num_of_tests_);
   function writeSkipAll($_reason_);
-  function writeTestCase(TestCase $_test_, $_number_);
-  function writeTodoTestCase(TodoTestCase $_test_, $_number_);
-  function writeSkipTestCase(SkipTestCase $_test_, $_number_);
+  function writeTestCaseResult(TestCaseResult $_test_, $_number_);
+  function writeTodoTestCaseResult(TodoTestCaseResult $_test_, $_number_);
+  function writeSkipTestCaseResult(SkipTestCaseResult $_test_, $_number_);
   function writeBailOut($_reason_);
   function writeComment($_comment_);
 }
@@ -216,18 +229,6 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TestResult
-
-final class TestResult {
-  public
-    $passed             = \FALSE,
-    $bailedOut          = \FALSE,
-    $runtimeErrorsCount = 0,
-    $failuresCount      = 0,
-    $testsCount         = 0;
-}
-
-// }}} ---------------------------------------------------------------------------------------------
 // {{{ TestProducer
 
 class TestProducer {
@@ -255,7 +256,7 @@ class TestProducer {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
     // NB: Until we have a plan, we use a dynamic test set.
-    $this->_set       = new _\DynamicTestSet();
+    $this->_set       = new _\DynamicTestResultSet();
     $this->_workflow  = new _\TestWorkflow();
   }
 
@@ -301,7 +302,7 @@ class TestProducer {
 
   function shutdown() {
     if (!$this->_interrupted) {
-      $this->_endTestSet();
+      $this->_endTestResultSet();
       $this->_addFooter();
     }
 
@@ -317,7 +318,7 @@ class TestProducer {
   // Test methods.
 
   function skipAll($_reason_) {
-    $this->_set = new _\EmptyTestSet();
+    $this->_set = new _\EmptyTestResultSet();
     $this->_addSkipAll($_reason_);
     $this->_addFooter();
     $this->_skipAllInterrupt();
@@ -336,7 +337,7 @@ class TestProducer {
       $this->bailOut('Number of tests must be a strictly positive integer. '
         . "You gave it '$_how_many_'.");
     }
-    $this->_set = new _\FixedSizeTestSet($_how_many_);
+    $this->_set = new _\FixedSizeTestResultSet($_how_many_);
     $this->_addPlan($_how_many_);
   }
 
@@ -349,14 +350,14 @@ class TestProducer {
   /// \param $_description_ <string> Test description
   /// \return TRUE if test passed, FALSE otherwise
   function assert($_test_, $_description_) {
-    $test = new DefaultTestCase($_description_, \TRUE === $_test_);
+    $test = new DefaultTestCaseResult($_description_, \TRUE === $_test_);
     if ($this->_inTodo()) {
-      $test = new TodoTestCase($test, $this->_todoReason);
+      $test = new TodoTestCaseResult($test, $this->_todoReason);
       $number = $this->_set->addTest($test);
-      $this->_addTodoTestCase($test, $number);
+      $this->_addTodoTestCaseResult($test, $number);
     } else {
       $number = $this->_set->addTest($test);
-      $this->_addTestCase($test, $number);
+      $this->_addTestCaseResult($test, $number);
     }
 
     if (!$test->passed()) {
@@ -384,19 +385,19 @@ EOL;
   function skip($_how_many_, $_reason_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       $errmsg = 'The number of skipped tests must be a strictly positive integer';
-      if ($this->_set instanceof _\FixedSizeTestSet) {
+      if ($this->_set instanceof _\FixedSizeTestResultSet) {
         $this->bailOut($errmsg);
       } else {
-        $this->Warn($errmsg); return;
+        $this->warn($errmsg); return;
       }
     }
     if ($this->_inTodo()) {
       $this->bailOut('You can not interlace a SKIP directive with a TO-DO block');
     }
-    $test = new SkipTestCase($_reason_);
+    $test = new SkipTestCaseResult($_reason_);
     for ($i = 1; $i <= $_how_many_; $i++) {
       $number = $this->_set->addTest($test);
-      $this->_addSkipTestCase($test, $number);
+      $this->_addSkipTestCaseResult($test, $number);
     }
   }
 
@@ -420,20 +421,20 @@ EOL;
   // FIXME: If the subtest exit, it will stop the whole test.
   function subTest(\Closure $_fun_, $_description_) {
   //function subTest($_m_, \Closure $_fun_, $_description_) {
-    // Switch to a new TestSet.
+    // Switch to a new TestResultSet.
     $set = $this->_set;
-    $this->_set = new _\DynamicTestSet();
+    $this->_set = new _\DynamicTestResultSet();
     // Notify outputs.
     $this->_startSubTest();
     // Execute the subtests.
     $_fun_();
     //
-    $this->_endTestSet();
+    $this->_endTestResultSet();
     // Restore outputs.
     $this->_endsubTest();
     //
     $passed = $this->_set->passed();
-    // Restore the TestSet.
+    // Restore the TestResultSet.
     $this->_set = $set;
     // Report the result to the parent producer.
     $this->assert($passed, $_description_);
@@ -485,7 +486,7 @@ EOL;
   }
 
   private function _createResult() {
-    $result = new TestResult();
+    $result = new TestSetResult();
     $result->passed             = $this->passed();
     $result->bailedOut          = $this->_bailedOut;
     $result->runtimeErrorsCount = $this->_runtimeErrorsCount;
@@ -500,7 +501,7 @@ EOL;
   }
 
   private function _postPlan() {
-    if ($this->_set instanceof _\DynamicTestSet
+    if ($this->_set instanceof _\DynamicTestResultSet
       && ($tests_count = $this->_set->getTestsCount()) > 0
     ) {
       // We actually run tests.
@@ -508,7 +509,7 @@ EOL;
     }
   }
 
-  private function _endTestSet() {
+  private function _endTestResultSet() {
     $this->_postPlan();
 
     // Print helpful messages if something went wrong.
@@ -516,7 +517,7 @@ EOL;
   }
 
   private function _reset() {
-    $this->_set         = new _\DynamicTestSet();
+    $this->_set         = new _\DynamicTestResultSet();
     $this->_bailedOut   = \FALSE;
     $this->_todoLevel   = 0;
     $this->_todoReason  = '';
@@ -596,19 +597,19 @@ EOL;
     $this->_outStream->writeSkipAll($_reason_);
   }
 
-  private function _addTestCase(TestCase $_test_, $_number_) {
-    $this->_workflow->enterTestCase();
-    $this->_outStream->writeTestCase($_test_, $_number_);
+  private function _addTestCaseResult(TestCaseResult $_test_, $_number_) {
+    $this->_workflow->enterTestCaseResult();
+    $this->_outStream->writeTestCaseResult($_test_, $_number_);
   }
 
-  private function _addTodoTestCase(TodoTestCase $_test_, $_number_) {
-    $this->_workflow->enterTestCase();
-    $this->_outStream->writeTodoTestCase($_test_, $_number_);
+  private function _addTodoTestCaseResult(TodoTestCaseResult $_test_, $_number_) {
+    $this->_workflow->enterTestCaseResult();
+    $this->_outStream->writeTodoTestCaseResult($_test_, $_number_);
   }
 
-  private function _addSkipTestCase(SkipTestCase $_test_, $_number_) {
-    $this->_workflow->enterTestCase();
-    $this->_outStream->writeSkipTestCase($_test_, $_number_);
+  private function _addSkipTestCaseResult(SkipTestCaseResult $_test_, $_number_) {
+    $this->_workflow->enterTestCaseResult();
+    $this->_outStream->writeSkipTestCaseResult($_test_, $_number_);
   }
 
   private function _addBailOut($_reason_) {
@@ -688,12 +689,12 @@ namespace Narvalo\Test\Framework\Internal;
 use \Narvalo;
 use \Narvalo\Test\Framework;
 
-// Test sets
+// Test result sets
 // =================================================================================================
 
-// {{{ AbstractTestSet
+// {{{ AbstractTestResultSet
 
-abstract class AbstractTestSet {
+abstract class AbstractTestResultSet {
   private
     // Number of failed tests.
     $_failuresCount = 0,
@@ -716,7 +717,7 @@ abstract class AbstractTestSet {
 
   abstract function passed();
 
-  function addTest(Framework\TestCase $_test_) {
+  function addTest(Framework\TestCaseResult $_test_) {
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
@@ -727,9 +728,9 @@ abstract class AbstractTestSet {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ EmptyTestSet
+// {{{ EmptyTestResultSet
 
-final class EmptyTestSet extends AbstractTestSet {
+final class EmptyTestResultSet extends AbstractTestResultSet {
   function __construct() {
     ;
   }
@@ -742,15 +743,15 @@ final class EmptyTestSet extends AbstractTestSet {
     ;
   }
 
-  final function addTest(Framework\TestCase $_test_) {
+  final function addTest(Framework\TestCaseResult $_test_) {
     return 0;
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ DynamicTestSet
+// {{{ DynamicTestResultSet
 
-final class DynamicTestSet extends AbstractTestSet {
+final class DynamicTestResultSet extends AbstractTestResultSet {
   function __construct() {
     ;
   }
@@ -778,9 +779,9 @@ final class DynamicTestSet extends AbstractTestSet {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ FixedSizeTestSet
+// {{{ FixedSizeTestResultSet
 
-final class FixedSizeTestSet extends AbstractTestSet {
+final class FixedSizeTestResultSet extends AbstractTestResultSet {
   // Number of expected tests.
   private $_length;
 
@@ -1071,7 +1072,7 @@ final class TestWorkflow {
     }
   }
 
-  function enterTestCase() {
+  function enterTestCaseResult() {
     switch ($this->_state) {
       // Allowed state.
     case self::HEADER:

@@ -94,19 +94,19 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
     return $this->writeTapLine_('1..0 skip ' . self::_FormatReason($_reason_));
   }
 
-  function writeTestCase(Framework\TestCase $_test_, $_number_) {
+  function writeTestCaseResult(Framework\TestCaseResult $_test_, $_number_) {
     $desc = self::_FormatDescription($_test_->getDescription());
     $line = \sprintf('%s %d - %s', $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc);
     return $this->writeTapLine_($line);
   }
 
-  function writeTodoTestCase(Framework\TodoTestCase $_test_, $_number_) {
+  function writeTodoTestCaseResult(Framework\TodoTestCaseResult $_test_, $_number_) {
     $reason = self::_FormatReason($_test_->getReason());
     $line = \sprintf('ok %d # SKIP %s', $_number_, $reason);
     return $this->writeTapLine_($line);
   }
 
-  function writeSkipTestCase(Framework\SkipTestCase $_test_, $_number_) {
+  function writeSkipTestCaseResult(Framework\SkipTestCaseResult $_test_, $_number_) {
     $desc   = self::_FormatDescription($_test_->getDescription());
     $reason = self::_FormatReason($_test_->getReason());
     $line = \sprintf('%s %d - %s # TODO %s',
@@ -237,7 +237,7 @@ final class TapHarnessStream
   extends Framework\FileStreamWriter
   implements Runner\TestHarnessStream
   {
-    function writeResult($_name_, Framework\TestResult $_result_) {
+    function writeResult($_name_, Framework\TestSetResult $_result_) {
       if ($_result_->passed) {
         $status = 'ok';
       } else {
@@ -273,9 +273,9 @@ final class TapHarnessStream
       }
       $this->writeLine_(
         \sprintf(
-          'Suites=%s, Failures=%s',
-          $_summary_->suitesCount,
-          $_summary_->failedSuitesCount));
+          'Sets=%s, Failures=%s',
+          $_summary_->setsCount,
+          $_summary_->failedSetsCount));
       $this->writeLine_(
         \sprintf(
           'Tests=%s, Failures=%s',
