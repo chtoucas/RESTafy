@@ -10,6 +10,12 @@ use \Narvalo\Test\Sets\Internal as _;
 // Core classes
 // =================================================================================================
 
+// {{{ TestSetException
+
+class TestSetException extends Narvalo\Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // {{{ TestSet
 
 interface TestSet {
@@ -32,11 +38,31 @@ class TestSuite implements TestSet {
     $_testMethods;
 
   final function __construct() {
-    $this->_selfInspect();
+    $names_to_exclude =& self::_GetMethodNamesToExclude();
+
+    $rfl = new \ReflectionObject($this);
+
+    $this->_name = $rfl->getName();
+
+    // All public methods in a derived class are considered to be a unit test case.
+    $this->_testMethods = \array_filter(
+      $rfl->getMethods(\ReflectionMethod::IS_PUBLIC),
+      function($_method_) use ($names_to_exclude) {
+        return !\array_key_exists($_method_->getName(), $names_to_exclude);
+      });
+
+    if (empty($this->_testMethods)) {
+      throw new TestSetException(\sprintf('No test case found in "%s"', $this->_name));
+    }
   }
 
   final function getName() {
     return $this->_name;
+  }
+
+  static function AutoRun() {
+    $me = new static();
+    $me->run();
   }
 
   final function run() {
@@ -49,7 +75,7 @@ class TestSuite implements TestSet {
     $this->teardown();
   }
 
-  // Fixtures.
+  // Test fixtures.
 
   function setup() {
     ;
@@ -63,6 +89,7 @@ class TestSuite implements TestSet {
     if (NULL === self::$_MethodNamesToExclude) {
       $rfl = new \ReflectionClass(__CLASS__);
 
+      // We mark as excluded all methods in TestSuite.
       self::$_MethodNamesToExclude
         = \array_flip(\array_map(
           function($_method_) { return $_method_->getName(); },
@@ -71,20 +98,6 @@ class TestSuite implements TestSet {
     }
 
     return self::$_MethodNamesToExclude;
-  }
-
-  private function _selfInspect() {
-    $rfl = new \ReflectionObject($this);
-
-    $this->_name = $rfl->getName();
-
-    $names_to_exclude =& self::_GetMethodNamesToExclude();
-
-    $this->_testMethods = \array_filter(
-      $rfl->getMethods(),
-      function($_method_) use ($names_to_exclude) {
-        return !\array_key_exists($_method_->getName(), $names_to_exclude);
-      });
   }
 }
 
@@ -134,7 +147,7 @@ class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
   }
 
   static function FromPath($_directory_, $_file_ext_) {
-    $it  = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
+    $it = new \RecursiveDirectoryIterator($_directory_, \FilesystemIterator::SKIP_DOTS);
 
     return new self($it, $_file_ext_);
   }
