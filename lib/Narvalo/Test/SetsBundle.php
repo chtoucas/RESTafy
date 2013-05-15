@@ -20,13 +20,6 @@ interface TestSet {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TestSetIterator
-
-// FIXME: This is really a bad design!!!!
-interface TestSetIterator extends \Iterator { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // xUnit-like test set
 // =================================================================================================
 
@@ -89,7 +82,7 @@ class FileTestSet implements TestSet {
 
 // {{{ FileTestSetIterator
 
-class FileTestSetIterator extends \IteratorIterator implements TestSetIterator {
+class FileTestSetIterator extends \IteratorIterator {
   function __construct(array $_paths_) {
     parent::__construct(new \ArrayIterator($_paths_));
   }
@@ -102,7 +95,7 @@ class FileTestSetIterator extends \IteratorIterator implements TestSetIterator {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ InDirectoryFileTestSetIterator
 
-class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator implements TestSetIterator {
+class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
   function __construct(\RecursiveDirectoryIterator $_it_, $_file_ext_) {
     parent::__construct(new _\RecursiveFileExtensionFilterIterator($_it_, $_file_ext_));
   }

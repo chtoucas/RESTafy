@@ -93,7 +93,19 @@ class TestHarness {
     $this->_runner = new TestRunner($producer);
   }
 
-  function execute(Sets\TestSetIterator $_it_) {
+  function executeSets(array $_sets_) {
+    return $this->_execute(new \ArrayIterator($_sets_));
+  }
+
+  function executeFiles(array $_paths_) {
+    return $this->_execute(new Sets\FileTestSetIterator($_paths_));
+  }
+
+  function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
+    return $this->_execute(Sets\InDirectoryFileTestSetIterator::FromPath($_directory_, $_file_ext_));
+  }
+
+  private function _execute(\Iterator $_it_) {
     $summary = new TestHarnessSummary();
 
     foreach ($_it_ as $set) {
@@ -113,18 +125,6 @@ class TestHarness {
 
     $this->_stream->writeSummary($summary);
     return $summary;
-  }
-
-  function executeSets(array $_sets_) {
-    return $this->execute(new \ArrayIterator($_sets_));
-  }
-
-  function executeFiles(array $_paths_) {
-    return $this->execute(new Sets\FileTestSetIterator($_paths_));
-  }
-
-  function scanDirectoryAndExecute($_directory_, $_file_ext_ = 'phpt') {
-    return $this->execute(Sets\InDirectoryFileTestSetIterator::FromPath($_directory_, $_file_ext_));
   }
 }
 
