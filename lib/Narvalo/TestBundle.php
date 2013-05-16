@@ -5,20 +5,15 @@ namespace Narvalo\Test;
 
 use \Narvalo\Test\Internal as _;
 
-/*!
- * When you are not yet sure of the number of tests to run.
- * Only useful during development phase.
- */
+/// When you are not yet sure of the number of tests to run.
+/// Only useful during development phase.
 function no_plan() {
   _\check_plan(\TRUE);
   _\start_no_plan();
 }
 
-/*!
- * Declare the number of tests to run
- *
- * \param $_max_ (integer) Number of tests
- */
+/// Declare the number of tests to run
+/// \param $_max_ (integer) Number of tests
 function plan($_max_) {
   _\check_plan(\TRUE);
 
@@ -28,18 +23,14 @@ function plan($_max_) {
     _\start_plan($max);
 
     echo "1..$max\n";
-  }
-  elseif (0 === $max) {
+  } elseif (0 === $max) {
     _\test_die('You said to run 0 tests');
-  }
-  else {
+  } else {
     _\test_die("Number of tests must be a positive integer. You gave it '$max'");
   }
 }
 
-/*!
- * Skip all tests
- */
+/// Skip all tests
 function skip_all($_reason_) {
   //$reason = isset($_arg_) ? "# $_arg_" : '';
   echo "1..0 $_reason_\n";
@@ -70,11 +61,9 @@ function ok($_test_, $_name_ = '') {
 
   if (empty($_name_)) {
     $name = '';
-  }
-  elseif ('#' === \substr($_name_, 0, 1)) {
+  } elseif ('#' === \substr($_name_, 0, 1)) {
     $name = $_name_;
-  }
-  else {
+  } else {
     $name = "- $_name_";
   }
 
@@ -88,8 +77,7 @@ function ok($_test_, $_name_ = '') {
     echo "ok $test->num_of_tests $name\n";
 
     $test->num_of_successes++;
-  }
-  else {
+  } else {
     echo "not ok $test->num_of_tests $name\n";
 
     $test->num_of_failures++;
@@ -107,8 +95,7 @@ function ok($_test_, $_name_ = '') {
     ) {
       $file = $calltree['0']['file'];
       $line = $calltree['0']['line'];
-    }
-    else {
+    } else {
       $file = $calltree['1']['file'];
       $line = $calltree['1']['line'];
     }
@@ -250,8 +237,7 @@ function can_ok($_obj_, $_methods_) {
 
   if ($passed) {
     ok(\TRUE, "method_exists(\$_obj_, ...)");
-  }
-  else {
+  } else {
     ok(\FALSE, "method_exists(\$_obj_, ...)");
 
     while (list(, $error) = each($errors)) {
@@ -299,12 +285,6 @@ function fail($_name_ = '') {
   return ok(\FALSE, $_name_);
 }
 
-function panic() {
-  // TODO: panic() not implemented.
-
-  _\check_plan();
-}
-
 function include_ok($_library_) {
   _\check_plan();
 
@@ -322,7 +302,7 @@ function dl_ok($_extension_) {
 
   _\check_plan();
 
-  return ok(dl($_extension_));
+  return ok(\dl($_extension_));
 }
 
 function is_deeply() {
@@ -378,8 +358,7 @@ function check_plan($_planning_ = \FALSE) {
     } else {
       $planned = \TRUE;
     }
-  }
-  else {
+  } else {
     if (!$planned) {
       test_die('You did not make any plan!');
     }
@@ -462,8 +441,7 @@ function __no_plan_shutdown() {
   if ($test->num_of_failures > 0) {
     diag("Looks like you failed {$test->num_of_failures} tests of {$test->num_of_tests}.");
     $exit_code = min(FATAL_CODE - 1, $test->num_of_failures);
-  }
-  else {
+  } else {
     $exit_code = SUCCESS_CODE;
   }
 
@@ -478,20 +456,17 @@ function __plan_shutdown() {
   if ($diff > 0) {
     $num_extra = $diff;
     diag("Looks like you planned {$test->num_of_expected_tests} tests but only ran {$test->num_of_tests}.");
-  }
-  elseif ($diff < 0) {
+  } elseif ($diff < 0) {
     $num_extra = - $diff;
     diag("Looks like you planned {$test->num_of_expected_tests} tests but ran $num_extra extra.");
-  }
-  else {
+  } else {
     $num_extra = 0;
   }
 
   if ($test->num_of_failures > 0) {
     diag("Looks like you failed {$test->num_of_failures} tests of {$test->num_of_tests}.");
     $exit_code = \min(FATAL_CODE - 1, $test->num_of_failures + $num_extra);
-  }
-  else {
+  } else {
     $exit_code = $num_extra > 0 ? FATAL_CODE : SUCCESS_CODE;
   }
 

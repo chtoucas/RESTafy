@@ -70,7 +70,8 @@ class More {
       break;
     default:
       $this->getProducer()->assert(\FALSE, $_description_);
-      $this->getProducer()->diagnose("Unrecognized comparison operator: {$_type_}");
+      $this->getProducer()->diagnose(
+        \sprintf('Unrecognized comparison operator: %s.', $_type_));
       return;
     }
 

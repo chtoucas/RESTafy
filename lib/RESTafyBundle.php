@@ -2,7 +2,7 @@
 
 namespace RESTafy;
 
-require_once 'NarvaloBundle.php';
+//require_once 'NarvaloBundle.php';
 
 //const VERSION = '%%VERSION%%';
 
