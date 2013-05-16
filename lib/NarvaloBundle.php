@@ -14,6 +14,18 @@ class Exception extends \Exception {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+
+// {{{ RuntimeException
+
+class RuntimeException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ FileNotFoundRuntimeException
+
+class FileNotFoundRuntimeException extends RuntimeException { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // {{{ ArgumentException
 
 class ArgumentException extends Exception {
@@ -34,21 +46,12 @@ class ArgumentException extends Exception {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ RuntimeException
-
-class RuntimeException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileNotFoundRuntimeException
-
-class FileNotFoundRuntimeException extends RuntimeException { }
-
-// }}} ---------------------------------------------------------------------------------------------
 // {{{ ArgumentNullException
 
 class ArgumentNullException extends ArgumentException { }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ InvalidOperationException
 
 class InvalidOperationException extends Exception { }
@@ -493,6 +496,112 @@ final class ConfigurationManager {
 // Miscs
 // =================================================================================================
 
+// Diagnostics
+// ================================================================================================
+
+// DI container
+// =================================================================================================
+
+// {{{ ContainerException
+
+class ContainerException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ ContainerBuilder
+
+class ContainerBuilder {
+  function build() {
+    throw new NotImplementedException();
+  }
+
+  function register() {
+    throw new NotImplementedException();
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ Container
+
+class Container {
+  function resolve() {
+    throw new NotImplementedException();
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// Caching
+// =================================================================================================
+
+// {{{ Cache
+
+interface Cache {
+  /// \brief Return TRUE if cache exists, FALSE otherwise
+  /// \param $_id_ (string) Cache Id
+  /// \param $_namespace_ (string) Cache namespace
+  /// \param $_test_validity_ (boolean) Check the cache validity
+  /// \return (boolean) TRUE if cache exists, FALSE otherwise
+  function has($_id_, $_namespace_, $_test_ = \TRUE);
+
+  /// \brief Return cached data on success, NULL if no available cache
+  /// \param $_id_ (string) Cache Id
+  /// \param $_namespace_ (string) Cache namespace
+  /// \param $_test_validity_ (boolean) Check the cache validity
+  /// \return (mixed)
+  function get($_id_, $_namespace_, $_test_ = \TRUE);
+
+  /// \brief Put $_data_ into the cache
+  /// \param $_id_ (string) Cache Id
+  /// \param $_namespace_ (string) Cache namespace
+  /// \param $_data_ (string) Data to be cached
+  /// \return (boolean) TRUE on success, FALSE otherwise
+  function put($_id_, $_namespace_, $_data_);
+
+  /// \brief Delete cache
+  /// \param $_id_ (string) Cache Id
+  /// \param $_namespace_ (string) Cache namespace
+  /// \return (boolean) TRUE on success, FALSE otherwise
+  function remove($_id_, $_namespace_);
+
+  /// \brief Get last modified time for cache
+  /// \param $_id_ (string) Cache Id
+  /// \param $_namespace_ (string) Cache namespace
+  /// \return (string) Last modified time
+  function getLastModified($_id_, $_namespace_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// Persistence
+// =================================================================================================
+
+// {{{ DBIException
+
+class DBIException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ DBI
+
+interface DBI {
+  function open();
+  function close();
+  //function open($_opts_);
+  //function selectDb($_db_);
+  //function quote($_str_);
+  //function & query($_sql_);
+  //function prepare($_sql_);
+  //function & execute();
+  //function fetchRowArray();
+  //function fetchRowHash();
+  //function commit();
+  //function rollback();
+  //function finish();
+}
+
+// }}}
+
 // {{{ Broken
 
 //class Slice implements \Iterator {
@@ -609,115 +718,5 @@ final class ConfigurationManager {
 //}
 
 // }}} ---------------------------------------------------------------------------------------------
-
-// Diagnostics
-// ================================================================================================
-
-// {{{ Broken
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// DI container
-// =================================================================================================
-
-// {{{ ContainerException
-
-class ContainerException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ ContainerBuilder
-
-class ContainerBuilder {
-  function build() {
-    throw new NotImplementedException();
-  }
-
-  function register() {
-    throw new NotImplementedException();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Container
-
-class Container {
-  function resolve() {
-    throw new NotImplementedException();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// Caching
-// =================================================================================================
-
-// {{{ Cache
-
-interface Cache {
-  /// \brief Return TRUE if cache exists, FALSE otherwise
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \param $_test_validity_ (boolean) Check the cache validity
-  /// \return (boolean) TRUE if cache exists, FALSE otherwise
-  function has($_id_, $_namespace_, $_test_ = \TRUE);
-
-  /// \brief Return cached data on success, NULL if no available cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \param $_test_validity_ (boolean) Check the cache validity
-  /// \return (mixed)
-  function get($_id_, $_namespace_, $_test_ = \TRUE);
-
-  /// \brief Put $_data_ into the cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \param $_data_ (string) Data to be cached
-  /// \return (boolean) TRUE on success, FALSE otherwise
-  function put($_id_, $_namespace_, $_data_);
-
-  /// \brief Delete cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \return (boolean) TRUE on success, FALSE otherwise
-  function remove($_id_, $_namespace_);
-
-  /// \brief Get last modified time for cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \return (string) Last modified time
-  function getLastModified($_id_, $_namespace_);
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// Persistence
-// =================================================================================================
-
-// {{{ DBIException
-
-class DBIException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ DBI
-
-interface DBI {
-  function open();
-  function close();
-  //function open($_opts_);
-  //function selectDb($_db_);
-  //function quote($_str_);
-  //function & query($_sql_);
-  //function prepare($_sql_);
-  //function & execute();
-  //function fetchRowArray();
-  //function fetchRowHash();
-  //function commit();
-  //function rollback();
-  //function finish();
-}
-
-// }}}
 
 // EOF

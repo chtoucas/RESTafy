@@ -10,7 +10,8 @@ Narvalo\Test
 * Currently, one can not create a new test module inside a subtest.
 * In a subtest, the line number from the backtrace is incorrect.
 * Failed include directive produce two error messages.
-* Add to More.php methods to check exception thrown.
+* Add timers to Harness & Runner
+* Add methods to More.php to check exception thrown.
 * BUG: if we run the harness twice in a row, it fails.
 
 Narvalo
