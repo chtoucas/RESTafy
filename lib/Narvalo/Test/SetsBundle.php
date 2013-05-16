@@ -25,18 +25,26 @@ interface TestSet {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ TestFixture
+
+interface TestFixture {
+  function setup();
+  function teardown();
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ TestSuite
 
-/// \brief xUnit-like test set
-class TestSuite implements TestSet {
+/// \brief A very simple xUnit-like test set.
+class TestSuite implements TestSet, TestFixture {
   private static $_MethodNamesToExclude;
   private
     $_name,
     $_testMethods;
 
   final function __construct() {
-    $names_to_exclude =& self::_GetMethodNamesToExclude();
+    self::_Initialize();
 
     $rfl = new \ReflectionObject($this);
 
@@ -45,12 +53,15 @@ class TestSuite implements TestSet {
     // All public methods in a derived class are considered to be a unit test case.
     $this->_testMethods = \array_filter(
       $rfl->getMethods(\ReflectionMethod::IS_PUBLIC),
-      function($_method_) use ($names_to_exclude) {
-        return !\array_key_exists($_method_->getName(), $names_to_exclude);
+      function($_method_) {
+        return !\array_key_exists($_method_->getName(), self::$_MethodNamesToExclude);
       });
 
     if (empty($this->_testMethods)) {
-      throw new TestSetException(\sprintf('No test case found in "%s"', $this->_name));
+      throw new TestSetException(
+        \sprintf(
+          'No test case found in "%s". Your TestSuite MUST contain at least one public method.',
+          $this->_name));
     }
   }
 
@@ -73,8 +84,6 @@ class TestSuite implements TestSet {
     $this->teardown();
   }
 
-  // Test fixtures.
-
   function setup() {
     ;
   }
@@ -83,19 +92,17 @@ class TestSuite implements TestSet {
     ;
   }
 
-  private static function & _GetMethodNamesToExclude() {
+  private static function _Initialize() {
     if (NULL === self::$_MethodNamesToExclude) {
       $rfl = new \ReflectionClass(__CLASS__);
 
-      // We mark as excluded all methods in TestSuite.
+      // All methods in TestSuite are to be excluded.
       self::$_MethodNamesToExclude
         = \array_flip(\array_map(
           function($_method_) { return $_method_->getName(); },
           $rfl->getMethods()
         ));
     }
-
-    return self::$_MethodNamesToExclude;
   }
 }
 
@@ -107,14 +114,17 @@ class TestSuite implements TestSet {
 // {{{ FileTestSet
 
 class FileTestSet implements TestSet {
-  private $_path;
+  private
+    $_name,
+    $_path;
 
-  function __construct($_path_) {
+  function __construct($_path_, $_name_ = \NULL) {
     $this->_path = $_path_;
+    $this->_name = $_name_ ?: $_path_;
   }
 
   function getName() {
-    return $this->_path;
+    return $this->_name;
   }
 
   function run() {
@@ -141,7 +151,7 @@ class FileTestSetIterator extends \IteratorIterator {
 
 class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
   function __construct(\RecursiveDirectoryIterator $_it_, $_file_ext_) {
-    parent::__construct(new _\RecursiveFileExtensionFilterIterator($_it_, $_file_ext_));
+    parent::__construct(new _\FileExtensionRecursiveFilterIterator($_it_, $_file_ext_));
   }
 
   static function FromPath($_path, $_file_ext_) {
@@ -163,9 +173,9 @@ class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
 
 namespace Narvalo\Test\Sets\Internal;
 
-// {{{ RecursiveFileExtensionFilterIterator
+// {{{ FileExtensionRecursiveFilterIterator
 
-class RecursiveFileExtensionFilterIterator extends \RecursiveFilterIterator {
+class FileExtensionRecursiveFilterIterator extends \RecursiveFilterIterator {
   private
     $_fileExt,
     $_fileExtLength;
