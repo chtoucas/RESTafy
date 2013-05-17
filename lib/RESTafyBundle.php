@@ -24,11 +24,11 @@ final class HttpVersion {
 
 final class HttpVerb {
   const
-    GET    = 'GET',
-    POST   = 'POST',
-    PUT    = 'PUT',
-    DELETE = 'DELETE',
-    HEAD   = 'HEAD';
+    Get    = 'GET',
+    Post   = 'POST',
+    Put    = 'PUT',
+    Delete = 'DELETE',
+    Head   = 'HEAD';
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ final class HttpVerb {
 // {{{ HttpHeaders
 
 class HttpHeaders implements \Iterator {
-  protected $_headers = array();
+  private $_headers = array();
 
   function __toString() {
     $str = '';
@@ -119,7 +119,7 @@ class HttpHeaders implements \Iterator {
 // {{{ HttpRequest
 
 class HttpRequest {
-  protected
+  private
     $_protocol,
     $_method,
     $_url,
@@ -170,12 +170,12 @@ class HttpRequest {
 
 class HttpResponse {
   const
-    PENDING   = 0,
-    INFO      = 1,
-    OK        = 2,
-    MORE      = 3,
-    REJECT    = 4,
-    ERROR     = 5;
+    Pending   = 0,
+    Info      = 1,
+    Ok        = 2,
+    More      = 3,
+    Reject    = 4,
+    Error     = 5;
 
   protected
     $_protocol,
@@ -216,27 +216,27 @@ class HttpResponse {
   }
 
   function isPending() {
-    return self::PENDING == $this->_status[0];
+    return self::Pending == $this->_status[0];
   }
 
   function isInformational() {
-    return self::INFO == $this->_status[0];
+    return self::Info == $this->_status[0];
   }
 
   function isSuccessful() {
-    return self::OK == $this->_status[0];
+    return self::Ok == $this->_status[0];
   }
 
   function isRedirection() {
-    return self::MORE == $this->_status[0];
+    return self::More == $this->_status[0];
   }
 
   function isClientError() {
-    return self::REJECT == $this->_status[0];
+    return self::Reject == $this->_status[0];
   }
 
   function isServerError() {
-    return self::ERROR == $this->_status[0];
+    return self::Error == $this->_status[0];
   }
 
   function appendHeader($_name_, $_value_) {
@@ -740,11 +740,11 @@ class CurlHttpClient {
 
     // Do not fail if the HTTP code returned is greater than or equal to 400.
     // The normal behaviour is to return the page normaly, ignoring the code.
-    \curl_setopt($ch, CURLOPT_FAILONERROR, \FALSE);
+    \curl_setopt($ch, \CURLOPT_FAILONERROR, \FALSE);
     // Return result upon execution.
-    \curl_setopt($ch, CURLOPT_RETURNTRANSFER, \TRUE);
+    \curl_setopt($ch, \CURLOPT_RETURNTRANSFER, \TRUE);
     // Response headers processing callback.
-    \curl_setopt($ch, CURLOPT_HEADERFUNCTION, 'Internal\http_client_scan');
+    \curl_setopt($ch, \CURLOPT_HEADERFUNCTION, 'Internal\http_client_scan');
 
     $this->ch = $ch;
   }
@@ -762,28 +762,28 @@ class CurlHttpClient {
   }
 
   function setVerbose($_bool_) {
-    $this->setOpt(CURLOPT_VERBOSE, $_bool_);
+    $this->setOpt(\CURLOPT_VERBOSE, $_bool_);
   }
 
   function setTimeout($_timeout_) {
-    $this->setOpt(CURLOPT_TIMEOUT, $_timeout_);
+    $this->setOpt(\CURLOPT_TIMEOUT, $_timeout_);
   }
 
   function setConnectTimeout($_timeout_) {
-    $this->setOpt(CURLOPT_CONNECTTIMEOUT, $_timeout_);
+    $this->setOpt(\CURLOPT_CONNECTTIMEOUT, $_timeout_);
   }
 
   function setMaxRedirects($_max_) {
     if ($_max_) {
-      $this->setOpt(CURLOPT_FOLLOWLOCATION, \TRUE);
-      $this->setOpt(CURLOPT_MAXREDIRS, $_max_);
+      $this->setOpt(\CURLOPT_FOLLOWLOCATION, \TRUE);
+      $this->setOpt(\CURLOPT_MAXREDIRS, $_max_);
     } else {
-      $this->setOpt(CURLOPT_FOLLOWLOCATION, \FALSE);
+      $this->setOpt(\CURLOPT_FOLLOWLOCATION, \FALSE);
     }
   }
 
   function setCredentials($_username_, $_password_) {
-    $this->setOpt(CURLOPT_USERPWD, "$_username_:$_password_");
+    $this->setOpt(\CURLOPT_USERPWD, "$_username_:$_password_");
   }
 
   function setCookieJar() {
@@ -794,27 +794,27 @@ class CurlHttpClient {
     // Set method specific opts.
     switch ($_req_->getMethod()) {
     case 'GET':
-      $this->setOpt(CURLOPT_HTTPGET, \TRUE);
+      $this->setOpt(\CURLOPT_HTTPGET, \TRUE);
       break;
     case 'POST':
-      $this->setOpt(CURLOPT_POST, \TRUE);
-      $this->setOpt(CURLOPT_POSTFIELDS, $_req_->getContent());
+      $this->setOpt(\CURLOPT_POST, \TRUE);
+      $this->setOpt(\CURLOPT_POSTFIELDS, $_req_->getContent());
       break;
     case 'HEAD':
-      $this->setOpt(CURLOPT_CUSTOMREQUEST, 'HEAD');
+      $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'HEAD');
       throw new Narvalo\NotImplementedException('HEAD not yet implemented');
       break;
     case 'PUT':
-      $this->setOpt(CURLOPT_CUSTOMREQUEST, 'PUT');
-      $this->setOpt(CURLOPT_POSTFIELDS, $_req_->getContent());
+      $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'PUT');
+      $this->setOpt(\CURLOPT_POSTFIELDS, $_req_->getContent());
       throw new Narvalo\NotImplementedException('PUT not yet implemented');
       break;
     case 'DELETE':
-      $this->setOpt(CURLOPT_CUSTOMREQUEST, 'DELETE');
+      $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'DELETE');
       throw new Narvalo\NotImplementedException('DELETE not yet implemented');
       break;
     case 'TRACE':
-      $this->setOpt(CURLOPT_CUSTOMREQUEST, 'TRACE');
+      $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'TRACE');
       throw new Narvalo\NotImplementedException('TRACE not yet implemented');
       break;
     default:
@@ -822,7 +822,7 @@ class CurlHttpClient {
     }
 
     // Set URL.
-    $this->setOpt(CURLOPT_URL, $_req_->getUrl()->__toString());
+    $this->setOpt(\CURLOPT_URL, $_req_->getUrl()->__toString());
 
     // Set headers.
     $headers = array();
@@ -831,7 +831,7 @@ class CurlHttpClient {
       $headers[] = "$k: $v";
     }
 
-    $this->setOpt(CURLOPT_HTTPHEADER, $headers);
+    $this->setOpt(\CURLOPT_HTTPHEADER, $headers);
 
     // Execution.
     $curl = new _\CurlHelper();

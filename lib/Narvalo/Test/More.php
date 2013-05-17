@@ -70,8 +70,7 @@ class More {
       break;
     default:
       $this->getProducer()->assert(\FALSE, $_description_);
-      $this->getProducer()->diagnose(
-        \sprintf('Unrecognized comparison operator: %s.', $_type_));
+      $this->getProducer()->diagnose(\sprintf('Unrecognized comparison operator: %s.', $_type_));
       return;
     }
 
@@ -189,8 +188,8 @@ class More {
   }
 
   private function _diagnoseCompare($_got_, $_type_, $_expect_) {
-    $got    = \NULL === $_got_    ? 'NULL' : (is_object($_got_)    ? 'Object' : "'$_got_'");
-    $expect = \NULL === $_expect_ ? 'NULL' : (is_object($_expect_) ? 'Object' : "'$_expect_'");
+    $got    = \NULL === $_got_    ? 'NULL' : (\is_object($_got_)    ? 'Object' : "'$_got_'");
+    $expect = \NULL === $_expect_ ? 'NULL' : (\is_object($_expect_) ? 'Object' : "'$_expect_'");
 
     $diag = <<<EOL
     $got
@@ -201,8 +200,8 @@ EOL;
   }
 
   private function _diagnoseEqual($_got_, $_expect_) {
-    $got    = \NULL === $_got_    ? 'NULL' : (is_object($_got_)    ? 'Object' : "'$_got_'");
-    $expect = \NULL === $_expect_ ? 'NULL' : (is_object($_expect_) ? 'Object' : "'$_expect_'");
+    $got    = \NULL === $_got_    ? 'NULL' : (\is_object($_got_)    ? 'Object' : "'$_got_'");
+    $expect = \NULL === $_expect_ ? 'NULL' : (\is_object($_expect_) ? 'Object' : "'$_expect_'");
 
     $diag = <<<EOL
          got: $got
@@ -212,7 +211,7 @@ EOL;
   }
 
   private function _diagnoseNotEqual($_got_) {
-    $got = \NULL === $_got_ ? 'NULL' : (is_object($_got_) ? 'Object' : "'$_got_'");
+    $got = \NULL === $_got_ ? 'NULL' : (\is_object($_got_) ? 'Object' : "'$_got_'");
 
     $diag = <<<EOL
          got: $got

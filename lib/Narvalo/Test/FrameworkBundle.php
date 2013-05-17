@@ -334,8 +334,9 @@ class TestProducer {
   function plan($_how_many_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       // Invalid argument exception
-      $this->bailOut('Number of tests must be a strictly positive integer. '
-        . "You gave it '$_how_many_'.");
+      $this->bailOut(
+        \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
+          $_how_many_));
     }
     $this->_set = new _\FixedSizeTestResultSet($_how_many_);
     $this->_addPlan($_how_many_);
@@ -517,13 +518,13 @@ EOL;
   }
 
   private function _reset() {
-    $this->_set         = new _\DynamicTestResultSet();
-    $this->_bailedOut   = \FALSE;
-    $this->_todoLevel   = 0;
-    $this->_todoReason  = '';
-    $this->_todoStack   = array();
+    $this->_set                = new _\DynamicTestResultSet();
+    $this->_bailedOut          = \FALSE;
+    $this->_todoLevel          = 0;
+    $this->_todoReason         = '';
+    $this->_todoStack          = array();
     $this->_runtimeErrorsCount = 0;
-    $this->_interrupted = \FALSE;
+    $this->_interrupted        = \FALSE;
     $this->_errStream->reset();
     $this->_outStream->reset();
     $this->_workflow->reset();
@@ -845,20 +846,20 @@ class TestWorkflowException extends Narvalo\Exception { }
 
 final class TestWorkflow {
   const
-    START       = 0,
-    HEADER      = 1,
-    PLAN        = 2,
-    BODY        = 3,
+    Start            = 0,
+    Header           = 1,
+    StaticPlanDecl   = 2,
+    DynamicPlanTests = 3,
     // Valid end states.
-    BODY_PLAN   = 4,
-    PLAN_BODY   = 5,
-    PLAN_NOBODY = 6,
-    BAILOUT     = 7,
-    END         = 8;
+    DynamicPlanDecl  = 4,
+    StaticPlanTests  = 5,
+    SkipAll          = 6,
+    BailOut          = 7,
+    End              = 8;
 
   private
     $_disposed     = \FALSE,
-    $_state        = self::START,
+    $_state        = self::Start,
     $_subStates    = array(),
     $_subTestLevel = 0,
     // TO-DO stack level
@@ -875,17 +876,15 @@ final class TestWorkflow {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid end states.
-    case self::END:
+    case self::End:
       break;
-    case self::START:
+    case self::Start:
       // XXX reset() or no test at all
       break;
     default:
-      // XXX: is it wise to throw during GC.
+      // XXX: Is it wise to throw during cleanup.
       throw new TestWorkflowException(
-        'The workflow will end in an invalid state: ' . $this->_state);
-      //\trigger_error('The workflow will end in an invalid state: ' . $this->_state,
-      //  \E_USER_WARNING);
+        \sprintf('The workflow will end in an invalid state: "%s".', $this->_state));
     }
     $this->_disposed = \TRUE;
   }
@@ -899,19 +898,20 @@ final class TestWorkflow {
   }
 
   function reset() {
-    $this->_state        = self::START;
+    $this->_state        = self::Start;
     $this->_subStates    = array();
     $this->_subTestLevel = 0;
     $this->_todoLevel    = 0;
   }
 
   function enterHeader() {
-    if (self::START === $this->_state) {
+    if (self::Start === $this->_state) {
       // Allowed state.
-      $this->_state = self::HEADER;
+      $this->_state = self::Header;
     } else {
       // Invalid state.
-      throw new TestWorkflowException('The header must come first. Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(
+        \sprintf('The header must come first. Invalid workflow state: "%s".', $this->_state));
     }
   }
 
@@ -919,57 +919,63 @@ final class TestWorkflow {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid end states.
-    case self::BAILOUT:
-    case self::BODY_PLAN:
-    case self::PLAN_BODY:
-    case self::PLAN_NOBODY:
+    case self::BailOut:
+    case self::DynamicPlanDecl:
+    case self::StaticPlanTests:
+    case self::SkipAll:
       // XXX
-    case self::HEADER:
+    case self::Header:
       break;
       // Invalid state.
-    case self::END:
-      throw new TestWorkflowException('Workflow already ended.');
-      //    case self::HEADER:
+    case self::End:
+      throw new TestWorkflowException('Can not enter footer. Workflow already ended.');
+      //    case self::Header:
       //      throw new TestWorkflowException('The workflow will end prematurely.');
     default:
-      throw new TestWorkflowException('The workflow will end in an invalid state: ' . $this->_state);
+      throw new TestWorkflowException(
+        \sprintf('Can not enter footer. The workflow will end in an invalid state: "%s".',
+          $this->_state));
     }
     // Check subtests' level
     if (0 !== $this->_subTestLevel) {
-      throw new TestWorkflowException('There is still an opened subtest in the workflow: ' . $this->_subTestLevel);
+      throw new TestWorkflowException(
+        \sprintf('There is still an opened subtest in the workflow: "%s".', $this->_subTestLevel));
     }
     // Check TO-DO' level
     if (0 !== $this->_todoLevel) {
-      throw new TestWorkflowException('There is still an opened TO-DO in the workflow: ' . $this->_subTestLevel);
+      throw new TestWorkflowException(
+        \sprintf('There is still an opened TO-DO in the workflow: "%s".', $this->_subTestLevel));
     }
-    $this->_state = self::END;
+    $this->_state = self::End;
   }
 
   function startSubTest() {
     switch ($this->_state) {
       // Allowed state.
-    case self::HEADER:
-    case self::BODY:
-    case self::PLAN:
-    case self::PLAN_BODY:
+    case self::Header:
+    case self::DynamicPlanTests:
+    case self::StaticPlanDecl:
+    case self::StaticPlanTests:
       break;
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('Unable to start a subtest: missing header');
-    case self::END:
-      throw new TestWorkflowException('Unable to start a subtest: workflow ended');
-    case self::BODY_PLAN:
-      throw new TestWorkflowException('Unable to start a subtest: you already end your tests with a plan');
-    case self::PLAN_NOBODY:
-      throw new TestWorkflowException('You can not start a subtest and skip all tests at the same time');
-    case self::BAILOUT:
-      throw new TestWorkflowException('You can not start a subtest after bailing out');
+    case self::Start:
+      throw new TestWorkflowException('Unable to start a subtest: missing header.');
+    case self::End:
+      throw new TestWorkflowException('Unable to start a subtest: workflow ended.');
+    case self::DynamicPlanDecl:
+      throw new TestWorkflowException(
+        'Unable to start a subtest: you already end your tests with a plan.');
+    case self::SkipAll:
+      throw new TestWorkflowException(
+        'You can not start a subtest and skip all tests at the same time.');
+    case self::BailOut:
+      throw new TestWorkflowException('You can not start a subtest after bailing out.');
     default:
-      throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
     // FIXME: Reset TO-DO level?
     \array_push($this->_subStates, $this->_state);
-    $this->_state = self::HEADER;
+    $this->_state = self::Header;
     return ++$this->_subTestLevel;
   }
 
@@ -977,7 +983,7 @@ final class TestWorkflow {
   function endSubTest() {
     // FIXME: Valid states.
     if (0 === $this->_subTestLevel) {
-      throw new TestWorkflowException('You can not end a subtest if you did not start one before');
+      throw new TestWorkflowException('You can not end a subtest if you did not start one before.');
     }
     $this->_state = \array_pop($this->_subStates);
     $this->_subTestLevel--;
@@ -986,24 +992,26 @@ final class TestWorkflow {
   function startTodo() {
     switch ($this->_state) {
       // Allowed state.
-    case self::HEADER:
-    case self::BODY:
-    case self::PLAN:
-    case self::PLAN_BODY:
+    case self::Header:
+    case self::DynamicPlanTests:
+    case self::StaticPlanDecl:
+    case self::StaticPlanTests:
       break;
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('Unable to start a TO-DO: missing header');
-    case self::END:
-      throw new TestWorkflowException('Unable to start a TO-DO: workflow ended');
-    case self::BODY_PLAN:
-      throw new TestWorkflowException('Unable to start a TO-DO: you already end your tests with a plan');
-    case self::PLAN_NOBODY:
-      throw new TestWorkflowException('You can not start a TO-DO and skip all tests at the same time');
-    case self::BAILOUT:
-      throw new TestWorkflowException('You can not start a TO-DO after bailing out');
+    case self::Start:
+      throw new TestWorkflowException('Unable to start a TO-DO: missing header.');
+    case self::End:
+      throw new TestWorkflowException('Unable to start a TO-DO: workflow ended.');
+    case self::DynamicPlanDecl:
+      throw new TestWorkflowException(
+        'Unable to start a TO-DO: you already end your tests with a plan.');
+    case self::SkipAll:
+      throw new TestWorkflowException(
+        'You can not start a TO-DO and skip all tests at the same time.');
+    case self::BailOut:
+      throw new TestWorkflowException('You can not start a TO-DO after bailing out.');
     default:
-      throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
     return ++$this->_todoLevel;
   }
@@ -1011,7 +1019,7 @@ final class TestWorkflow {
   function endTodo() {
     // FIXME: Valid states.
     if (0 === $this->_todoLevel) {
-      throw new TestWorkflowException('You can not end a TO-DO if you did not start one before');
+      throw new TestWorkflowException('You can not end a TO-DO if you did not start one before.');
     }
     $this->_todoLevel--;
   }
@@ -1019,112 +1027,117 @@ final class TestWorkflow {
   function enterPlan() {
     switch ($this->_state) {
       // Allowed state.
-    case self::HEADER:
+    case self::Header:
       // Static plan.
-      $this->_state = self::PLAN;
+      $this->_state = self::StaticPlanDecl;
       break;
-    case self::BODY:
+    case self::DynamicPlanTests:
       // Dynamic plan.
-      $this->_state = self::BODY_PLAN;
+      $this->_state = self::DynamicPlanDecl;
       break;
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('You can not plan: missing header');
-    case self::END:
-      throw new TestWorkflowException('You can not plan: workflow already ended');
-    case self::BODY_PLAN:
-    case self::PLAN:
-    case self::PLAN_BODY:
-      throw new TestWorkflowException('You can not plan twice. Invalid workflow state: ' . $this->_state);
-    case self::PLAN_NOBODY:
-      throw new TestWorkflowException('You can not plan and skip all tests at the same time');
-    case self::BAILOUT:
-      throw new TestWorkflowException('You can not plan after bailing out');
+    case self::Start:
+      throw new TestWorkflowException('You can not plan: missing header.');
+    case self::End:
+      throw new TestWorkflowException('You can not plan: workflow already ended.');
+    case self::DynamicPlanDecl:
+    case self::StaticPlanDecl:
+    case self::StaticPlanTests:
+      throw new TestWorkflowException(
+        \sprintf('You can not plan twice. Invalid workflow state: "%s".', $this->_state));
+    case self::SkipAll:
+      throw new TestWorkflowException('You can not plan and skip all tests at the same time.');
+    case self::BailOut:
+      throw new TestWorkflowException('You can not plan after bailing out.');
     default:
-      throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
   }
 
   function enterSkipAll() {
     switch ($this->_state) {
       // Allowed state.
-    case self::HEADER:
+    case self::Header:
       // Skip All plan.
-      $this->_state = self::PLAN_NOBODY;
+      $this->_state = self::SkipAll;
       break;
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('Unable to skip all tests: missing header');
-    case self::END:
-      throw new TestWorkflowException('Unable to skip all tests: workflow already closed');
-    case self::BODY:
-      throw new TestWorkflowException('Unable to skip all tests: you already run at least one test');
-    case self::BODY_PLAN:
-    case self::PLAN:
-    case self::PLAN_BODY:
-      throw new TestWorkflowException('Unable to skip all tests: you already made a plan. Invalid workflow state: ' . $this->_state);
-    case self::PLAN_NOBODY:
-      throw new TestWorkflowException('You already asked to skip all tests');
-    case self::BAILOUT:
-      throw new TestWorkflowException('You can not skip all tests after bailing out');
+    case self::Start:
+      throw new TestWorkflowException('Unable to skip all tests: missing header.');
+    case self::End:
+      throw new TestWorkflowException('Unable to skip all tests: workflow already closed.');
+    case self::DynamicPlanTests:
+      throw new TestWorkflowException('Unable to skip all tests: you already run at least one test.');
+    case self::DynamicPlanDecl:
+    case self::StaticPlanDecl:
+    case self::StaticPlanTests:
+      throw new TestWorkflowException(
+        \sprintf('Unable to skip all tests: you already made a plan. Invalid workflow state: "%s".',
+          $this->_state));
+    case self::SkipAll:
+      throw new TestWorkflowException('You already asked to skip all tests.');
+    case self::BailOut:
+      throw new TestWorkflowException('You can not skip all tests after bailing out.');
     default:
-      throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(
+        \sprintf('Invalid workflow state: "%s".', $this->_state));
     }
   }
 
   function enterTestCaseResult() {
     switch ($this->_state) {
       // Allowed state.
-    case self::HEADER:
+    case self::Header:
       // Dynamic plan. First test.
-      $this->_state = self::BODY;
+      $this->_state = self::DynamicPlanTests;
       break;
-    case self::BODY:
+    case self::DynamicPlanTests:
       // Dynamic plan. Later test.
       break;
-    case self::PLAN:
+    case self::StaticPlanDecl:
       // Static plan. First test.
-      $this->_state = self::PLAN_BODY;
+      $this->_state = self::StaticPlanTests;
       break;
-    case self::PLAN_BODY:
+    case self::StaticPlanTests:
       // Static plan. Later test.
       break;
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('Unable to register a test: missing header');
-    case self::END:
-      throw new TestWorkflowException('Unable to register a test: workflow already ended');
-    case self::BODY_PLAN:
-      throw new TestWorkflowException('Unable to register a test: you already end your tests with a plan');
-    case self::PLAN_NOBODY:
-      throw new TestWorkflowException('You can not register a test if you asked to skip all tests');
-    case self::BAILOUT:
-      throw new TestWorkflowException('You can not register a test after bailing out');
+    case self::Start:
+      throw new TestWorkflowException('Unable to register a test: missing header.');
+    case self::End:
+      throw new TestWorkflowException('Unable to register a test: workflow already ended.');
+    case self::DynamicPlanDecl:
+      throw new TestWorkflowException(
+        'Unable to register a test: you already end your tests with a plan.');
+    case self::SkipAll:
+      throw new TestWorkflowException('You can not register a test if you asked to skip all tests.');
+    case self::BailOut:
+      throw new TestWorkflowException('You can not register a test after bailing out.');
     default:
-      throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
   }
 
   function enterBailOut() {
     switch ($this->_state) {
       // Allowed state.
-    case self::HEADER:
-    case self::BODY:
-    case self::BODY_PLAN:
-    case self::PLAN:
-    case self::PLAN_BODY:
-    case self::PLAN_NOBODY:
-      $this->_state = self::BAILOUT;
+    case self::Header:
+    case self::DynamicPlanTests:
+    case self::DynamicPlanDecl:
+    case self::StaticPlanDecl:
+    case self::StaticPlanTests:
+    case self::SkipAll:
+      $this->_state = self::BailOut;
       break;
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('You can not bail out: missing header');
-    case self::END:
-      throw new TestWorkflowException('You can not bail out: workflow already ended');
-    case self::BAILOUT:
-      throw new TestWorkflowException('You can not bail out twice');
+    case self::Start:
+      throw new TestWorkflowException('You can not bail out: missing header.');
+    case self::End:
+      throw new TestWorkflowException('You can not bail out: workflow already ended.');
+    case self::BailOut:
+      throw new TestWorkflowException('You can not bail out twice.');
     default:
-      throw new TestWorkflowException('Invalid workflow state: ' . $this->_state);
+      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
   }
 
@@ -1132,10 +1145,10 @@ final class TestWorkflow {
     // Only one invalid state and this method does not change state.
     switch ($this->_state) {
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('You can not write a comment: missing header');
-    case self::END:
-      throw new TestWorkflowException('You can not write a comment: workflow already ended');
+    case self::Start:
+      throw new TestWorkflowException('You can not write a comment: missing header.');
+    case self::End:
+      throw new TestWorkflowException('You can not write a comment: workflow already ended.');
     default:
       break;
     }
@@ -1145,10 +1158,10 @@ final class TestWorkflow {
     // Only one invalid state and this method does not change state.
     switch ($this->_state) {
       // Invalid state.
-    case self::START:
-      throw new TestWorkflowException('You can not write an error: missing header');
-    case self::END:
-      throw new TestWorkflowException('You can not write an error: workflow already closed');
+    case self::Start:
+      throw new TestWorkflowException('You can not write an error: missing header.');
+    case self::End:
+      throw new TestWorkflowException('You can not write an error: workflow already closed.');
     default:
       break;
     }

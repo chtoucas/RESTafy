@@ -9,7 +9,7 @@ namespace Narvalo;
 
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
-    parent::__construct($_message_, 0, $_innerException_);
+    parent::__construct($_message_, 0 /* code */, $_innerException_);
   }
 }
 
@@ -32,8 +32,8 @@ class ArgumentException extends Exception {
   private $_paramName;
 
   function __construct($_paramName_, $_message_ = '', \Exception $_innerException_ = \NULL) {
-    $this->_paramName = $_paramName_;
     parent::__construct($_message_, $_innerException_);
+    $this->_paramName = $_paramName_;
   }
 
   function getParamName() {
@@ -67,18 +67,18 @@ class KeyNotFoundException extends Exception { }
 
 final class ObjectType {
   const
-    UNKNOWN   = 0,
+    Unknown    = 0,
     // Simple types.
-    NULL      = 1,
-    BOOLEAN   = 2,
-    INTEGER   = 3,
-    FLOAT     = 4,
-    STRING    = 5,
+    Null       = 1,
+    Boolean    = 2,
+    Integer    = 3,
+    Float      = 4,
+    String     = 5,
     // Complex types.
-    REAL_ARRAY = 10,
-    HASH       = 11,
-    OBJECT     = 12,
-    RESOURCE   = 13;
+    TrueArray  = 10,
+    Dictionary = 11,
+    Object     = 12,
+    Resource   = 13;
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -86,8 +86,8 @@ final class ObjectType {
 
 class TypeName {
   const
-    DELIMITER        = '\\',
-    GLOBAL_NAMESPACE = '\\';
+    Delimiter       = '\\',
+    GlobalNamespace = '\\';
 
   private static
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
@@ -96,39 +96,32 @@ class TypeName {
     $_NamespaceNameRegex = "/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$/";
 
   private
-    /// \var string
     $_name,
-    /// \var string
     $_namespace;
 
-  function __construct($_name_, $_namespace_ = self::GLOBAL_NAMESPACE) {
+  function __construct($_name_, $_namespace_ = self::GlobalNamespace) {
     $this->_name      = $_name_;
     $this->_namespace = $_namespace_;
   }
 
-  /// \return bool.
   static function IsWellformed($_name_) {
     return 1 === \preg_match(self::$_TypeNameRegex, $_name_);
   }
 
-  /// \return bool.
   static function IsWellformedNamespace($_name_) {
     return 1 === \preg_match(self::$_NamespaceNameRegex,  $_name_);
   }
 
-  /// \return string.
   function getFullyQualifiedName() {
-    return self::DELIMITER . $this->getQualifiedName();
+    return self::Delimiter . $this->getQualifiedName();
   }
 
-  /// \return string.
   function getName() {
     return $this->_name;
   }
 
-  /// \return string.
   function getQualifiedName() {
-    return $this->_namespace . self::DELIMITER . $this->_name;
+    return $this->_namespace . self::Delimiter . $this->_name;
   }
 }
 
@@ -158,41 +151,32 @@ final class Type {
   static function GetType($_value_) {
     if (\NULL === $_value_) {
       // Keep this on top.
-      return ObjectType::NULL;
-    }
-    elseif (\is_string($_value_)) {
-      return ObjectType::STRING;
-    }
-    elseif (\is_int($_value_)) {
-      return ObjectType::INTEGER;
-    }
-    elseif (\is_float($_value_)) {
-      return ObjectType::FLOAT;
-    }
-    elseif (\is_bool($_value_)) {
-      return ObjectType::BOOLEAN;
-    }
-    elseif (\is_array($_value_)) {
+      return ObjectType::Null;
+    } elseif (\is_string($_value_)) {
+      return ObjectType::String;
+    } elseif (\is_int($_value_)) {
+      return ObjectType::Integer;
+    } elseif (\is_float($_value_)) {
+      return ObjectType::Float;
+    } elseif (\is_bool($_value_)) {
+      return ObjectType::Boolean;
+    } elseif (\is_array($_value_)) {
       // Much faster alternative to the usual snippet:
-      // array_keys($_value_) === range(0, count($_value_) - 1)
-      // || empty($_value_)
+      // \array_keys($_value_) === \range(0, \count($_value_) - 1) || empty($_value_)
       $i = 0;
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {
-          return ObjectType::HASH;
+          return ObjectType::Dictionary;
         }
         $i++;
       }
-      return ObjectType::REAL_ARRAY;
-    }
-    elseif (\is_object($_value_)) {
-      return ObjectType::OBJECT;
-    }
-    elseif (\is_resource($_value_)) {
-      return ObjectType::RESOURCE;
-    }
-    else {
-      return ObjectType::UNKNOWN;
+      return ObjectType::TrueArray;
+    } elseif (\is_object($_value_)) {
+      return ObjectType::Object;
+    } elseif (\is_resource($_value_)) {
+      return ObjectType::Resource;
+    } else {
+      return ObjectType::Unknown;
     }
   }
 
@@ -202,10 +186,10 @@ final class Type {
 
   static function IsSimple($_value_) {
     switch ($type = self::GetType($_value_)) {
-    case ObjectType::BOOLEAN:
-    case ObjectType::INTEGER:
-    case ObjectType::FLOAT:
-    case ObjectType::STRING:
+    case ObjectType::Boolean:
+    case ObjectType::Integer:
+    case ObjectType::Float:
+    case ObjectType::String:
       return \TRUE;
     default:
       return \FALSE;
@@ -217,7 +201,7 @@ final class Type {
 // {{{ DynaLoader
 
 final class DynaLoader {
-  const FILE_EXTENSION = '.php';
+  const FileExtension = '.php';
 
   /// \brief Dynamically load a code file.
   /// WARNING: only works if the included file does not return FALSE.
@@ -242,7 +226,7 @@ final class DynaLoader {
   }
 
   private static function _ToPath($_name_) {
-    return \str_replace(TypeName::DELIMITER, \DIRECTORY_SEPARATOR, $_name_) . self::FILE_EXTENSION;
+    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
   }
 }
 
@@ -275,12 +259,10 @@ final class Guard {
 trait ReadOnlyDictionary {
   private $_store = array();
 
-  /// \return boolean
   function has($_key_) {
     return \array_key_exists($_key_, $this->_store);
   }
 
-  /// \return mixed
   function get($_key_) {
     $this->_checkKey($_key_);
     return $this->_store[$_key_];
@@ -320,7 +302,7 @@ trait Singleton {
   private static $_Instance = \NULL;
 
   private function __construct() {
-     $this->_initialize();
+    $this->_initialize();
   }
 
   final private function __clone() {

@@ -68,7 +68,7 @@ class TapStream extends Framework\FileStreamWriter {
 // {{{ TapOutStream
 
 final class TapOutStream extends TapStream implements Framework\TestOutStream {
-  const VERSION = '13';
+  const Version = '13';
 
   private $_verbose;
 
@@ -79,7 +79,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 
   function writeHeader() {
-    return $this->writeTapLine_('TAP version ' . self::VERSION);
+    return $this->writeTapLine_('TAP version ' . self::Version);
   }
 
   function writeFooter() {
@@ -165,8 +165,8 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 class TapProducer extends Framework\TestProducer {
   const
-    SUCCESS_CODE = 0,
-    FATAL_CODE   = 255;
+    SuccessCode = 0,
+    FailureCode = 255;
 
   function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
     parent::__construct($_outStream_, $_errStream_);
@@ -180,16 +180,16 @@ class TapProducer extends Framework\TestProducer {
 
   protected function getExitCode_() {
     if ($this->getRuntimeErrorsCount() > 0) {
-      return self::FATAL_CODE;
-    } else if ($this->passed()) {
-      return self::SUCCESS_CODE;
-    } else if ($this->bailedOut()) {
-      return self::FATAL_CODE;
-    } else if (($count = $this->getFailuresCount()) > 0) {
-      return $count < self::FATAL_CODE ? $count : (self::FATAL_CODE - 1);
+      return self::FailureCode;
+    } elseif ($this->passed()) {
+      return self::SuccessCode;
+    } elseif ($this->bailedOut()) {
+      return self::FailureCode;
+    } elseif (($count = $this->getFailuresCount()) > 0) {
+      return $count < self::FailureCode ? $count : (self::FailureCode - 1);
     } else {
       // Other kind of errors: extra tests, unattended interrupt.
-      return self::FATAL_CODE;
+      return self::FailureCode;
     }
   }
 }

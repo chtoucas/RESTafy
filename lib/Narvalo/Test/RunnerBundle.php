@@ -84,7 +84,7 @@ class TestHarness {
     $_runner;
 
   function __construct(
-    TestHarnessStream $_stream_,
+    TestHarnessStream       $_stream_,
     Framework\TestOutStream $_outStream_ = \NULL,
     Framework\TestErrStream $_errStream_ = \NULL
   ) {
