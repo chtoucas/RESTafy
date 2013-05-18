@@ -13,6 +13,27 @@ Narvalo\Test
 * Add timers to Harness & Runner
 * Add methods to More.php to check exception thrown.
 * BUG: if we run the harness twice in a row, it fails.
+* noPlan()
+* add a verbose mode for TapRunner
+* check all constructors for validity
+* reset states
+* return values for methods
+* can TAP normal and error streams use the same FH?
+* flush on handles to ensure correct ordering
+* test the test
+* in a subtest, we should unindent in bailout
+* how to catch exceptions so that they do not garble the output
+* Test::Harness, Test::Differences, Test::Deeper, Test::Class, Test::Most
+* doc: code, usage, diff with Test::More, error reporting
+
+Several ways to report an error:
+* throws an Exception for any internal error and for fatal error
+    where we can not use TestProducer::bailOut()
+* trigger_error()
+  - E_USER_ERROR for any fatal error during GC
+  - c E_USER_WARNING for any non-fatal error where we can not use \c TestProducer::Warn()
+* TestProducer::bailOut() for remaining fatal errors
+* TestProducer::Warn() for remaining non-fatal errors
 
 Narvalo
 =======

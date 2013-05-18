@@ -13,12 +13,10 @@ use \Narvalo\Test\Framework\Internal as _;
 // {{{ TestCaseResult
 
 interface TestCaseResult {
-  /// The test's description
-  /// \return string
+  /// The test's description.
   function getDescription();
 
-  /// TRUE if the test passed, FALSE otherwise
-  /// \return boolean
+  /// TRUE if the test passed, FALSE otherwise.
   function passed();
 }
 
@@ -165,10 +163,10 @@ class FileStreamWriter {
     $_opened = \FALSE;
 
   function __construct($_path_) {
-    // Open the handle
     $handle = \fopen($_path_, 'w');
     if (\FALSE === $handle) {
-      throw new FileStreamWriterException("Unable to open '{$_path_}' for writing");
+      throw new FileStreamWriterException(
+        \sprintf('Unable to open "%s" for writing', $_path_));
     }
     $this->_opened = \TRUE;
     $this->_handle = $handle;
@@ -233,23 +231,23 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 class TestProducer {
   private
-    // Error stream.
+    /// Error stream.
     $_errStream,
-    // Out stream.
+    /// Out stream.
     $_outStream,
-    // Test set.
+    /// Test set.
     $_set,
-    // Test workflow.
+    /// Test workflow.
     $_workflow,
-    // Was the producer interrupted, ie did we throw a TestProducerInterrupt exception?
+    /// Was the producer interrupted?
     $_interrupted       = \FALSE,
     $_bailedOut         = \FALSE,
     $_runtimeErrorsCount = 0,
-    // TO-DO stack level
+    /// TO-DO stack level
     $_todoLevel         = 0,
-    // TO-DO reason
+    /// TO-DO reason
     $_todoReason        = '',
-    // TO-DO stack
+    /// TO-DO stack
     $_todoStack         = array();
 
   function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
@@ -333,7 +331,7 @@ class TestProducer {
 
   function plan($_how_many_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
-      // Invalid argument exception
+      // XXX: Invalid argument exception?
       $this->bailOut(
         \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
@@ -344,12 +342,10 @@ class TestProducer {
 
   /// Evaluates the expression $_test_, if TRUE reports success,
   /// otherwise reports a failure.
-  /// \code
-  ///     assert($got === $expected, $test_name);
-  /// \endcode
-  /// \param $_test_ <boolean> Expression to test
-  /// \param $_description_ <string> Test description
-  /// \return TRUE if test passed, FALSE otherwise
+  ///   assert($got === $expected, $test_name);
+  /// $_test_ <boolean> Expression to test
+  /// $_description_ <string> Test description
+  /// Return TRUE if test passed, FALSE otherwise.
   function assert($_test_, $_description_) {
     $test = new DefaultTestCaseResult($_description_, \TRUE === $_test_);
     if ($this->_inTodo()) {
@@ -362,7 +358,7 @@ class TestProducer {
     }
 
     if (!$test->passed()) {
-      // if the test failed, display the source of the prob
+      // If the test failed, display the source of the problem.
       $what = $this->_inTodo() ? '(TODO) test' : 'test';
       $caller = self::_FindCaller();
       $description = $test->getDescription();
@@ -404,7 +400,7 @@ EOL;
 
   function startTodo($_reason_) {
     if ($this->_inTodo()) {
-      // Keep the upper-level TO-DO in memory
+      // Keep the upper-level TO-DO in memory.
       \array_push($this->_todoStack, $this->_todoReason);
     }
     $this->_todoReason = $_reason_;
@@ -419,9 +415,8 @@ EOL;
     $this->_todoReason = $this->_inTodo() ? \array_pop($this->_todoStack) : '';
   }
 
-  // FIXME: If the subtest exit, it will stop the whole test.
   function subTest(\Closure $_fun_, $_description_) {
-  //function subTest($_m_, \Closure $_fun_, $_description_) {
+    // FIXME: If the subtest exit, it will stop the whole test.
     // Switch to a new TestResultSet.
     $set = $this->_set;
     $this->_set = new _\DynamicTestResultSet();
@@ -481,7 +476,6 @@ EOL;
     return array('file' => $file,  'line' => $line);
   }
 
-  /// \return boolean
   private static function _IsStrictlyPositiveInteger($_value_) {
     return (int)$_value_ === $_value_ && $_value_ > 0;
   }
@@ -697,9 +691,9 @@ use \Narvalo\Test\Framework;
 
 abstract class AbstractTestResultSet {
   private
-    // Number of failed tests.
+    /// Number of failed tests.
     $_failuresCount = 0,
-    // List of tests.
+    /// List of tests.
     $_tests = array();
 
   protected function __construct() {
@@ -783,14 +777,13 @@ final class DynamicTestResultSet extends AbstractTestResultSet {
 // {{{ FixedSizeTestResultSet
 
 final class FixedSizeTestResultSet extends AbstractTestResultSet {
-  // Number of expected tests.
+  /// Number of expected tests.
   private $_length;
 
   function __construct($_length_) {
     $this->_length = $_length_;
   }
 
-  /// \return integer
   function getLength() {
     return $this->_length;
   }
@@ -807,7 +800,6 @@ final class FixedSizeTestResultSet extends AbstractTestResultSet {
   }
 
   function close(Framework\TestErrStream $_errStream_) {
-    //
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
@@ -862,7 +854,7 @@ final class TestWorkflow {
     $_state        = self::Start,
     $_subStates    = array(),
     $_subTestLevel = 0,
-    // TO-DO stack level
+    /// TO-DO stack level.
     $_todoLevel    = 0;
 
   function __destruct() {
@@ -875,12 +867,16 @@ final class TestWorkflow {
     }
     // Check workflow's state.
     switch ($this->_state) {
-      // Valid end states.
+      // Valid states.
+
     case self::End:
       break;
     case self::Start:
-      // XXX reset() or no test at all
+      // XXX reset() or no test at all.
       break;
+
+      // Invalid states.
+
     default:
       // XXX: Is it wise to throw during cleanup.
       throw new TestWorkflowException(
@@ -906,10 +902,12 @@ final class TestWorkflow {
 
   function enterHeader() {
     if (self::Start === $this->_state) {
-      // Allowed state.
+      // Valid states.
+
       $this->_state = self::Header;
     } else {
-      // Invalid state.
+      // Invalid states.
+
       throw new TestWorkflowException(
         \sprintf('The header must come first. Invalid workflow state: "%s".', $this->_state));
     }
@@ -918,7 +916,8 @@ final class TestWorkflow {
   function enterFooter() {
     // Check workflow's state.
     switch ($this->_state) {
-      // Valid end states.
+      // Valid states.
+
     case self::BailOut:
     case self::DynamicPlanDecl:
     case self::StaticPlanTests:
@@ -926,7 +925,9 @@ final class TestWorkflow {
       // XXX
     case self::Header:
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::End:
       throw new TestWorkflowException('Can not enter footer. Workflow already ended.');
       //    case self::Header:
@@ -936,12 +937,12 @@ final class TestWorkflow {
         \sprintf('Can not enter footer. The workflow will end in an invalid state: "%s".',
           $this->_state));
     }
-    // Check subtests' level
+    // Check subtests' level.
     if (0 !== $this->_subTestLevel) {
       throw new TestWorkflowException(
         \sprintf('There is still an opened subtest in the workflow: "%s".', $this->_subTestLevel));
     }
-    // Check TO-DO' level
+    // Check TO-DO level.
     if (0 !== $this->_todoLevel) {
       throw new TestWorkflowException(
         \sprintf('There is still an opened TO-DO in the workflow: "%s".', $this->_subTestLevel));
@@ -951,13 +952,16 @@ final class TestWorkflow {
 
   function startSubTest() {
     switch ($this->_state) {
-      // Allowed state.
+      // Valid states.
+
     case self::Header:
     case self::DynamicPlanTests:
     case self::StaticPlanDecl:
     case self::StaticPlanTests:
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('Unable to start a subtest: missing header.');
     case self::End:
@@ -991,13 +995,16 @@ final class TestWorkflow {
 
   function startTodo() {
     switch ($this->_state) {
-      // Allowed state.
+      // Valid states.
+
     case self::Header:
     case self::DynamicPlanTests:
     case self::StaticPlanDecl:
     case self::StaticPlanTests:
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('Unable to start a TO-DO: missing header.');
     case self::End:
@@ -1026,7 +1033,8 @@ final class TestWorkflow {
 
   function enterPlan() {
     switch ($this->_state) {
-      // Allowed state.
+      // Valid states.
+
     case self::Header:
       // Static plan.
       $this->_state = self::StaticPlanDecl;
@@ -1035,7 +1043,9 @@ final class TestWorkflow {
       // Dynamic plan.
       $this->_state = self::DynamicPlanDecl;
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('You can not plan: missing header.');
     case self::End:
@@ -1056,12 +1066,15 @@ final class TestWorkflow {
 
   function enterSkipAll() {
     switch ($this->_state) {
-      // Allowed state.
+      // Valid states.
+
     case self::Header:
       // Skip All plan.
       $this->_state = self::SkipAll;
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('Unable to skip all tests: missing header.');
     case self::End:
@@ -1086,7 +1099,8 @@ final class TestWorkflow {
 
   function enterTestCaseResult() {
     switch ($this->_state) {
-      // Allowed state.
+      // Valid states.
+
     case self::Header:
       // Dynamic plan. First test.
       $this->_state = self::DynamicPlanTests;
@@ -1101,7 +1115,9 @@ final class TestWorkflow {
     case self::StaticPlanTests:
       // Static plan. Later test.
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('Unable to register a test: missing header.');
     case self::End:
@@ -1120,7 +1136,8 @@ final class TestWorkflow {
 
   function enterBailOut() {
     switch ($this->_state) {
-      // Allowed state.
+      // Valid states.
+
     case self::Header:
     case self::DynamicPlanTests:
     case self::DynamicPlanDecl:
@@ -1129,7 +1146,9 @@ final class TestWorkflow {
     case self::SkipAll:
       $this->_state = self::BailOut;
       break;
-      // Invalid state.
+
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('You can not bail out: missing header.');
     case self::End:
@@ -1142,26 +1161,34 @@ final class TestWorkflow {
   }
 
   function enterComment() {
-    // Only one invalid state and this method does not change state.
+    // This method does not change the current state.
     switch ($this->_state) {
-      // Invalid state.
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('You can not write a comment: missing header.');
     case self::End:
       throw new TestWorkflowException('You can not write a comment: workflow already ended.');
+
+      // Valid states.
+
     default:
       break;
     }
   }
 
   function enterError() {
-    // Only one invalid state and this method does not change state.
+    // This method does not change the current state.
     switch ($this->_state) {
-      // Invalid state.
+      // Invalid states.
+
     case self::Start:
       throw new TestWorkflowException('You can not write an error: missing header.');
     case self::End:
       throw new TestWorkflowException('You can not write an error: workflow already closed.');
+
+      // Valid states.
+
     default:
       break;
     }
@@ -1169,35 +1196,5 @@ final class TestWorkflow {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-
-//\note IMPORTANT
-//
-//DO NOT import any other file, the testing library MUST STAY self contained.
-//
-//\todo
-//
-// - noPlan()
-// - add a verbose mode for TapRunner
-// - check all constructors for validity
-// - reset states
-// - return values for methods
-// - can TAP normal and error streams use the same FH?
-// - flush on handles to ensure correct ordering
-// - test the test
-// - in a subtest, we should unindent in bailout
-// - how to catch exceptions so that they do not garble the output
-// - Test::Harness, Test::Differences, Test::Deeper, Test::Class, Test::Most
-// - doc: code, usage, diff with Test::More, error reporting
-//
-//\par ERROR REPORTING
-//
-//Several ways to report an error:
-// - throws an Exception for any internal error and for fatal error
-//    where we can not use TestProducer::bailOut()
-// - trigger_error()
-//    * \c E_USER_ERROR for any fatal error during GC
-//    * \c E_USER_WARNING for any non-fatal error where we can not use \c TestProducer::Warn()
-// - \c TestProducer::bailOut() for remaining fatal errors
-// - \c TestProducer::Warn() for remaining non-fatal errors
 
 // EOF

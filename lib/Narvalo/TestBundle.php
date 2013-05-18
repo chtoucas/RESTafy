@@ -12,8 +12,8 @@ function no_plan() {
   _\start_no_plan();
 }
 
-/// Declare the number of tests to run
-/// \param $_max_ (integer) Number of tests
+/// Declare the number of tests to run.
+/// $_max_ (integer) Number of tests
 function plan($_max_) {
   _\check_plan(\TRUE);
 
@@ -30,7 +30,7 @@ function plan($_max_) {
   }
 }
 
-/// Skip all tests
+/// Skip all tests?
 function skip_all($_reason_) {
   //$reason = isset($_arg_) ? "# $_arg_" : '';
   echo "1..0 $_reason_\n";
@@ -422,8 +422,6 @@ function diag($_message_) {
 
   echo "# $_message_\n";
 }
-
-// =================================================================================================
 
 function __test_shutdown() {
   $test = build_test();

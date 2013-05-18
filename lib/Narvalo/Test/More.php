@@ -141,7 +141,7 @@ class More {
 
   function implementsInterface($_class_, $_interface_, $_description_) {
     // FIXME: __autoload?
-    // check that we do have an interface by reflection or via interface_exists()
+    // Check that we do have an interface by reflection or via interface_exists().
     $rc = new \ReflectionClass($_class_);
     return $this->getProducer()->assert($rc->implementsInterface($_interface_), $_description_);
   }

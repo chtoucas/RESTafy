@@ -129,25 +129,25 @@ class TypeName {
 // {{{ Type
 
 final class Type {
-  /// \brief Return the datatype of $_value_
+  /// Return the datatype of $_value_
   ///
   /// Why create our own function? There is already gettype!
   /// According to the documentation, we should never rely on gettype...
   /// Another difference with gettype is that we return a different type
   /// for hashes (associative arrays) and real arrays.
   ///
-  /// \param $_value_ (mixed) Any PHP structure
-  /// \return A string representing a somehow extended PHP type:
-  ///    - null
-  ///    - boolean
-  ///    - integer
-  ///    - float
-  ///    - string
-  ///    - array
-  ///    - hash
-  ///    - object
-  ///    - resource
-  /// \return NULL if none of above.
+  /// $_value_ (mixed) Any PHP structure
+  /// Return a string representing a somehow extended PHP type:
+  ///   - null
+  ///   - boolean
+  ///   - integer
+  ///   - float
+  ///   - string
+  ///   - array
+  ///   - hash
+  ///   - object
+  ///   - resource
+  /// Return NULL if none of above.
   static function GetType($_value_) {
     if (\NULL === $_value_) {
       // Keep this on top.
@@ -203,9 +203,9 @@ final class Type {
 final class DynaLoader {
   const FileExtension = '.php';
 
-  /// \brief Dynamically load a code file.
+  /// Dynamically load a code file.
   /// WARNING: only works if the included file does not return FALSE.
-  /// \throw InvalidOperationException
+  /// May throw an InvalidOperationException.
   static function LoadFile($_path_) {
     if (\FALSE === (include_once $_path_)) {
       throw new FileNotFoundRuntimeException(
@@ -255,8 +255,9 @@ final class Guard {
 
 // {{{ ReadOnlyDictionary
 
-// TODO: Not really ReadOnly, since the derived class can access the private property.
 trait ReadOnlyDictionary {
+  // TODO: Not really ReadOnly, since the derived class can access the private property.
+
   private $_store = array();
 
   function has($_key_) {
@@ -519,37 +520,35 @@ class Container {
 // {{{ Cache
 
 interface Cache {
-  /// \brief Return TRUE if cache exists, FALSE otherwise
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \param $_test_validity_ (boolean) Check the cache validity
-  /// \return (boolean) TRUE if cache exists, FALSE otherwise
+  /// Return TRUE if cache exists, FALSE otherwise.
+  /// $_id_ (string) Cache Id
+  /// $_namespace_ (string) Cache namespace
+  /// $_test_validity_ (boolean) Check the cache validity
   function has($_id_, $_namespace_, $_test_ = \TRUE);
 
-  /// \brief Return cached data on success, NULL if no available cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \param $_test_validity_ (boolean) Check the cache validity
-  /// \return (mixed)
+  /// Return cached data on success, NULL if no available cache.
+  /// $_id_ (string) Cache Id
+  /// $_namespace_ (string) Cache namespace
+  /// $_test_validity_ (boolean) Check the cache validity
   function get($_id_, $_namespace_, $_test_ = \TRUE);
 
-  /// \brief Put $_data_ into the cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \param $_data_ (string) Data to be cached
-  /// \return (boolean) TRUE on success, FALSE otherwise
+  /// Put $_data_ into the cache.
+  /// $_id_ (string) Cache Id
+  /// $_namespace_ (string) Cache namespace
+  /// $_data_ (string) Data to be cached
+  /// Return TRUE on success, FALSE otherwise.
   function put($_id_, $_namespace_, $_data_);
 
-  /// \brief Delete cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \return (boolean) TRUE on success, FALSE otherwise
+  /// Delete cache.
+  /// $_id_ (string) Cache Id
+  /// $_namespace_ (string) Cache namespace
+  /// Return TRUE on success, FALSE otherwise.
   function remove($_id_, $_namespace_);
 
-  /// \brief Get last modified time for cache
-  /// \param $_id_ (string) Cache Id
-  /// \param $_namespace_ (string) Cache namespace
-  /// \return (string) Last modified time
+  /// Get last modified time for cache.
+  /// $_id_ (string) Cache Id
+  /// $_namespace_ (string) Cache namespace
+  /// Return last modified time.
   function getLastModified($_id_, $_namespace_);
 }
 

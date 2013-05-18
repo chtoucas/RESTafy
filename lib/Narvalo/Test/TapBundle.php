@@ -25,10 +25,11 @@ define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 // TAP streams
 // =================================================================================================
 
-// FIXME: TapStream should be internal.
 // {{{ TapStream
 
 class TapStream extends Framework\FileStreamWriter {
+  // FIXME: TapStream should be internal.
+
   private $_indent = '';
 
   function reset() {
@@ -249,7 +250,6 @@ final class TapHarnessStream
       }
 
       if ($_result_->runtimeErrorsCount > 0) {
-        // There are runtime errors. See diagnostics above.
         $status .= ' DUBIOUS';
       }
 

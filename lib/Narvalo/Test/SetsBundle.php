@@ -36,7 +36,7 @@ interface TestFixture {
 
 // {{{ TestSuite
 
-/// \brief A very simple xUnit-like test set.
+/// A very simple xUnit-like test set.
 class TestSuite implements TestSet, TestFixture {
   private static $_MethodNamesToExclude;
   private
