@@ -6,10 +6,10 @@ use \Narvalo\Test;
 
 $t = new Test\More();
 
-$t->plan(2);
+$t->plan(1);
 
-$t->assert(\TRUE, 'OK');
+$t->ok(\TRUE, 'OK');
 
-$t->bailOut('Premature exit');
+$t->bailOut('Premature exit.');
 
 // EOF

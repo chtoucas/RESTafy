@@ -196,11 +196,11 @@ final class NoopTestOutStream implements Framework\TestOutStream {
     return \TRUE;
   }
 
-  function startSubTest() {
+  function startSubtest() {
     ;
   }
 
-  function endSubTest() {
+  function endSubtest() {
     ;
   }
 
@@ -257,11 +257,11 @@ final class NoopTestErrStream implements Framework\TestErrStream {
     return \TRUE;
   }
 
-  function startSubTest() {
+  function startSubtest() {
     ;
   }
 
-  function endSubTest() {
+  function endSubtest() {
     ;
   }
 

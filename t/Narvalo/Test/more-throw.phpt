@@ -8,7 +8,7 @@ $t = new Test\More();
 
 $t->plan(2);
 
-$t->assert(TRUE, 'OK');
+$t->ok(TRUE, 'OK');
 
 throw new Exception("exception");
 

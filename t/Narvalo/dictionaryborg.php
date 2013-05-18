@@ -1,18 +1,20 @@
 <?php
 
 require_once 'NarvaloBundle.php';
-require_once 'Narvalo\TestBundle.php';
+require_once 'Narvalo/TestBundle.php';
 
-use Narvalo\Test as t;
-use Narvalo\DictionaryBorg;
+use \Narvalo;
+use \Narvalo\Test as t;
 
 t\plan(4);
 
 // Stubs.
 
-class Stub1 extends DictionaryBorg { }
-class Stub2 extends DictionaryBorg { }
-class Stub3 extends DictionaryBorg {
+class Stub1 extends Narvalo\DictionaryBorg { }
+
+class Stub2 extends Narvalo\DictionaryBorg { }
+
+class Stub3 extends Narvalo\DictionaryBorg {
   protected static function & GetSharedState_() {
     static $state = array('Key' => 'Value');
     return $state;

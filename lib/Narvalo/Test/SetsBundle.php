@@ -46,13 +46,13 @@ class TestSuite implements TestSet, TestFixture {
   final function __construct() {
     self::_Initialize();
 
-    $rfl = new \ReflectionObject($this);
+    $ro = new \ReflectionObject($this);
 
-    $this->_name = $rfl->getName();
+    $this->_name = $ro->getName();
 
     // All public methods in a derived class are considered to be a unit test case.
     $this->_testMethods = \array_filter(
-      $rfl->getMethods(\ReflectionMethod::IS_PUBLIC),
+      $ro->getMethods(\ReflectionMethod::IS_PUBLIC),
       function($_method_) {
         return !\array_key_exists($_method_->getName(), self::$_MethodNamesToExclude);
       });
@@ -94,13 +94,13 @@ class TestSuite implements TestSet, TestFixture {
 
   private static function _Initialize() {
     if (NULL === self::$_MethodNamesToExclude) {
-      $rfl = new \ReflectionClass(__CLASS__);
+      $rc = new \ReflectionClass(__CLASS__);
 
       // All methods in TestSuite are to be excluded.
       self::$_MethodNamesToExclude
         = \array_flip(\array_map(
           function($_method_) { return $_method_->getName(); },
-          $rfl->getMethods()
+          $rc->getMethods()
         ));
     }
   }

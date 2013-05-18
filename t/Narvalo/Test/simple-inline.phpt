@@ -6,6 +6,6 @@ use \Narvalo\Test;
 
 $t = new Test\Simple(1);
 
-$t->assert(\TRUE, "OK");
+$t->ok(\TRUE, "OK");
 
 // EOF

@@ -8,6 +8,6 @@ $t = new Test\More();
 
 $t->skipAll('Skip all tests');
 
-$t->assert(\TRUE, 'OK');
+$t->ok(\TRUE, 'OK');
 
 // EOF

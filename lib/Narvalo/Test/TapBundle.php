@@ -36,11 +36,11 @@ class TapStream extends Framework\FileStreamWriter {
     $this->_indent = '';
   }
 
-  function startSubTest() {
+  function startSubtest() {
     $this->_indent();
   }
 
-  function endSubTest() {
+  function endSubtest() {
     $this->_unindent();
   }
 

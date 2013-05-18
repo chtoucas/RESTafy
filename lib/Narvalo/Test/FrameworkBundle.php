@@ -126,8 +126,8 @@ interface TestOutStream {
   function reset();
   function canWrite();
 
-  function startSubTest();
-  function endSubTest();
+  function startSubtest();
+  function endSubtest();
 
   function writeHeader();
   function writeFooter();
@@ -148,8 +148,8 @@ interface TestErrStream {
   function reset();
   function canWrite();
 
-  function startSubTest();
-  function endSubTest();
+  function startSubtest();
+  function endSubtest();
 
   function write($_value_);
 }
@@ -421,7 +421,7 @@ EOL;
     $set = $this->_set;
     $this->_set = new _\DynamicTestResultSet();
     // Notify outputs.
-    $this->_startSubTest();
+    $this->_startSubtest();
     // Execute the subtests.
     $_fun_();
     //
@@ -436,13 +436,13 @@ EOL;
     $this->assert($passed, $_description_);
   }
 
-  function skipSubTest($_reason_) {
+  function skipSubtest($_reason_) {
     // Notify outputs.
-    $this->_startSubTest();
+    $this->_startSubtest();
     // Skip all tests.
     $this->_addSkipAll($_reason_);
     // Restore outputs.
-    $this->_endSubTest();
+    $this->_endSubtest();
     // Report the result to the parent producer.
     $this->skip(1, $_reason_);
   }
@@ -558,16 +558,16 @@ EOL;
     $this->_outStream->writeFooter();
   }
 
-  private function _startSubTest() {
-    $this->_workflow->startSubTest();
-    $this->_outStream->startSubTest();
-    $this->_errStream->startSubTest();
+  private function _startSubtest() {
+    $this->_workflow->startSubtest();
+    $this->_outStream->startSubtest();
+    $this->_errStream->startSubtest();
   }
 
-  private function _endSubTest() {
-    $this->_workflow->endSubTest();
-    $this->_outStream->endSubTest();
-    $this->_errStream->endSubTest();
+  private function _endSubtest() {
+    $this->_workflow->endSubtest();
+    $this->_outStream->endSubtest();
+    $this->_errStream->endSubtest();
   }
 
   private function _startTodo() {
@@ -640,6 +640,10 @@ final class TestKernel {
   private static
     $_SharedProducer,
     $_Bootstrapped = \FALSE;
+
+  static function Bootstrapped() {
+    return self::$_Bootstrapped;
+  }
 
   static function Bootstrap(TestProducer $_producer_) {
     if (self::$_Bootstrapped) {
@@ -889,7 +893,7 @@ final class TestWorkflow {
     return $this->_todoLevel > 0;
   }
 
-  function inSubTest() {
+  function inSubtest() {
     return $this->_subTestLevel > 0;
   }
 
@@ -950,7 +954,7 @@ final class TestWorkflow {
     $this->_state = self::End;
   }
 
-  function startSubTest() {
+  function startSubtest() {
     switch ($this->_state) {
       // Valid states.
 
@@ -984,7 +988,7 @@ final class TestWorkflow {
   }
 
   /// \return void
-  function endSubTest() {
+  function endSubtest() {
     // FIXME: Valid states.
     if (0 === $this->_subTestLevel) {
       throw new TestWorkflowException('You can not end a subtest if you did not start one before.');

@@ -427,8 +427,8 @@ final class ProviderHelper {
     if (\NULL === $params) {
       return new $providerClass();
     } else {
-      $refl = new \ReflectionClass($providerClass);
-      return $refl->newInstance($params);
+      $rc = new \ReflectionClass($providerClass);
+      return $rc->newInstance($params);
     }
   }
 }

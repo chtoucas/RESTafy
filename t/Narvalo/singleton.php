@@ -1,21 +1,19 @@
 <?php
 
 require_once 'NarvaloBundle.php';
-require_once 'Narvalo\TestBundle.php';
+require_once 'Narvalo/TestBundle.php';
 
-use Narvalo\Test as t;
-use Narvalo\Singleton;
-
-t\no_plan();
+use \Narvalo;
+use \Narvalo\Test as t;
 
 // Stubs.
 
 class Stub1 {
-  use Singleton;
+  use Narvalo\Singleton;
 }
 
 class Stub2 {
-  use Singleton;
+  use Narvalo\Singleton;
 
   static $InitializeCount = 0;
 

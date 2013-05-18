@@ -10,8 +10,8 @@ $t = new Test\More();
 $t->plan(15);
 //$t->skipAll('TEST');
 
-$t->assert(\TRUE, 'Passing test');
-//$t->assert(\FALSE, 'Failing test');
+$t->ok(\TRUE, 'Passing test');
+//$t->ok(\FALSE, 'Failing test');
 
 $t->pass('Passing test');
 $t->fail('Failing test');
@@ -23,11 +23,11 @@ TODO: {
   $t->endTodo();
 }
 
-$t->equal(1, 1, 'Passing equal Numeric');
-$t->equal(\NULL, '', "Passing equal NULL==''");
-$t->equal(\NULL, \NULL, 'Passing equal NULL==NULL');
-$t->equal(array(1, 1), array(1, 1), 'Passing equal array');
-$t->equal(new \StdClass(), new \StdClass(), 'Failing equal anonymous object');
+$t->is(1, 1, 'Passing equal Numeric');
+$t->is(\NULL, '', "Passing equal NULL==''");
+$t->is(\NULL, \NULL, 'Passing equal NULL==NULL');
+$t->is(array(1, 1), array(1, 1), 'Passing equal array');
+$t->is(new \StdClass(), new \StdClass(), 'Failing equal anonymous object');
 
 $t->like(" ", "{\s+}", 'Passing Regex');
 
@@ -35,28 +35,28 @@ $t->canInclude('doesnotexist.php', 'Failing include does not exist');
 //$t->canInclude('failed.php', 'Failing include failed');
 //$t->canInclude('returnfalse.php', 'Passing include returning FALSE');
 
-$t->subTest(function() use ($t) {
+$t->subtest(function() use ($t) {
   //$t->plan(5);
-  $t->equal(1, 2, 'Passing equal Numeric');
+  $t->is(1, 2, 'Passing equal Numeric');
   $t->pass('Passing sub test');
   $t->pass('Passing sub test');
   //$s = new Test\Simple(1);
-  //$s->assert(\TRUE, 'Passing sub test');
-  $t->subTest(function() use ($t) {
+  //$s->ok(\TRUE, 'Passing sub test');
+  $t->subtest(function() use ($t) {
     $t->plan(5);
-    $t->equal(1, 1, 'Passing equal Numeric');
+    $t->is(1, 1, 'Passing equal Numeric');
     $t->pass('Passing sub test');
     $t->pass('Passing sub test');
-    $t->subTest(function() use ($t) {
-      $t->equal(1, 1, 'Passing equal Numeric');
+    $t->subtest(function() use ($t) {
+      $t->is(1, 1, 'Passing equal Numeric');
     }, 'Sub sub sub test');
     //$s = new Test\Simple();
-    $t->assert(\TRUE, 'Passing sub test');
+    $t->ok(\TRUE, 'Passing sub test');
   }, 'Sample sub subtest');
 }, 'Sample subtest');
 
-$t->skipSubTest(function() use ($t) {
-  $t->equal(1, 1, 'Passing equal Numeric');
+$t->skipSubtest(function() use ($t) {
+  $t->is(1, 1, 'Passing equal Numeric');
   $t->pass('Passing first sub test');
   $t->pass('Passing second sub test');
   $t->fail('Failing sub test');

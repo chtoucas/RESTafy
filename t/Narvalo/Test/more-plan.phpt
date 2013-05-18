@@ -8,6 +8,6 @@ $t = new Test\More();
 
 $t->plan(1);
 
-$t->assert(\TRUE, 'OK');
+$t->ok(\TRUE, 'OK');
 
 // EOF
