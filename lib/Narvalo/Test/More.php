@@ -2,7 +2,7 @@
 
 namespace Narvalo\Test;
 
-require_once 'Narvalo\Test\FrameworkBundle.php';
+require_once 'Narvalo/Test/FrameworkBundle.php';
 
 use \Narvalo\Test\Framework;
 

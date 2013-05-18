@@ -161,8 +161,8 @@ final class Type {
     } elseif (\is_bool($_value_)) {
       return ObjectType::Boolean;
     } elseif (\is_array($_value_)) {
-      // Much faster alternative to the usual snippet:
-      // \array_keys($_value_) === \range(0, \count($_value_) - 1) || empty($_value_)
+      // Faster alternative to the usual snippet:
+      // empty($_value_) || \array_keys($_value_) === \range(0, \count($_value_) - 1)
       $i = 0;
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {

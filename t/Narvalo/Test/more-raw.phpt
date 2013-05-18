@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Narvalo\Test\More.php';
+require_once 'Narvalo/Test/More.php';
 
 use Narvalo\Test;
 

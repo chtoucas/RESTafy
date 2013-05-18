@@ -3,8 +3,8 @@
 namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
-require_once 'Narvalo\Test\FrameworkBundle.php';
-require_once 'Narvalo\Test\SetsBundle.php';
+require_once 'Narvalo/Test/FrameworkBundle.php';
+require_once 'Narvalo/Test/SetsBundle.php';
 
 use \Narvalo;
 use \Narvalo\Test\Framework;

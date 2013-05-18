@@ -8,8 +8,8 @@
 
 namespace Narvalo\Test\Tap;
 
-require_once 'Narvalo\Test\FrameworkBundle.php';
-require_once 'Narvalo\Test\RunnerBundle.php';
+require_once 'Narvalo/Test/FrameworkBundle.php';
+require_once 'Narvalo/Test/RunnerBundle.php';
 
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
