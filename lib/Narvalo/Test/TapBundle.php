@@ -80,7 +80,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 
   function writeHeader() {
-    return $this->writeTapLine_('TAP version ' . self::Version);
+    // XXX: return $this->writeTapLine_('TAP version ' . self::Version);
   }
 
   function writeFooter() {

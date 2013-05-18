@@ -764,10 +764,10 @@ final class DynamicTestResultSet extends AbstractTestResultSet {
         $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
           . "of {$tests_count} run.");
       }
-      $_errStream_->write('No plan!');
+      // XXX: $_errStream_->write('No plan!');
     } else {
       // No tests run.
-      $_errStream_->write('No plan. No tests run!');
+      // XXX: $_errStream_->write('No plan. No tests run!');
     }
   }
 
