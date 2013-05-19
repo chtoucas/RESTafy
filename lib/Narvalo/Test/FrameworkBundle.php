@@ -43,9 +43,9 @@ final class DefaultTestCaseResult implements TestCaseResult {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ AbstractTestCaseResult
+// {{{ AbstractRegulatedTestCaseResult
 
-abstract class AbstractTestCaseResult implements TestCaseResult {
+abstract class AbstractRegulatedTestCaseResult implements TestCaseResult {
   private $_reason;
 
   protected function __construct($_reason_) {
@@ -60,7 +60,7 @@ abstract class AbstractTestCaseResult implements TestCaseResult {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ SkipTestCaseResult
 
-final class SkipTestCaseResult extends AbstractTestCaseResult {
+final class SkipTestCaseResult extends AbstractRegulatedTestCaseResult {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
@@ -77,7 +77,7 @@ final class SkipTestCaseResult extends AbstractTestCaseResult {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TodoTestCaseResult
 
-final class TodoTestCaseResult extends AbstractTestCaseResult {
+final class TodoTestCaseResult extends AbstractRegulatedTestCaseResult {
   private $_inner;
 
   function __construct(TestCaseResult $_inner_, $_reason_) {
@@ -331,8 +331,8 @@ class TestProducer {
 
   function plan($_how_many_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
-      // XXX: Invalid argument exception?
-      $this->bailOut(
+      throw new Narvalo\ArgumentException(
+        'how_many',
         \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
@@ -340,12 +340,6 @@ class TestProducer {
     $this->_addPlan($_how_many_);
   }
 
-  /// Evaluates the expression $_test_, if TRUE reports success,
-  /// otherwise reports a failure.
-  ///   assert($got === $expected, $test_name);
-  /// $_test_ <boolean> Expression to test
-  /// $_description_ <string> Test description
-  /// Return TRUE if test passed, FALSE otherwise.
   function assert($_test_, $_description_) {
     $test = new DefaultTestCaseResult($_description_, \TRUE === $_test_);
     if ($this->_inTodo()) {
@@ -357,39 +351,29 @@ class TestProducer {
       $this->_addTestCaseResult($test, $number);
     }
 
-    if (!$test->passed()) {
-      // If the test failed, display the source of the problem.
-      $what = $this->_inTodo() ? '(TODO) test' : 'test';
-      $caller = self::_FindCaller();
-      $description = $test->getDescription();
-      if (empty($description)) {
-        $diag = <<<EOL
-Failed $what
-at {$caller['file']} line {$caller['line']}.
-EOL;
-      } else {
-        $diag = <<<EOL
-Failed $what '$description'
-at {$caller['file']} line {$caller['line']}.
-EOL;
-      }
-      $this->diagnose($diag);
+    $passed = $test->passed();
+
+    if (!$passed) {
+      $this->diagnose(\sprintf(
+        'Failed %s: %s',
+        $this->_inTodo() ? '(TODO) test' : 'test',
+        $test->getDescription()));
     }
 
-    return $test->passed();
+    return $passed;
   }
 
   function skip($_how_many_, $_reason_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
-      $errmsg = 'The number of skipped tests must be a strictly positive integer';
-      if ($this->_set instanceof _\FixedSizeTestResultSet) {
-        $this->bailOut($errmsg);
-      } else {
-        $this->warn($errmsg); return;
-      }
+      throw new Narvalo\ArgumentException(
+        'how_many',
+        \sprintf('The number of skipped tests must be a strictly positive integer. You gave it "%s".',
+          $_how_many_));
     }
     if ($this->_inTodo()) {
-      $this->bailOut('You can not interlace a SKIP directive with a TO-DO block');
+      // XXX: Handled by the workflow?
+      throw new Narvalo\InvalidOperationException(
+        'You can not interlace a SKIP directive with a TO-DO block');
     }
     $test = new SkipTestCaseResult($_reason_);
     for ($i = 1; $i <= $_how_many_; $i++) {
@@ -399,20 +383,17 @@ EOL;
   }
 
   function startTodo($_reason_) {
+    $this->_startTodo();
     if ($this->_inTodo()) {
       // Keep the upper-level TO-DO in memory.
       \array_push($this->_todoStack, $this->_todoReason);
     }
     $this->_todoReason = $_reason_;
-    $this->_startTodo();
   }
 
   function endTodo() {
-    //if (!$this->inTodo()) {
-    //  $this->bailOut('You can not end a TO-DO block if you did not start one before');
-    //}
     $this->_endTodo();
-    $this->_todoReason = $this->_inTodo() ? \array_pop($this->_todoStack) : '';
+    $this->_todoReason = \array_pop($this->_todoStack);
   }
 
   function subTest(\Closure $_fun_, $_description_) {
@@ -469,13 +450,6 @@ EOL;
 
   // Utilities.
 
-  private static function _FindCaller() {
-    $calltree = \debug_backtrace();
-    $file = $calltree['2']['file'];
-    $line = $calltree['2']['line'];
-    return array('file' => $file,  'line' => $line);
-  }
-
   private static function _IsStrictlyPositiveInteger($_value_) {
     return (int)$_value_ === $_value_ && $_value_ > 0;
   }
@@ -505,10 +479,11 @@ EOL;
   }
 
   private function _endTestResultSet() {
-    $this->_postPlan();
-
     // Print helpful messages if something went wrong.
+    // NB: This must stay above _postPlan().
     $this->_set->close($this->_errStream);
+
+    $this->_postPlan();
   }
 
   private function _reset() {
@@ -761,13 +736,14 @@ final class DynamicTestResultSet extends AbstractTestResultSet {
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
-        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
-          . "of {$tests_count} run.");
+        $_errStream_->write(
+          \sprintf('Looks like you failed %s test%s of %s run.',
+            $failures_count, $s, $tests_count));
       }
-      // XXX: $_errStream_->write('No plan!');
+      $_errStream_->write('No plan!');
     } else {
       // No tests run.
-      // XXX: $_errStream_->write('No plan. No tests run!');
+      $_errStream_->write('No plan. No tests run!');
     }
   }
 
@@ -810,15 +786,17 @@ final class FixedSizeTestResultSet extends AbstractTestResultSet {
       if ($extras_count != 0) {
         // Count missmatch.
         $s = $this->_length > 1 ? 's' : '';
-        $_errStream_->write("Looks like you planned {$this->_length} test{$s} "
-          . "but ran {$tests_count}.");
+        $_errStream_->write(
+          \sprintf('Looks like you planned %s test%s but ran %s.',
+            $this->_length, $s, $tests_count));
       }
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
         $qualifier = 0 == $extras_count ? '' : ' run';
-        $_errStream_->write("Looks like you failed {$failures_count} test{$s} "
-          . "of {$tests_count}{$qualifier}.");
+        $_errStream_->write(
+          \sprintf('Looks like you failed %s test%s of %s%s.',
+            $failures_count, $s, $tests_count, $qualifier));
       }
     } else {
       // No tests run.

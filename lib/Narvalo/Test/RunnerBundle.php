@@ -24,9 +24,6 @@ class TestRunner {
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer     = $_producer_;
     $this->_errorCatcher = new _\RuntimeErrorCatcher($_producer_);
-
-    // FIXME: Find a better way to initialize TestKernel.
-    Framework\TestKernel::Bootstrap($_producer_);
   }
 
   function run(Sets\TestSet $_set_) {
@@ -93,6 +90,8 @@ class TestHarness {
     $producer = new Framework\TestProducer(
       $_outStream_ ?: new _\NoopTestOutStream(),
       $_errStream_ ?: new _\NoopTestErrStream());
+
+    Framework\TestKernel::Bootstrap($producer);
 
     $this->_runner = new TestRunner($producer);
   }

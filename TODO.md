@@ -1,7 +1,9 @@
 Narvalo\Test
 ============
 
-* Check the conformance with TAP 1.3.
+* Check the conformance with TAP 12.
+* SKIP & TODO
+* Abstract the directives TODO & SKIP.
 * Test the Test.
 * Comments & doc.
 * Review all FIXME & TODO.

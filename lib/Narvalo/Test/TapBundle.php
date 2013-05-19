@@ -69,7 +69,7 @@ class TapStream extends Framework\FileStreamWriter {
 // {{{ TapOutStream
 
 final class TapOutStream extends TapStream implements Framework\TestOutStream {
-  const Version = '13';
+  const Version = 12;
 
   private $_verbose;
 
@@ -80,7 +80,9 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 
   function writeHeader() {
-    // XXX: return $this->writeTapLine_('TAP version ' . self::Version);
+    if (self::Version > 12) {
+      return $this->writeTapLine_(\sprintf('TAP version %s', self::Version));
+    }
   }
 
   function writeFooter() {
@@ -134,7 +136,8 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
     // Escape #.
     $desc = \str_replace('#', '\\#', $desc);
     if ($desc != $_desc_) {
-      \trigger_error("The description '$_desc_' contains invalid chars.", \E_USER_NOTICE);
+      \trigger_error(
+        \sprintf('The description "%s" contains invalid chars.', $_desc_), \E_USER_NOTICE);
     }
     return $desc;
   }
@@ -142,7 +145,8 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   private static function _FormatReason($_reason_) {
     $reason = \preg_replace(_CRLF_REGEX, '¤', $_reason_);
     if ($reason != $_reason_) {
-      \trigger_error("The reason '$_reason_' contains invalid chars.", \E_USER_NOTICE);
+      \trigger_error(
+        \sprintf('The reason "%s" contains invalid chars.', $_reason_), \E_USER_NOTICE);
     }
     return $reason;
   }
