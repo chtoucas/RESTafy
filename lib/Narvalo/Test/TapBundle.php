@@ -218,7 +218,7 @@ final class TapHarnessStream
 
 // }}}
 
-// TAP core classes
+// TAP producer
 // =================================================================================================
 
 // {{{ TapProducer
@@ -251,30 +251,6 @@ class TapProducer extends Framework\TestProducer {
       // Other kind of errors: extra tests, unattended interrupt.
       return self::FailureCode;
     }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TapRunner
-
-class TapRunner extends Runner\TestRunner {
-  function __construct(TapProducer $_producer_) {
-    parent::__construct($_producer_);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TapHarness
-
-class TapHarness extends Runner\TestHarness {
-  function __construct(
-    TapHarnessStream $_stream_,
-    Framework\TestOutStream $_outStream_ = \NULL,
-    Framework\TestErrStream $_errStream_ = \NULL
-  ) {
-    parent::__construct($_stream_);
   }
 }
 

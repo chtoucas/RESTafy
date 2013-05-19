@@ -1,11 +1,9 @@
 <?php
 /// Automaticaly loaded when you use ./bin/runphpt.
 
-require_once 'NarvaloBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
-use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Tap;
 

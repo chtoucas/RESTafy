@@ -1,10 +1,11 @@
 <?php
-/// Usage:
-///   ./bin/runphp libexec/runtest.php
+/// Usage: ./bin/runphp libexec/runtest.php
 
+require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
+use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
@@ -14,7 +15,7 @@ $producer = new Tap\TapProducer(
   new Tap\TapErrStream('php://stderr'),
   \TRUE /* register */
 );
-$runner = new Tap\TapRunner($producer);
+$runner = new Runner\TestRunner($producer);
 
 //$file = 't/arvalo/Test/more-bailout.phpt';
 //$file = 't/Narvalo/Test/simple-inline.phpt';
