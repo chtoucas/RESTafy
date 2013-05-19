@@ -1,21 +1,34 @@
 #!/bin/sh
-# TODO:
-# - clean
+# TODO: cleanup
 
 PROJECT_DIR=$(cd `dirname $0` && pwd)/..
+LIB_DIR="${PROJECT_DIR}/lib"
 BLIB_DIR="${PROJECT_DIR}/blib"
-PHP="php -n -c ./etc/php.ini -w"
-
-cd ${PROJECT_DIR}
 
 [ -d ${BLIB_DIR} ] || mkdir ${BLIB_DIR}
 
-rm -rf ${BLIB_DIR}/*
+PHPRC="${PROJECT_DIR}/etc/php.ini"
 
-mkdir blib/Narvalo
-${PHP} lib/NarvaloBundle.php > ${BLIB_DIR}/NarvaloBundle.php
-${PHP} lib/Narvalo/TestBundle.php > ${BLIB_DIR}/Narvalo/TestBundle.php
+if [ -n "${CYGWIN}" ] ; then
+    PHPRC="`cygpath -w -a -- "${PHPRC}"`"
+fi
 
-${PHP} lib/RESTafyBundle.php > ${BLIB_DIR}/RESTafyBundle.php
+PHP_EXE="`which php-cli 2>/dev/null`"
+if [ ! -x "${PHP_EXE}" ]; then
+    PHP_EXE="`which php 2>/dev/null`"
+fi
+if [ ! -x "${PHP_EXE}" ]; then
+    echo "Sorry but can't find php."; exit 1
+fi
+
+cd ${LIB_DIR}
+
+for lib in `find . -iname "*.php" -type f`
+do
+    echo "Processing ${lib}"
+    lib_dir=$(dirname ${BLIB_DIR}/${lib})
+    [ -d ${lib_dir} ] || mkdir -p ${lib_dir}
+    ${PHP_EXE} -w "${lib}" > "${BLIB_DIR}/${lib}"
+done
 
 cd - > /dev/null

@@ -17,6 +17,14 @@ if [ -n "${CYGWIN}" ] ; then
     PHP_INCLUDE_PATH="`cygpath -w -a -- "${PHP_INCLUDE_PATH}"`"
 fi
 
-php -d include_path="${PHP_INCLUDE_PATH}" "$@"
+PHP_EXE="`which php-cli 2>/dev/null`"
+if [ ! -x "${PHP_EXE}" ]; then
+    PHP_EXE="`which php 2>/dev/null`"
+fi
+if [ ! -x "${PHP_EXE}" ]; then
+    echo "Sorry but can't find php."; exit 1
+fi
+
+"${PHP_EXE}" -d include_path="${PHP_INCLUDE_PATH}" "$@"
 
 # EOF

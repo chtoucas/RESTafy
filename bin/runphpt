@@ -10,7 +10,7 @@ if [ `which uname` ]; then
     esac
 fi
 
-[ -d "${TMP_DIR}" ] || mkdir "${TMP_DIR}"
+[ -d "${TMP_DIR}" ] || mkdir -p "${TMP_DIR}"
 
 PHPRC="${PROJECT_DIR}/etc/phpt.ini"
 PHP_INCLUDE_PATH="${PROJECT_DIR}/lib"
@@ -24,7 +24,15 @@ if [ -n "${CYGWIN}" ] ; then
     PHP_ERROR_LOG="`cygpath -w -a -- "${PHP_ERROR_LOG}"`"
 fi
 
-php -d include_path="${PHP_INCLUDE_PATH}" \
+PHP_EXE="`which php-cli 2>/dev/null`"
+if [ ! -x "${PHP_EXE}" ]; then
+    PHP_EXE="`which php 2>/dev/null`"
+fi
+if [ ! -x "${PHP_EXE}" ]; then
+    echo "Sorry but can't find php."; exit 1
+fi
+
+"${PHP_EXE}" -d include_path="${PHP_INCLUDE_PATH}" \
     -d auto_prepend_file="${PHP_AUTO_PREPEND_FILE}" \
     -d error_log="${PHP_ERROR_LOG}" \
     "$@"
