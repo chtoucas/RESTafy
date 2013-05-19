@@ -69,11 +69,6 @@ class TestSuite implements TestSet, TestFixture {
     return $this->_name;
   }
 
-//  static function AutoRun() {
-//    $me = new static();
-//    $me->run();
-//  }
-
   final function run() {
     $this->setup();
 
@@ -190,14 +185,16 @@ class FileExtensionRecursiveFilterIterator extends \RecursiveFilterIterator {
   function accept() {
     $current = $this->getInnerIterator()->current();
 
-    return $this->hasChildren() || !$current->isFile() || $this->_match($current->getFilename());
+    return $this->hasChildren()
+      || !$current->isFile()
+      || $this->_matchExtension($current->getFilename());
   }
 
   function getChildren() {
     return new self($this->getInnerIterator()->getChildren(), $this->_fileExt);
   }
 
-  private function _match($_value_) {
+  private function _matchExtension($_value_) {
     return \substr($_value_, - $this->_fileExtLength) === $this->_fileExt;
   }
 }

@@ -1,17 +1,22 @@
 #!/bin/sh
-#setenv  PHPRC
-#setenv  PHP_INI_SCAN_DIR
 
 PROJECT_DIR=$(cd `dirname $0` && pwd)/..
 
-if [ "$1" = "" ]; then
-    echo "You forgot to specify an input file.";
-    exit 0;
+if [ `which uname` ]; then
+    case "`uname -a`" in
+        CYGWIN*)
+            CYGWIN=1 ;;
+    esac
 fi
 
-cd ${PROJECT_DIR}
+PHPRC="${PROJECT_DIR}/etc/php.ini"
+PHP_INCLUDE_PATH="${PROJECT_DIR}/lib"
 
-php -n -c ./etc/php.ini -f "$1"
+if [ -n "${CYGWIN}" ] ; then
+    PHPRC="`cygpath -w -a -- "${PHPRC}"`"
+    PHP_INCLUDE_PATH="`cygpath -w -a -- "${PHP_INCLUDE_PATH}"`"
+fi
 
-cd - > /dev/null
+php -d include_path="${PHP_INCLUDE_PATH}" "$@"
 
+# EOF

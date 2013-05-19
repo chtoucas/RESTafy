@@ -1,17 +1,32 @@
 #!/bin/sh
-#setenv  PHPRC
-#setenv  PHP_INI_SCAN_DIR
 
 PROJECT_DIR=$(cd `dirname $0` && pwd)/..
+TMP_DIR="${PROJECT_DIR}/tmp"
 
-if [ "$1" = "" ]; then
-    echo "You forgot to specify an input file.";
-    exit 0;
+if [ `which uname` ]; then
+    case "`uname -a`" in
+        CYGWIN*)
+            CYGWIN=1 ;;
+    esac
 fi
 
-cd ${PROJECT_DIR}
+[ -d "${TMP_DIR}" ] || mkdir "${TMP_DIR}"
 
-php -n -c ./etc/phpt.ini -f "$1"
+PHPRC="${PROJECT_DIR}/etc/phpt.ini"
+PHP_INCLUDE_PATH="${PROJECT_DIR}/lib"
+PHP_AUTO_PREPEND_FILE="${PROJECT_DIR}/libexec/tap.php"
+PHP_ERROR_LOG="${TMP_DIR}/test.log"
 
-cd - > /dev/null
+if [ -n "${CYGWIN}" ] ; then
+    PHPRC="`cygpath -w -a -- "${PHPRC}"`"
+    PHP_INCLUDE_PATH="`cygpath -w -a -- "${PHP_INCLUDE_PATH}"`"
+    PHP_AUTO_PREPEND_FILE="`cygpath -w -a -- "${PHP_AUTO_PREPEND_FILE}"`"
+    PHP_ERROR_LOG="`cygpath -w -a -- "${PHP_ERROR_LOG}"`"
+fi
 
+php -d include_path="${PHP_INCLUDE_PATH}" \
+    -d auto_prepend_file="${PHP_AUTO_PREPEND_FILE}" \
+    -d error_log="${PHP_ERROR_LOG}" \
+    "$@"
+
+# EOF

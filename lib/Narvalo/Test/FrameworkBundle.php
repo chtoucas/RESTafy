@@ -286,23 +286,13 @@ class TestProducer {
 
   //
 
-  function startup() {
+  final function startup() {
     $this->_addHeader();
+
+    $this->startupCore_();
   }
 
-  function bailOutOnException(\Exception $_ex_) {
-    $this->_bailedOut = \TRUE;
-    $this->_addBailOut($_ex_->getMessage());
-    $this->_addFooter();
-    $this->_bailOutInterrupt(\FALSE);
-  }
-
-  function captureRuntimeError($_error_) {
-    $this->_runtimeErrorsCount++;
-    $this->_addError($_error_);
-  }
-
-  function shutdown() {
+  final function shutdown() {
     if (!$this->_interrupted) {
       $this->_endTestResultSet();
       $this->_addFooter();
@@ -315,6 +305,18 @@ class TestProducer {
     $this->_reset();
 
     return $result;
+  }
+
+  function bailOutOnException(\Exception $_ex_) {
+    $this->_bailedOut = \TRUE;
+    $this->_addBailOut($_ex_->getMessage());
+    $this->_addFooter();
+    $this->_bailOutInterrupt(\FALSE);
+  }
+
+  function captureRuntimeError($_error_) {
+    $this->_runtimeErrorsCount++;
+    $this->_addError($_error_);
   }
 
   // Test methods.
@@ -371,11 +373,12 @@ class TestProducer {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       throw new Narvalo\ArgumentException(
         'how_many',
-        \sprintf('The number of skipped tests must be a strictly positive integer. You gave it "%s".',
+        \sprintf(
+          'The number of skipped tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
     if ($this->_inTodo()) {
-      // XXX: Handled by the workflow?
+      // XXX: Should be handled by the workflow?
       throw new Narvalo\InvalidOperationException(
         'You can not interlace a SKIP directive with a TO-DO block');
     }
@@ -400,7 +403,7 @@ class TestProducer {
     $this->_todoReason = \array_pop($this->_todoStack);
   }
 
-  function subTest(\Closure $_fun_, $_description_) {
+  function subtest(\Closure $_fun_, $_description_) {
     // FIXME: If the subtest exit, it will stop the whole test.
     // Switch to a new TestResultSet.
     $set = $this->_set;
@@ -412,10 +415,10 @@ class TestProducer {
     //
     $this->_endTestResultSet();
     // Restore outputs.
-    $this->_endsubTest();
+    $this->_endSubtest();
     //
     $passed = $this->_set->passed();
-    // Restore the TestResultSet.
+    // Restore the orginal TestResultSet.
     $this->_set = $set;
     // Report the result to the parent producer.
     $this->assert($passed, $_description_);
@@ -449,6 +452,10 @@ class TestProducer {
   }
 
   protected function shutdownCore_() {
+    ;
+  }
+
+  protected function startupCore_() {
     ;
   }
 
@@ -839,7 +846,7 @@ final class TestWorkflow {
     $_disposed     = \FALSE,
     $_state        = self::Start,
     $_subStates    = array(),
-    $_subTestLevel = 0,
+    $_subtestLevel = 0,
     /// TO-DO stack level.
     $_todoLevel    = 0;
 
@@ -876,13 +883,13 @@ final class TestWorkflow {
   }
 
   function inSubtest() {
-    return $this->_subTestLevel > 0;
+    return $this->_subtestLevel > 0;
   }
 
   function reset() {
     $this->_state        = self::Start;
     $this->_subStates    = array();
-    $this->_subTestLevel = 0;
+    $this->_subtestLevel = 0;
     $this->_todoLevel    = 0;
   }
 
@@ -924,14 +931,14 @@ final class TestWorkflow {
           $this->_state));
     }
     // Check subtests' level.
-    if (0 !== $this->_subTestLevel) {
+    if (0 !== $this->_subtestLevel) {
       throw new TestWorkflowException(
-        \sprintf('There is still an opened subtest in the workflow: "%s".', $this->_subTestLevel));
+        \sprintf('There is still an opened subtest in the workflow: "%s".', $this->_subtestLevel));
     }
     // Check TO-DO level.
     if (0 !== $this->_todoLevel) {
       throw new TestWorkflowException(
-        \sprintf('There is still an opened TO-DO in the workflow: "%s".', $this->_subTestLevel));
+        \sprintf('There is still an opened TO-DO in the workflow: "%s".', $this->_subtestLevel));
     }
     $this->_state = self::End;
   }
@@ -966,17 +973,17 @@ final class TestWorkflow {
     // FIXME: Reset TO-DO level?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::Header;
-    return ++$this->_subTestLevel;
+    return ++$this->_subtestLevel;
   }
 
   /// \return void
   function endSubtest() {
     // FIXME: Valid states.
-    if (0 === $this->_subTestLevel) {
+    if (0 === $this->_subtestLevel) {
       throw new TestWorkflowException('You can not end a subtest if you did not start one before.');
     }
     $this->_state = \array_pop($this->_subStates);
-    $this->_subTestLevel--;
+    $this->_subtestLevel--;
   }
 
   function startTodo() {
