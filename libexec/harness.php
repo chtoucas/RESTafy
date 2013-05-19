@@ -4,7 +4,7 @@ require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo\Test\Tap;
 
-$harness = new Tap\DefaultTapHarness();
+$harness = new Tap\TapHarness(new Tap\TapHarnessStream('php://stdout'));
 
 $harness->scanDirectoryAndExecute('t');
 

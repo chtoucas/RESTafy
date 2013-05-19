@@ -1,18 +1,24 @@
 <?php
 
-require_once 'Narvalo/Test/FrameworkBundle.php';
-require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
-use \Narvalo\Test\Framework;
-use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-$producer = new Tap\DefaultTapProducer(\TRUE);
-Framework\TestKernel::Bootstrap($producer);
-$runner = new Runner\TestRunner($producer);
+class DefaultTestRunner extends Tap\TapRunner {
+  function __construct() {
+    parent::__construct(
+      new Tap\TapProducer(
+        new Tap\TapOutStream('php://stdout', \TRUE),
+        new Tap\TapErrStream('php://stderr'),
+        \TRUE /* register */
+      )
+    );
+  }
+}
+
+$runner = new DefaultTestRunner();
 
 //$file = 't/arvalo/Test/more-bailout.phpt';
 //$file = 't/Narvalo/Test/simple-inline.phpt';

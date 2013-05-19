@@ -250,12 +250,16 @@ class TestProducer {
     /// TO-DO stack
     $_todoStack         = array();
 
-  function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
+  function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_, $_register_) {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
     // NB: Until we have a plan, we use a dynamic test set.
     $this->_set       = new _\DynamicTestResultSet();
     $this->_workflow  = new _\TestWorkflow();
+
+    if ($_register_) {
+      TestKernel::Bootstrap($this);
+    }
   }
 
   // Properties.

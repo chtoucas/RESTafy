@@ -1,19 +1,14 @@
 Narvalo\Test
 ============
 
-* Check the conformance with TAP 12.
 * SKIP & TODO
 * Abstract the directives TODO & SKIP.
 * Test the Test.
 * Comments & doc.
 * Review all FIXME & TODO.
-* Rewrite Test.php to use the test framework.
-  Ultimate goal: ability to use both prove and our own TestHarness.
 * Currently, one can not create a new test module inside a subtest.
-* In a subtest, the line number from the backtrace is incorrect.
 * Failed include directive produce two error messages.
 * Add timers to Harness & Runner
-* Add methods to More.php to check exception thrown.
 * BUG: if we run the harness twice in a row, it fails.
 * check all constructors for validity
 * reset states

@@ -8,19 +8,17 @@ use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Tap;
 
-final class ProveTapProducer extends Tap\TapProducer {
+class ProveTapProducer extends Tap\TapProducer {
   function __construct() {
     parent::__construct(
-      new Tap\TapOutStream('php://stdout', \TRUE), new Tap\TapErrStream('php://stdout'));
+      new Tap\TapOutStream('php://stdout', \TRUE),
+      new Tap\TapErrStream('php://stdout'),
+      \TRUE /* register */
+    );
   }
 }
 
-if (Framework\TestKernel::Bootstrapped()) {
-  throw new Narvalo\InvalidOperationException('TestKernel was already initialized.');
-}
-
-$producer = new ProveTapProducer(\TRUE);
-Framework\TestKernel::Bootstrap($producer);
+$producer = new ProveTapProducer();
 $producer->startup();
 
 \register_shutdown_function(function() {

@@ -163,79 +163,6 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// TAP producers
-// =================================================================================================
-
-// {{{ TapProducer
-
-class TapProducer extends Framework\TestProducer {
-  const
-    SuccessCode = 0,
-    FailureCode = 255;
-
-  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
-    parent::__construct($_outStream_, $_errStream_);
-  }
-
-  protected function shutdownCore_() {
-    $exit_code = $this->getExitCode_();
-
-    exit($exit_code);
-  }
-
-  protected function getExitCode_() {
-    if ($this->getRuntimeErrorsCount() > 0) {
-      return self::FailureCode;
-    } elseif ($this->passed()) {
-      return self::SuccessCode;
-    } elseif ($this->bailedOut()) {
-      return self::FailureCode;
-    } elseif (($count = $this->getFailuresCount()) > 0) {
-      return $count < self::FailureCode ? $count : (self::FailureCode - 1);
-    } else {
-      // Other kind of errors: extra tests, unattended interrupt.
-      return self::FailureCode;
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTapProducer
-
-final class DefaultTapProducer extends TapProducer {
-  function __construct($_verbose_) {
-    parent::__construct(
-      new TapOutStream('php://stdout', $_verbose_), new TapErrStream('php://stderr'));
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// TAP runners
-// =================================================================================================
-
-// {{{ TapRunner
-
-class TapRunner extends Runner\TestRunner {
-  function __construct(TapProducer $_producer_) {
-    parent::__construct($_producer_);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTapRunner
-
-class DefaultTapRunner extends TapRunner {
-  function __construct($_verbose_) {
-    parent::__construct(new DefaultTapProducer($_verbose_));
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// TAP harnesses
-// =================================================================================================
-
 // {{{ TapHarnessStream
 
 final class TapHarnessStream
@@ -291,20 +218,59 @@ final class TapHarnessStream
 
 // }}}
 
+// TAP core classes
+// =================================================================================================
+
+// {{{ TapProducer
+
+class TapProducer extends Framework\TestProducer {
+  const
+    SuccessCode = 0,
+    FailureCode = 255;
+
+  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_, $_register_) {
+    parent::__construct($_outStream_, $_errStream_, $_register_);
+  }
+
+  protected function shutdownCore_() {
+    $exit_code = $this->getExitCode_();
+
+    exit($exit_code);
+  }
+
+  protected function getExitCode_() {
+    if ($this->getRuntimeErrorsCount() > 0) {
+      return self::FailureCode;
+    } elseif ($this->passed()) {
+      return self::SuccessCode;
+    } elseif ($this->bailedOut()) {
+      return self::FailureCode;
+    } elseif (($count = $this->getFailuresCount()) > 0) {
+      return $count < self::FailureCode ? $count : (self::FailureCode - 1);
+    } else {
+      // Other kind of errors: extra tests, unattended interrupt.
+      return self::FailureCode;
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ TapRunner
+
+class TapRunner extends Runner\TestRunner {
+  function __construct(TapProducer $_producer_) {
+    parent::__construct($_producer_);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // {{{ TapHarness
 
 class TapHarness extends Runner\TestHarness {
   function __construct(TapHarnessStream $_stream_) {
     parent::__construct($_stream_);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTapHarness
-
-final class DefaultTapHarness extends Runner\TestHarness {
-  function __construct() {
-    parent::__construct(new TapHarnessStream('php://stdout'));
   }
 }
 
