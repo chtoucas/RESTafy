@@ -8,11 +8,11 @@ use \Narvalo\Test as t;
 
 // Stubs.
 
-class Stub1 {
+class SingletonStub1 {
   use Narvalo\Singleton;
 }
 
-class Stub2 {
+class SingletonStub2 {
   use Narvalo\Singleton;
 
   static $InitializeCount = 0;
@@ -31,12 +31,12 @@ class Stub2 {
 
 // AAA.
 
-//$stub1 = Stub1::UniqInstance();
-//$stub11 = Stub1::UniqInstance();
+//$stub1 = SingletonStub1::UniqInstance();
+//$stub11 = SingletonStub1::UniqInstance();
 
-$stub2 = Stub2::UniqInstance();
+$stub2 = SingletonStub2::UniqInstance();
 t\is(\TRUE, $stub2->initialized(), 'Initialized.');
 
-$stub21 = Stub2::UniqInstance();
-t\is(1, Stub2::$InitializeCount, 'Initialized only once.');
+$stub21 = SingletonStub2::UniqInstance();
+t\is(1, SingletonStub2::$InitializeCount, 'Initialized only once.');
 

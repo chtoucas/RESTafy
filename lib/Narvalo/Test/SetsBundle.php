@@ -69,10 +69,10 @@ class TestSuite implements TestSet, TestFixture {
     return $this->_name;
   }
 
-  static function AutoRun() {
-    $me = new static();
-    $me->run();
-  }
+//  static function AutoRun() {
+//    $me = new static();
+//    $me->run();
+//  }
 
   final function run() {
     $this->setup();

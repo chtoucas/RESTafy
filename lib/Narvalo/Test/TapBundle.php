@@ -269,7 +269,11 @@ class TapRunner extends Runner\TestRunner {
 // {{{ TapHarness
 
 class TapHarness extends Runner\TestHarness {
-  function __construct(TapHarnessStream $_stream_) {
+  function __construct(
+    TapHarnessStream $_stream_,
+    Framework\TestOutStream $_outStream_ = \NULL,
+    Framework\TestErrStream $_errStream_ = \NULL
+  ) {
     parent::__construct($_stream_);
   }
 }

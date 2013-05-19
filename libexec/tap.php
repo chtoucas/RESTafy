@@ -1,4 +1,5 @@
 <?php
+/// Automaticaly loaded when you use ./bin/runphpt.
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
@@ -8,17 +9,13 @@ use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Tap;
 
-class ProveTapProducer extends Tap\TapProducer {
-  function __construct() {
-    parent::__construct(
-      new Tap\TapOutStream('php://stdout', \TRUE),
-      new Tap\TapErrStream('php://stdout'),
-      \TRUE /* register */
-    );
-  }
-}
+// NB: This producer is compatible with prove from Test::Harness.
+$producer = new Tap\TapProducer(
+  new Tap\TapOutStream('php://stdout', \TRUE),
+  new Tap\TapErrStream('php://stdout'),
+  \TRUE /* register */
+);
 
-$producer = new ProveTapProducer();
 $producer->startup();
 
 \register_shutdown_function(function() {
