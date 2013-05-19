@@ -9,7 +9,13 @@ use \Narvalo\Test\Framework;
 class Simple {
   use Framework\TestProducerAccessor;
 
-  function __construct($_how_many_) {
+  function __construct($_how_many_ = \NULL) {
+    if (\NULL !== $_how_many_) {
+      $this->plan($_how_many_);
+    }
+  }
+
+  function plan($_how_many_) {
     $this->getProducer()->plan($_how_many_);
   }
 

@@ -14,6 +14,12 @@ class More {
 
   use Framework\TestProducerAccessor;
 
+  function __construct($_how_many_ = \NULL) {
+    if (\NULL !== $_how_many_) {
+      $this->plan($_how_many_);
+    }
+  }
+
   // Test declaration of intentions.
 
   function plan($_how_many_) {

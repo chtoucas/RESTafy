@@ -29,7 +29,7 @@ final class DefaultTestCaseResult implements TestCaseResult {
     $_passed;
 
   function __construct($_description_, $_passed_) {
-    $this->_description = empty($_description_) ? 'unamed test' : $_description_;
+    $this->_description = empty($_description_) ? 'Unnamed test.' : $_description_;
     $this->_passed      = $_passed_;
   }
 
