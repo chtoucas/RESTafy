@@ -4,12 +4,8 @@ PROJECT_DIR=$(cd `dirname $0` && pwd)/..
 
 cd ${PROJECT_DIR}
 
-rm -f ${PROJECT_DIR}/test.log
+rm -f ${PROJECT_DIR}/tmp/prove.log
 
-if [ "$1" = "" ]; then
-    prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -f' t/
-else
-    php -n -c ./etc/phpt.ini -f "$1"
-fi
+prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -f' t/
 
 cd - > /dev/null

@@ -1,34 +1,55 @@
 <?php
-/// Usage: ./bin/runphp libexec/runtest.php
+/// Usage: bin/runphp libexec/runtest.php [filepath]
 
+namespace Narvalo;
+
+require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
+use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-// NB: This producer is NOT compatible with prove from Test::Harness.
-$producer = new Tap\TapProducer(
-  new Tap\TapOutStream('php://stdout', \TRUE),
-  new Tap\TapErrStream('php://stderr'),
-  \TRUE /* register */
-);
-$runner = new Runner\TestRunner($producer);
+RunTestApp::Main();
 
-//$file = 't/arvalo/Test/more-bailout.phpt';
-//$file = 't/Narvalo/Test/simple-inline.phpt';
-//$file = 't/Narvalo/Test/more-noplan.phpt';
-$file = 't/Narvalo/Test/more-plan.phpt';
-//$file = 't/Narvalo/Test/more-skipall.phpt';
-//$file = 't/Narvalo/Test/more-bailout.phpt';
-//$file = 't/Narvalo/Test/more-complex.phpt';
-//$file = 't/Narvalo/Test/more-throw.phpt';
-//$file = 't/Narvalo/Test/more-raw.phpt';
-//$file = 't/Narvalo/Test/more-autorun.phpt';
-//$file = 't/i-do-not-exist.phpt';
+// ------------------------------------------------------------------------------------------------
 
-$runner->run(new Sets\FileTestSet($file));
+class RunTestApp {
+  private $_runner;
+
+  function __construct(Framework\TestProducer $_producer_) {
+    $this->_runner = new Runner\TestRunner($_producer_);
+  }
+
+  static function Main() {
+    (new self(self::GetProducer()))->run(self::GetFilepath());
+  }
+
+  static function GetProducer() {
+    // NB: This producer is NOT compatible with prove from Test::Harness.
+    return new Tap\TapProducer(
+      new Tap\TapOutStream('php://stdout', \TRUE),
+      new Tap\TapErrStream('php://stderr'),
+      \TRUE /* register */
+    );
+  }
+
+  static function GetFilepath() {
+    global $argv;
+
+    if (!\array_key_exists(1, $argv)) {
+      echo 'You must supply the path of a file to test.', \PHP_EOL;
+      exit(1);
+    }
+    return $argv[1];
+  }
+
+  function run($_filepath_) {
+    $this->_runner->run(new Sets\FileTestSet($_filepath_));
+  }
+}
 
 // EOF

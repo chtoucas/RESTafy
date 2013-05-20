@@ -11,7 +11,7 @@ if [ "$1" = "-b" ]; then
     echo;
 fi
 
-rm -f ${PROJECT_DIR}/test.log
+rm -f ${PROJECT_DIR}/tmp/prove.log
 
 prove -r --ext=.php --exec 'php -n -c ./etc/blib.ini -f' t/
 

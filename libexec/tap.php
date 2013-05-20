@@ -1,5 +1,5 @@
 <?php
-/// Automaticaly loaded when you use ./bin/runphpt.
+/// Automaticaly loaded when using bin/runphpt
 
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
@@ -21,4 +21,3 @@ $producer->startup();
 });
 
 // EOF
-
