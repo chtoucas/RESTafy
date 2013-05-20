@@ -13,8 +13,8 @@ PHPRC="${PROJECT_DIR}/etc/php.ini"
 PHP_INCLUDE_PATH="${PROJECT_DIR}/lib"
 
 if [ -n "${CYGWIN}" ] ; then
-    PHPRC="`cygpath -w -a -- "${PHPRC}"`"
-    PHP_INCLUDE_PATH="`cygpath -w -a -- "${PHP_INCLUDE_PATH}"`"
+    PHPRC="`cygpath -w -l -a -- "${PHPRC}"`"
+    PHP_INCLUDE_PATH="`cygpath -w -l -a -- "${PHP_INCLUDE_PATH}"`"
 fi
 
 PHP_EXE="`which php-cli 2>/dev/null`"

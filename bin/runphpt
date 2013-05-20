@@ -18,10 +18,10 @@ PHP_AUTO_PREPEND_FILE="${PROJECT_DIR}/libexec/tap.php"
 PHP_ERROR_LOG="${TMP_DIR}/test.log"
 
 if [ -n "${CYGWIN}" ] ; then
-    PHPRC="`cygpath -w -a -- "${PHPRC}"`"
-    PHP_INCLUDE_PATH="`cygpath -w -a -- "${PHP_INCLUDE_PATH}"`"
-    PHP_AUTO_PREPEND_FILE="`cygpath -w -a -- "${PHP_AUTO_PREPEND_FILE}"`"
-    PHP_ERROR_LOG="`cygpath -w -a -- "${PHP_ERROR_LOG}"`"
+    PHPRC="`cygpath -w -l -a -- "${PHPRC}"`"
+    PHP_INCLUDE_PATH="`cygpath -w -l -a -- "${PHP_INCLUDE_PATH}"`"
+    PHP_AUTO_PREPEND_FILE="`cygpath -w -l -a -- "${PHP_AUTO_PREPEND_FILE}"`"
+    PHP_ERROR_LOG="`cygpath -w -l -a -- "${PHP_ERROR_LOG}"`"
 fi
 
 PHP_EXE="`which php-cli 2>/dev/null`"
