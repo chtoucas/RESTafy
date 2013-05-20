@@ -6,15 +6,15 @@ require_once 'Narvalo/Test/FrameworkBundle.php';
 
 use \Narvalo\Test\Framework;
 
-class More {
+class More extends Framework\TestModule {
   // TODO: Test deep object graph.
   // TODO: Test exceptions thrown.
   // TODO: Test dynamicly loaded extensions.
   // TODO: Add more diagnostics.
 
-  use Framework\TestProducerAccessor;
-
   function __construct($_how_many_ = \NULL) {
+    parent::__construct();
+
     if (\NULL !== $_how_many_) {
       $this->plan($_how_many_);
     }

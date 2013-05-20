@@ -257,7 +257,7 @@ class TestProducer {
     $this->_workflow  = new _\TestWorkflow();
 
     if ($_register_) {
-      TestKernel::Bootstrap($this);
+      (new TestModule())->setProducer($this);
     }
   }
 
@@ -610,55 +610,38 @@ class TestProducer {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Test kernel
+// Test modules
 // =================================================================================================
 
-// {{{ TestKernelException
+// {{{ TestModuleException
 
-class TestKernelException extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TestKernel
-
-final class TestKernel {
-  private static
-    $_SharedProducer,
-    $_Bootstrapped = \FALSE;
-
-  static function Bootstrapped() {
-    return self::$_Bootstrapped;
-  }
-
-  static function Bootstrap(TestProducer $_producer_) {
-    if (self::$_Bootstrapped) {
-      throw new TestKernelException('Kernel already initialized.');
-    }
-
-    self::$_SharedProducer = $_producer_;
-    self::$_Bootstrapped = \TRUE;
-  }
-
-  static function GetSharedProducer() {
-    if (!self::$_Bootstrapped) {
-      throw new TestKernelException('Before anything, you must initialize the kernel.');
-    }
-    return self::$_SharedProducer;
-  }
-}
+class TestModuleException extends Narvalo\Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TestProducerAccessor
+
+// {{{ TestModule
 
 /// NB: you can create as many instances of any derived class
 /// and they will all share the same producer.
-trait TestProducerAccessor {
+class TestModule {
+  private static $_SharedProducer;
   private $_producer;
+
+  function __construct() {
+    // All modules share the same producer.
+    $this->_producer =& self::$_SharedProducer;
+  }
+
+  function setProducer(TestProducer $_producer_) {
+    if (\NULL !== $this->_producer) {
+      throw new TestModuleException('Modules already initialized.');
+    }
+    $this->_producer = $_producer_;
+  }
 
   function getProducer() {
     if (\NULL === $this->_producer) {
-      // All modules share the same producer.
-      $this->_producer = TestKernel::GetSharedProducer();
+      throw new TestModuleException('Before anything, you must provide a producer.');
     }
     return $this->_producer;
   }

@@ -6,10 +6,10 @@ require_once 'Narvalo/Test/FrameworkBundle.php';
 
 use \Narvalo\Test\Framework;
 
-class Simple {
-  use Framework\TestProducerAccessor;
-
+class Simple extends Framework\TestModule {
   function __construct($_how_many_ = \NULL) {
+    parent::__construct();
+
     if (\NULL !== $_how_many_) {
       $this->plan($_how_many_);
     }

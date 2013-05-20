@@ -18,8 +18,8 @@ $producer = new Tap\TapProducer(
 
 $producer->startup();
 
-\register_shutdown_function(function() {
-  Framework\TestKernel::GetSharedProducer()->shutdown();
+\register_shutdown_function(function() use ($producer) {
+  $producer->shutdown();
 });
 
 // EOF
