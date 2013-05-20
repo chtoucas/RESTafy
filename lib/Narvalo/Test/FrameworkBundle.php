@@ -165,8 +165,7 @@ class FileStreamWriter {
   function __construct($_path_) {
     $handle = \fopen($_path_, 'w');
     if (\FALSE === $handle) {
-      throw new FileStreamWriterException(
-        \sprintf('Unable to open "%s" for writing', $_path_));
+      throw new FileStreamWriterException(\sprintf('Unable to open "%s" for writing', $_path_));
     }
     $this->_opened = \TRUE;
     $this->_handle = $handle;

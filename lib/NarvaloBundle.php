@@ -52,6 +52,11 @@ class ArgumentNullException extends ArgumentException { }
 class InvalidOperationException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ FileNotFoundException
+
+class FileNotFoundException extends Exception { }
+
+// }}}
 // {{{ KeyNotFoundException
 
 class KeyNotFoundException extends Exception { }
@@ -219,7 +224,7 @@ final class DynaLoader {
 
   static function LoadFile($_path_, $_once_) {
     if (!self::TryLoadFile($_path_, $_once_)) {
-      throw new RuntimeException(\sprintf('Unable to load the file: "%s".', $_path_));
+      throw new FileNotFoundException(\sprintf('Unable to load the file: "%s".', $_path_));
     }
   }
 
