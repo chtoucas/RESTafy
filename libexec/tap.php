@@ -7,7 +7,7 @@ require_once 'Narvalo/Test/TapBundle.php';
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Tap;
 
-// NB: This producer is compatible with prove from Test::Harness.
+// NB: This producer IS compatible with prove from Test::Harness.
 $producer = new Tap\TapProducer(
   new Tap\TapOutStream('php://stdout', \TRUE),
   new Tap\TapErrStream('php://stdout'),

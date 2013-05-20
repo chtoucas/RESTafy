@@ -28,7 +28,7 @@ class RunTestApp {
   }
 
   static function GetProducer() {
-    // NB: This producer is NOT compatible with prove from Test::Harness.
+    // NB: This producer IS NOT compatible with prove from Test::Harness.
     return new Tap\TapProducer(
       new Tap\TapOutStream('php://stdout', \TRUE),
       new Tap\TapErrStream('php://stderr'),
