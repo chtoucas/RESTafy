@@ -3,9 +3,9 @@
 
 PROJECT_DIR=$(cd `dirname $0` && pwd)/..
 LIB_DIR="${PROJECT_DIR}/lib"
-BLIB_DIR="${PROJECT_DIR}/blib"
+BLIB_DIR="${PROJECT_DIR}/_build/lib"
 
-[ -d ${BLIB_DIR} ] || mkdir ${BLIB_DIR}
+[ -d ${BLIB_DIR} ] || mkdir -p ${BLIB_DIR}
 
 PHPRC="${PROJECT_DIR}/etc/php.ini"
 

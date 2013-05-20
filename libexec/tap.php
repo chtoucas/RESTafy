@@ -1,6 +1,8 @@
 <?php
 /// Automaticaly loaded when using bin/runphpt
 
+namespace Narvalo\Test\Runner;
+
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 

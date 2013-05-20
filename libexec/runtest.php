@@ -24,7 +24,7 @@ class RunTestApp {
   }
 
   static function Main() {
-    (new self(self::GetProducer()))->run(self::GetFilepath());
+    (new self(self::GetProducer()))->run(self::GetFilePath());
   }
 
   static function GetProducer() {
@@ -36,7 +36,7 @@ class RunTestApp {
     );
   }
 
-  static function GetFilepath() {
+  static function GetFilePath() {
     global $argv;
 
     if (!\array_key_exists(1, $argv)) {

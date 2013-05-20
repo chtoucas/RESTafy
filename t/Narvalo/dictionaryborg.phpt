@@ -39,3 +39,4 @@ t\is($stub2->get('Key'), 'Value2', 'Distinct borgs do not share states.');
 $stub3 = new DictionaryBorgStub3();
 t\is($stub3->get('Key'), 'Value', 'Shared state loaded.');
 
+// EOF

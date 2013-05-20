@@ -20,14 +20,14 @@ class ProveApp {
   }
 
   static function Main() {
-    (new self(self::GetHarnessStream()))->run(self::GetDirpath());
+    (new self(self::GetHarnessStream()))->run(self::GetDirectoryPath());
   }
 
   static function GetHarnessStream() {
     return new Tap\TapHarnessStream('php://stdout');
   }
 
-  static function GetDirpath() {
+  static function GetDirectoryPath() {
     global $argv;
 
     return \array_key_exists(1, $argv) ? $argv[1] : 't';

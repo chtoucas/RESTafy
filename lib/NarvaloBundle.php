@@ -213,9 +213,13 @@ final class DynaLoader {
     DirectorySeparator = '/',
     FileExtension      = '.php';
 
-  static function IncludeFile($_path_, $_once_) {
-    if (!self::TryIncludeFile($_path_, $_once_)) {
-      throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
+  static function LoadAndEvaluateFile($_path_) {
+     eval('self::LoadFile($_path_, \FALSE /* once */);');
+  }
+
+  static function LoadFile($_path_, $_once_) {
+    if (!self::TryLoadFile($_path_, $_once_)) {
+      throw new RuntimeException(\sprintf('Unable to load the file: "%s".', $_path_));
     }
   }
 
@@ -231,14 +235,8 @@ final class DynaLoader {
     }
   }
 
-  static function LoadTypeLibrary(TypeName $_typeName_) {
-    if (!self::TryLoadTypeLibrary($_typeName_)) {
-      throw new RuntimeException(\sprintf('Unable to load the type library: "%s".', $_typeName_));
-    }
-  }
-
-  static function TryIncludeFile($_path_, $_once_) {
-    return self::_TryIncludeFile(self::_PathToPlatformPath($_path_), $_once_);
+  static function TryLoadFile($_path_, $_once_) {
+    return self::_TryIncludeFile(self::_NormalizePath($_path_), $_once_);
   }
 
   static function TryLoadBundle($_namespace_) {
@@ -249,19 +247,13 @@ final class DynaLoader {
     return self::_TryIncludeLibrary(self::_GetTypePath($_typeName_));
   }
 
-  static function TryLoadTypeLibrary(TypeName $_typeName_) {
-    // First, try by type then by bundle (the order is important).
-    return self::TryLoadType($_typeName_)
-      || self::TryLoadBundle($_typeName_->getNamespace());
-  }
-
   // Private methods.
 
   private static function _NameToPath($_name_) {
     return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
   }
 
-  private static function _PathToPlatformPath($_path_) {
+  private static function _NormalizePath($_path_) {
     return \DIRECTORY_SEPARATOR !== self::DirectorySeparator
       ? \str_replace(self::DirectorySeparator, \DIRECTORY_SEPARATOR, $_path_)
       : $_path_;
