@@ -123,7 +123,7 @@ class FileTestSet implements TestSet {
   }
 
   function run() {
-    Narvalo\DynaLoader::LoadFile($this->_path);
+    Narvalo\DynaLoader::IncludeFile($this->_path, \TRUE /* once */);
   }
 }
 

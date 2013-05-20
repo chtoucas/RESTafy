@@ -20,11 +20,6 @@ class Exception extends \Exception {
 class RuntimeException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ FileNotFoundRuntimeException
-
-class FileNotFoundRuntimeException extends RuntimeException { }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ ArgumentException
 
@@ -104,6 +99,10 @@ class TypeName {
     $this->_namespace = $_namespace_;
   }
 
+  static function FromFullyQualifiedName($_name_) {
+    throw new NotImplementedException();
+  }
+
   static function IsWellformed($_name_) {
     return 1 === \preg_match(self::$_TypeNameRegex, $_name_);
   }
@@ -113,15 +112,23 @@ class TypeName {
   }
 
   function getFullyQualifiedName() {
-    return self::Delimiter . $this->getQualifiedName();
+    return self::GlobalNamespace . $this->getQualifiedName();
   }
 
   function getName() {
     return $this->_name;
   }
 
+  function getNamespace() {
+    return $this->_namespace;
+  }
+
   function getQualifiedName() {
     return $this->_namespace . self::Delimiter . $this->_name;
+  }
+
+  function __toString() {
+    return $this->getFullyQualifiedName();
   }
 }
 
@@ -200,39 +207,59 @@ final class Type {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ DynaLoader
 
+/// WARNING: Only works if the target files do not return FALSE.
 final class DynaLoader {
   const
     DirectorySeparator = '/',
     FileExtension      = '.php';
 
-  /// Dynamically load a file.
-  /// MAY throw an InvalidOperationException.
-  /// WARNING: Only works if the included file does not return FALSE.
-  static function LoadFile($_path_, $_once_ = \TRUE) {
-    self::_LoadFile(self::_PathToPlatformPath($_path_), $_once_);
+  static function IncludeFile($_path_, $_once_) {
+    if (!self::TryIncludeFile($_path_, $_once_)) {
+      throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
+    }
   }
 
   static function LoadBundle($_namespace_) {
-    self::_LoadInclude(self::_GetBundlePath($_namespace_));
+    if (!self::TryLoadBundle($_typeName_)) {
+      throw new RuntimeException(\sprintf('Unable to load the bundle: "%s".', $_namespace_));
+    }
   }
 
   static function LoadType(TypeName $_typeName_) {
-    self::_LoadInclude(self::_GetTypePath($_typeName_));
+    if (!self::TryLoadType($_typeName_)) {
+      throw new RuntimeException(\sprintf('Unable to load the type: "%s".', $_typeName_));
+    }
   }
 
-  static function TryLoadFile($_path_, $_once_ = \TRUE) {
-    return self::_TryLoadFile(self::_PathToPlatformPath($_path_), $_once_);
+  static function LoadTypeLibrary(TypeName $_typeName_) {
+    if (!self::TryLoadTypeLibrary($_typeName_)) {
+      throw new RuntimeException(\sprintf('Unable to load the type library: "%s".', $_typeName_));
+    }
+  }
+
+  static function TryIncludeFile($_path_, $_once_) {
+    return self::_TryIncludeFile(self::_PathToPlatformPath($_path_), $_once_);
   }
 
   static function TryLoadBundle($_namespace_) {
-    return self::_TryLoadInclude(self::_GetBundlePath($_namespace_));
+    return self::_TryIncludeLibrary(self::_GetBundlePath($_namespace_));
   }
 
   static function TryLoadType(TypeName $_typeName_) {
-    return self::_TryLoadInclude(self::_GetTypePath($_typeName_));
+    return self::_TryIncludeLibrary(self::_GetTypePath($_typeName_));
+  }
+
+  static function TryLoadTypeLibrary(TypeName $_typeName_) {
+    // First, try by type then by bundle (the order is important).
+    return self::TryLoadType($_typeName_)
+      || self::TryLoadBundle($_typeName_->getNamespace());
   }
 
   // Private methods.
+
+  private static function _NameToPath($_name_) {
+    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
+  }
 
   private static function _PathToPlatformPath($_path_) {
     return \DIRECTORY_SEPARATOR !== self::DirectorySeparator
@@ -248,11 +275,7 @@ final class DynaLoader {
     return self::_NameToPath($_typeName_->getQualifiedName());
   }
 
-  private static function _NameToPath($_name_) {
-    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
-  }
-
-  private static function _TryLoadFile($_path_, $_once_) {
+  private static function _TryIncludeFile($_path_, $_once_) {
     if ($_once_) {
       return \FALSE !== (include_once $_path_);
     } else {
@@ -260,25 +283,11 @@ final class DynaLoader {
     }
   }
 
-  private static function _TryLoadInclude($_path_) {
+  private static function _TryIncludeLibrary($_path_) {
     if (\FALSE !== ($file = \stream_resolve_include_path($_path_))) {
       return \FALSE !== (include_once $file);
     } else {
       return \FALSE;
-    }
-  }
-
-  private static function _LoadFile($_path_, $_once_) {
-    if (!self::_TryLoadFile($_path_, $_once_)) {
-      throw new FileNotFoundRuntimeException(
-        \sprintf('Unable to include the file: "%s".', $_path_));
-    }
-  }
-
-  private static function _LoadInclude($_path_) {
-    if (!self::_TryLoadInclude($_path_)) {
-      throw new FileNotFoundRuntimeException(
-        \sprintf('Unable to include the file: "%s".', $_path_));
     }
   }
 }

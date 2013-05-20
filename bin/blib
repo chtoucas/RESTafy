@@ -10,7 +10,7 @@ BLIB_DIR="${PROJECT_DIR}/blib"
 PHPRC="${PROJECT_DIR}/etc/php.ini"
 
 if [ -n "${CYGWIN}" ] ; then
-    PHPRC="`cygpath -w -a -- "${PHPRC}"`"
+    PHPRC="`cygpath -w -l -a -- "${PHPRC}"`"
 fi
 
 PHP_EXE="`which php-cli 2>/dev/null`"
