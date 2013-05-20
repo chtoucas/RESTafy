@@ -1,7 +1,7 @@
 <?php
 /// Usage: bin/runphp libexec/runtest.php [filepath]
 
-namespace Narvalo;
+namespace Narvalo\Test\Runner;
 
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
@@ -9,7 +9,6 @@ require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo\Test\Framework;
-use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
@@ -21,7 +20,7 @@ class RunTestApp {
   private $_runner;
 
   function __construct(Framework\TestProducer $_producer_) {
-    $this->_runner = new Runner\TestRunner($_producer_);
+    $this->_runner = new TestRunner($_producer_);
   }
 
   static function Main() {

@@ -1,12 +1,11 @@
 <?php
 /// Usage: bin/runphp libexec/prove.php [dirpath]
 
-namespace Narvalo;
+namespace Narvalo\Test\Runner;
 
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
-use \Narvalo\Test\Runner;
 use \Narvalo\Test\Tap;
 
 ProveApp::Main();
@@ -16,8 +15,8 @@ ProveApp::Main();
 class ProveApp {
   private $_harness;
 
-  function __construct(Runner\TestHarnessStream $_stream_) {
-    $this->_harness = new Runner\TestHarness($_stream_);
+  function __construct(TestHarnessStream $_stream_) {
+    $this->_harness = new TestHarness($_stream_);
   }
 
   static function Main() {
