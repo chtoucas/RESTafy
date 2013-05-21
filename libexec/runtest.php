@@ -69,7 +69,7 @@ class RunTestOptions {
     if (!\array_key_exists(1, $_argv_)) {
       throw new Narvalo\ApplicationException('You must supply the path of a file to test.');
     }
-    $self>setFilePath($_argv_[1]);
+    $self->setFilePath($_argv_[1]);
 
     return $self;
   }
