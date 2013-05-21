@@ -279,7 +279,7 @@ class TestProducer {
     return $this->_runtimeErrorsCount;
   }
 
-  function running() {
+  function busy() {
     return $this->_workflow->running();
   }
 
@@ -617,12 +617,6 @@ class TestProducer {
 // Test modules
 // =================================================================================================
 
-// {{{ TestModuleException
-
-class TestModuleException extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // {{{ TestModule
 
 /// NB: you can create as many derived class as you wish, they will all share the same producer.
@@ -635,23 +629,28 @@ class TestModule {
     $this->_producer =& self::$_SharedProducer;
   }
 
-  function setProducer(TestProducer $_producer_) {
-    if (\NULL !== $this->_producer && $this->_producer->running()) {
-      throw new TestModuleException(
-        'You can not set a new producer while another one is still running.');
-    }
-    $this->_producer = $_producer_;
-  }
-
   function getProducer() {
     if (\NULL === $this->_producer) {
-      throw new TestModuleException('Before anything, you must provide a producer.');
+      throw new Narvalo\InvalidOperationException(
+        'Looks like you didn\'t initialize '.__CLASS__.' with a TestProducer.');
     }
     return $this->_producer;
   }
 
+  function initialize(TestProducer $_producer_) {
+    if (!$this->canInitialize()) {
+      throw new Narvalo\InvalidOperationException(
+        'You can not initialize '.__CLASS__.' while a TestProducer is still running.');
+    }
+    $this->_producer = $_producer_;
+  }
+
+  function canInitialize() {
+    return \NULL === $this->_producer || !$this->_producer->busy();
+  }
+
   static function Bootstrap(TestProducer $_producer_) {
-    (new self())->setProducer($_producer_);
+    (new self())->initialize($_producer_);
   }
 }
 
@@ -869,6 +868,7 @@ final class TestWorkflow {
   }
 
   function running() {
+    // TODO: Check this.
     return self::Start !== $this->_state && self::End !== $this->_state;
   }
 

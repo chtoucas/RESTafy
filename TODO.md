@@ -2,7 +2,7 @@ Utilities
 =========
 
 * Rewrite all utilities to make them more portable, maintainable and reliable.
-For instance, currently a call to mkdir under Cygwin might fail.
+For instance, a call to mkdir under Cygwin might fail.
 
 Narvalo\Test
 ============
@@ -15,6 +15,7 @@ Narvalo\Test
 * Currently, one can not create a new test module inside a subtest.
 * Failed include directive produce two error messages.
 * Add timers to Harness & Runner
+* Add OnTestCompleted event?
 * BUG: if we run the harness twice in a row, it fails.
 * check all constructors for validity
 * reset states
