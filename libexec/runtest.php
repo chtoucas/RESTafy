@@ -18,8 +18,6 @@ RunTestApp::Main($argv);
 
 // ------------------------------------------------------------------------------------------------
 
-class RunTestAppException extends Narvalo\RuntimeException { }
-
 class RunTestApp {
   private $_runner;
 
@@ -30,7 +28,7 @@ class RunTestApp {
   static function Main(array $_argv_) {
     try {
       $options  = RunTestOptions::Parse($_argv_);
-    } catch (RunTestAppException $e) {
+    } catch (Narvalo\ApplicationException $e) {
       echo $e->getMessage(), \PHP_EOL;
       exit(1);
     }
@@ -66,14 +64,14 @@ class RunTestOptions {
   }
 
   static function Parse(array $_argv_) {
-    $options = new self();
+    $self = new self();
 
     if (!\array_key_exists(1, $_argv_)) {
-      throw new RunTestAppException('You must supply the path of a file to test.');
+      throw new Narvalo\ApplicationException('You must supply the path of a file to test.');
     }
-    $options->setFilePath($_argv_[1]);
+    $self>setFilePath($_argv_[1]);
 
-    return $options;
+    return $self;
   }
 }
 

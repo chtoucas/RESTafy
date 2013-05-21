@@ -62,6 +62,11 @@ class FileNotFoundException extends Exception { }
 class KeyNotFoundException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ ApplicationException
+
+class ApplicationException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ ObjectType
 
