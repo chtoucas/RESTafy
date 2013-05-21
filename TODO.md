@@ -1,8 +1,14 @@
+Utilities
+=========
+
+* Rewrite all utilities to make them more portable, maintainable and reliable.
+For instance, currently a call to mkdir under Cygwin might fail.
+
 Narvalo\Test
 ============
 
 * SKIP & TODO
-* Abstract the directives TODO & SKIP.
+* Abstract the directives TODO & SKIP to ease the creation of new directives.
 * Test the Test.
 * Comments & doc.
 * Review all FIXME & TODO.

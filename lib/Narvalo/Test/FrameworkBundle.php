@@ -289,11 +289,7 @@ class TestProducer {
     TestModule::Bootstrap($this);
   }
 
-  final function startup($_register_) {
-    if ($_register_) {
-      $this->register();
-    }
-
+  final function startup() {
     $this->_addHeader();
 
     $this->startupCore_();
@@ -385,7 +381,7 @@ class TestProducer {
           $_how_many_));
     }
     if ($this->_inTodo()) {
-      // XXX: Should be handled by the workflow?
+      // XXX: Shouldn't this be handled by the workflow?
       throw new Narvalo\InvalidOperationException(
         'You can not interlace a SKIP directive with a TO-DO block');
     }

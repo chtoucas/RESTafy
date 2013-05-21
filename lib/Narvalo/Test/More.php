@@ -127,19 +127,12 @@ class More extends Framework\TestModule {
 
   /// WARNING: Does not work with includes that return FALSE.
   function canInclude($_library_, $_name_) {
-    // We turn off error reporting to avoid duplicate errors.
-    $errlevel = \ini_get('error_reporting');
-    \error_reporting(0);
     $test = Narvalo\DynaLoader::TryLoadAndEvaluateFile($_library_);
-    \error_reporting($errlevel);
     return $this->ok($test, $_name_);
   }
 
 //  function canRequire($_library_, $_name_) {
-//    $errlevel = \ini_get('error_reporting');
-//    \error_reporting(0);
 //    $test = eval('return (\FALSE !== (require_once $_library_))');
-//    \error_reporting($errlevel);
 //    return $this->ok($test, $_name_);
 //  }
 

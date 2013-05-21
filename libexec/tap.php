@@ -18,7 +18,8 @@ function bootstrap() {
     new Tap\TapErrStream('php://stdout')
   );
 
-  $producer->startup(\TRUE /* register */);
+  $producer->register();
+  $producer->startup();
 
   \register_shutdown_function(function() use ($producer) {
     $producer->shutdown();

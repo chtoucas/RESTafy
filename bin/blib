@@ -8,7 +8,6 @@ BLIB_DIR="${PROJECT_DIR}/_build/lib"
 [ -d ${BLIB_DIR} ] || mkdir -p ${BLIB_DIR}
 
 PHPRC="${PROJECT_DIR}/etc/php.ini"
-
 if [ -n "${CYGWIN}" ] ; then
     PHPRC="`cygpath -w -l -a -- "${PHPRC}"`"
 fi

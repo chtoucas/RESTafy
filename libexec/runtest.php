@@ -3,11 +3,13 @@
 
 namespace Narvalo\Test\Runner;
 
+require_once 'NarvaloBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
+use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
@@ -15,6 +17,8 @@ use \Narvalo\Test\Tap;
 RunTestApp::Main($argv);
 
 // ------------------------------------------------------------------------------------------------
+
+class RunTestAppException extends Narvalo\RuntimeException { }
 
 class RunTestApp {
   private $_runner;
@@ -24,8 +28,15 @@ class RunTestApp {
   }
 
   static function Main(array $_argv_) {
-    $options  = RunTestOptions::Parse($_argv_);
+    try {
+      $options  = RunTestOptions::Parse($_argv_);
+    } catch (RunTestAppException $e) {
+      echo $e->getMessage(), \PHP_EOL;
+      exit(1);
+    }
+
     $producer = self::_GetProducer();
+    $producer->register();
 
     (new self($producer))->run($options);
   }
@@ -58,8 +69,7 @@ class RunTestOptions {
     $options = new self();
 
     if (!\array_key_exists(1, $_argv_)) {
-      echo 'You must supply the path of a file to test.', \PHP_EOL;
-      exit(1);
+      throw new RunTestAppException('You must supply the path of a file to test.');
     }
     $options->setFilePath($_argv_[1]);
 

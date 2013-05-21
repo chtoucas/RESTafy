@@ -1,7 +1,10 @@
 #!/bin/sh
 
 PROJECT_DIR=$(cd `dirname $0` && pwd)/..
-TMP_DIR="${PROJECT_DIR}/tmp"
+TMP_DIR="${PROJECT_DIR}/XXX"
+#TMP_DIR="${TMP_DIR/\~/\~}"
+
+[ -d "${TMP_DIR}" ] || mkdir -p "${TMP_DIR}"
 
 if [ `which uname` ]; then
     case "`uname -a`" in
@@ -10,13 +13,10 @@ if [ `which uname` ]; then
     esac
 fi
 
-[ -d "${TMP_DIR}" ] || mkdir -p "${TMP_DIR}"
-
 PHPRC="${PROJECT_DIR}/etc/phpt.ini"
 PHP_INCLUDE_PATH="${PROJECT_DIR}/lib"
 PHP_AUTO_PREPEND_FILE="${PROJECT_DIR}/libexec/tap.php"
 PHP_ERROR_LOG="${TMP_DIR}/test.log"
-
 if [ -n "${CYGWIN}" ] ; then
     PHPRC="`cygpath -w -l -a -- "${PHPRC}"`"
     PHP_INCLUDE_PATH="`cygpath -w -l -a -- "${PHP_INCLUDE_PATH}"`"

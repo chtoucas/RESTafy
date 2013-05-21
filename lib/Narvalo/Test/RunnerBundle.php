@@ -29,7 +29,7 @@ class TestRunner {
   function run(Sets\TestSet $_set_) {
     Narvalo\Guard::NotNull($_set_, 'set');
 
-    $this->_producer->startup(\TRUE /* register */);
+    $this->_producer->startup();
     $this->_errorCatcher->start();
 
     try {
@@ -91,6 +91,7 @@ class TestHarness {
       $_outStream_ ?: new _\NoopTestOutStream(),
       $_errStream_ ?: new _\NoopTestErrStream()
     );
+    $producer->register();
 
     $this->_runner = new TestRunner($producer);
   }

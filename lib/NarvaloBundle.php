@@ -297,7 +297,7 @@ final class DynaLoader {
 final class Guard {
   static function NotEmpty($_value_, $_paramName_) {
     if (empty($_value_)) {
-      throw new ArgumentNullException($_paramName_, 'Value can not be empty.');
+      throw new ArgumentException($_paramName_, 'Value can not be empty.');
     }
   }
 
