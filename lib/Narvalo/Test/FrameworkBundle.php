@@ -249,16 +249,12 @@ class TestProducer {
     /// TO-DO stack
     $_todoStack         = array();
 
-  function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_, $_register_) {
+  function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
     // NB: Until we have a plan, we use a dynamic test set.
     $this->_set       = new _\DynamicTestResultSet();
     $this->_workflow  = new _\TestWorkflow();
-
-    if ($_register_) {
-      (new TestModule())->setProducer($this);
-    }
   }
 
   // Properties.
@@ -283,9 +279,15 @@ class TestProducer {
     return $this->_runtimeErrorsCount;
   }
 
+  function running() {
+    return $this->_workflow->running();
+  }
+
   //
 
   final function startup() {
+    TestModule::Bootstrap($this);
+
     $this->_addHeader();
 
     $this->startupCore_();
@@ -621,8 +623,7 @@ class TestModuleException extends Narvalo\Exception { }
 
 // {{{ TestModule
 
-/// NB: you can create as many instances of any derived class
-/// and they will all share the same producer.
+/// NB: you can create as many derived class as you wish, they will all share the same producer.
 class TestModule {
   private static $_SharedProducer;
   private $_producer;
@@ -633,8 +634,9 @@ class TestModule {
   }
 
   function setProducer(TestProducer $_producer_) {
-    if (\NULL !== $this->_producer) {
-      throw new TestModuleException('Modules already initialized.');
+    if (\NULL !== $this->_producer && $this->_producer->running()) {
+      throw new TestModuleException(
+        'You can not set a new producer while another one is still running.');
     }
     $this->_producer = $_producer_;
   }
@@ -644,6 +646,10 @@ class TestModule {
       throw new TestModuleException('Before anything, you must provide a producer.');
     }
     return $this->_producer;
+  }
+
+  static function Bootstrap(TestProducer $_producer_) {
+    (new self())->setProducer($_producer_);
   }
 }
 
@@ -858,6 +864,10 @@ final class TestWorkflow {
         \sprintf('The workflow will end in an invalid state: "%s".', $this->_state));
     }
     $this->_disposed = \TRUE;
+  }
+
+  function running() {
+    return self::Start !== $this->_state && self::End !== $this->_state;
   }
 
   function inTodo() {

@@ -228,8 +228,8 @@ class TapProducer extends Framework\TestProducer {
     SuccessCode = 0,
     FailureCode = 255;
 
-  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_, $_register_) {
-    parent::__construct($_outStream_, $_errStream_, $_register_);
+  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
+    parent::__construct($_outStream_, $_errStream_);
   }
 
   protected function shutdownCore_() {

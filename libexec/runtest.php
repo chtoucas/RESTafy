@@ -12,7 +12,7 @@ use \Narvalo\Test\Framework;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-RunTestApp::Main();
+RunTestApp::Main($argv);
 
 // ------------------------------------------------------------------------------------------------
 
@@ -23,31 +23,47 @@ class RunTestApp {
     $this->_runner = new TestRunner($_producer_);
   }
 
-  static function Main() {
-    (new self(self::GetProducer()))->run(self::GetFilePath());
+  static function Main(array $_argv_) {
+    $options  = RunTestOptions::Parse($_argv_);
+    $producer = self::_GetProducer();
+
+    (new self($producer))->run($options);
   }
 
-  static function GetProducer() {
+  function run(RunTestOptions $_options_) {
+    $this->_runner->run(new Sets\FileTestSet($_options_->getFilePath()));
+  }
+
+  private static function _GetProducer() {
     // NB: This producer IS NOT compatible with prove from Test::Harness.
     return new Tap\TapProducer(
       new Tap\TapOutStream('php://stdout', \TRUE),
-      new Tap\TapErrStream('php://stderr'),
-      \TRUE /* register */
+      new Tap\TapErrStream('php://stderr')
     );
   }
+}
 
-  static function GetFilePath() {
-    global $argv;
+class RunTestOptions {
+  private $_filePath;
 
-    if (!\array_key_exists(1, $argv)) {
+  function getFilePath() {
+    return $this->_filePath;
+  }
+
+  function setFilePath($_value_) {
+    $this->_filePath = $_value_;
+  }
+
+  static function Parse(array $_argv_) {
+    $options = new self();
+
+    if (!\array_key_exists(1, $_argv_)) {
       echo 'You must supply the path of a file to test.', \PHP_EOL;
       exit(1);
     }
-    return $argv[1];
-  }
+    $options->setFilePath($_argv_[1]);
 
-  function run($_filepath_) {
-    $this->_runner->run(new Sets\FileTestSet($_filepath_));
+    return $options;
   }
 }
 

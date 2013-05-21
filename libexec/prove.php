@@ -8,7 +8,7 @@ require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo\Test\Tap;
 
-ProveApp::Main();
+ProveApp::Main($argv);
 
 // ------------------------------------------------------------------------------------------------
 
@@ -19,22 +19,39 @@ class ProveApp {
     $this->_harness = new TestHarness($_stream_);
   }
 
-  static function Main() {
-    (new self(self::GetHarnessStream()))->run(self::GetDirectoryPath());
+  static function Main(array $_argv_) {
+    $options = ProveOptions::Parse($_argv_);
+    $stream  = self::_GetHarnessStream();
+
+    (new self($stream))->run($options);
   }
 
-  static function GetHarnessStream() {
+  function run(ProveOptions $_options_) {
+    $this->_harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
+  }
+
+  private static function _GetHarnessStream() {
     return new Tap\TapHarnessStream('php://stdout');
   }
+}
 
-  static function GetDirectoryPath() {
-    global $argv;
+class ProveOptions {
+  private $_directoryPath = 't';
 
-    return \array_key_exists(1, $argv) ? $argv[1] : 't';
+  function getDirectoryPath() {
+    return $this->_directoryPath;
   }
 
-  function run($_dirpath_) {
-    $this->_harness->scanDirectoryAndExecute($_dirpath_);
+  function setDirectoryPath($_value_) {
+    $this->_directoryPath = $_value_;
+  }
+
+  static function Parse(array $_argv_) {
+    $options = new self();
+    if (\array_key_exists(1, $_argv_)) {
+      $options->setDirectoryPath($_argv_[1]);
+    }
+    return $options;
   }
 }
 

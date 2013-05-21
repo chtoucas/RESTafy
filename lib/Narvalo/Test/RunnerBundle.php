@@ -89,8 +89,7 @@ class TestHarness {
 
     $producer = new Framework\TestProducer(
       $_outStream_ ?: new _\NoopTestOutStream(),
-      $_errStream_ ?: new _\NoopTestErrStream(),
-      \TRUE /* register */
+      $_errStream_ ?: new _\NoopTestErrStream()
     );
 
     $this->_runner = new TestRunner($producer);
