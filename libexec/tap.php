@@ -3,10 +3,8 @@
 
 namespace Narvalo\Test\Runner;
 
-require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
-use \Narvalo\Test\Framework;
 use \Narvalo\Test\Tap;
 
 bootstrap();
