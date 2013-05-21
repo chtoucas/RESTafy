@@ -285,8 +285,14 @@ class TestProducer {
 
   //
 
-  final function startup() {
+  final function register() {
     TestModule::Bootstrap($this);
+  }
+
+  final function startup($_register_) {
+    if ($_register_) {
+      $this->register();
+    }
 
     $this->_addHeader();
 

@@ -29,7 +29,7 @@ class TestRunner {
   function run(Sets\TestSet $_set_) {
     Narvalo\Guard::NotNull($_set_, 'set');
 
-    $this->_producer->startup();
+    $this->_producer->startup(\TRUE /* register */);
     $this->_errorCatcher->start();
 
     try {

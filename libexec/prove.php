@@ -1,5 +1,5 @@
 <?php
-/// Usage: bin/runphp libexec/prove.php [dirpath]
+/// Usage: prove.php [dirpath]
 
 namespace Narvalo\Test\Runner;
 

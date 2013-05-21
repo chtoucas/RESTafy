@@ -2,8 +2,10 @@
 
 namespace Narvalo\Test;
 
+require_once 'NarvaloBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 
+use \Narvalo;
 use \Narvalo\Test\Framework;
 
 class More extends Framework\TestModule {
@@ -122,15 +124,13 @@ class More extends Framework\TestModule {
   }
 
   // Test library availability.
-  // FIXME: What about includes that return FALSE?
-  // FIXME: Include once or not?
 
+  /// WARNING: Does not work with includes that return FALSE.
   function canInclude($_library_, $_name_) {
-    // We turn off error reporting otherwise we will have duplicate errors.
-    // We eval the code otherwise the include call may abort the whole script.
+    // We turn off error reporting to avoid duplicate errors.
     $errlevel = \ini_get('error_reporting');
     \error_reporting(0);
-    $test = eval('return (\FALSE !== (include_once $_library_))');
+    $test = Narvalo\DynaLoader::TryLoadAndEvaluateFile($_library_);
     \error_reporting($errlevel);
     return $this->ok($test, $_name_);
   }

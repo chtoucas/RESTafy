@@ -1,5 +1,5 @@
 <?php
-/// Usage: bin/runphp libexec/runtest.php [filepath]
+/// Usage: runtest.php [filepath]
 
 namespace Narvalo\Test\Runner;
 

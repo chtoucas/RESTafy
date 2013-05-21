@@ -219,11 +219,11 @@ final class DynaLoader {
     FileExtension      = '.php';
 
   static function LoadAndEvaluateFile($_path_) {
-     eval('self::LoadFile($_path_, \FALSE /* once */);');
+     eval('self::LoadFile($_path_);');
   }
 
-  static function LoadFile($_path_, $_once_) {
-    if (!self::TryLoadFile($_path_, $_once_)) {
+  static function LoadFile($_path_) {
+    if (!self::TryLoadFile($_path_)) {
       throw new FileNotFoundException(\sprintf('Unable to load the file: "%s".', $_path_));
     }
   }
@@ -240,8 +240,8 @@ final class DynaLoader {
     }
   }
 
-  static function TryLoadFile($_path_, $_once_) {
-    return self::_TryIncludeFile(self::_NormalizePath($_path_), $_once_);
+  static function TryLoadFile($_path_) {
+    return self::_TryIncludeFile(self::_NormalizePath($_path_));
   }
 
   static function TryLoadBundle($_namespace_) {
@@ -251,6 +251,11 @@ final class DynaLoader {
   static function TryLoadType(TypeName $_typeName_) {
     return self::_TryIncludeLibrary(self::_GetTypePath($_typeName_));
   }
+
+  static function TryLoadAndEvaluateFile($_path_) {
+     return eval('return self::TryLoadFile($_path_);');
+  }
+
 
   // Private methods.
 
@@ -272,12 +277,8 @@ final class DynaLoader {
     return self::_NameToPath($_typeName_->getQualifiedName());
   }
 
-  private static function _TryIncludeFile($_path_, $_once_) {
-    if ($_once_) {
-      return \FALSE !== (include_once $_path_);
-    } else {
-      return \FALSE !== (include $_path_);
-    }
+  private static function _TryIncludeFile($_path_) {
+    return \FALSE !== (include $_path_);
   }
 
   private static function _TryIncludeLibrary($_path_) {
