@@ -591,13 +591,10 @@ class IOException extends Exception { }
 // {{{ FileHandle
 
 class FileHandle {
-  private
-    $_handle,
-    $_opened = \FALSE;
+  private $_handle;
 
   function __construct($_handle_) {
     $this->_handle = $handle;
-    $this->_opened = \TRUE;
   }
 
   function __destruct() {
@@ -612,16 +609,25 @@ class FileHandle {
     return new static($handle);
   }
 
+  static function GetStdErr($_mode_) {
+    return static::FromPath('php://stderr', $_mode_);
+  }
+
+  static function GetStdOut($_mode_) {
+    return static::FromPath('php://stdout', $_mode_);
+  }
+
   function close() {
     $this->cleanup_(\TRUE);
   }
 
   function opened() {
-    return $this->_opened;
+    return \NULL !== $this->_handle;
   }
 
   function canWrite() {
-    return $this->_opened && 0 === \fwrite($this->_handle, '');
+    // XXX: Is this correct?
+    return $this->opened() && 0 === \fwrite($this->_handle, '');
   }
 
   function write($_value_) {
@@ -638,7 +644,6 @@ class FileHandle {
     }
     if (\TRUE === \fclose($this->_handle)) {
       $this->_handle = \NULL;
-      $this->_opened = \FALSE;
     }
   }
 }

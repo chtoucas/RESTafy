@@ -66,7 +66,6 @@ class TestHarnessSummary {
 
 interface TestHarnessStream {
   function close();
-  function canWrite();
 
   function writeResult($_name_, Framework\TestSetResult $_result_);
   function writeSummary(TestHarnessSummary $_summary_);
@@ -191,10 +190,6 @@ final class NoopTestOutStream implements Framework\TestOutStream {
     ;
   }
 
-  function canWrite() {
-    return \TRUE;
-  }
-
   function startSubtest() {
     ;
   }
@@ -250,10 +245,6 @@ final class NoopTestErrStream implements Framework\TestErrStream {
 
   function reset() {
     ;
-  }
-
-  function canWrite() {
-    return \TRUE;
   }
 
   function startSubtest() {

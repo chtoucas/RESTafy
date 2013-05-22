@@ -124,7 +124,6 @@ class FileStreamWriterException extends Narvalo\Exception { }
 interface TestOutStream {
   function close();
   function reset();
-  function canWrite();
 
   function startSubtest();
   function endSubtest();
@@ -146,7 +145,6 @@ interface TestOutStream {
 interface TestErrStream {
   function close();
   function reset();
-  function canWrite();
 
   function startSubtest();
   function endSubtest();
@@ -181,10 +179,6 @@ class FileStreamWriter {
 
   function opened() {
     return $this->_opened;
-  }
-
-  function canWrite() {
-    return $this->_opened && 0 === \fwrite($this->_handle, '');
   }
 
   protected function write_($_value_) {
