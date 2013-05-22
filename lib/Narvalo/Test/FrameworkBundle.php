@@ -286,7 +286,7 @@ class TestProducer {
   //
 
   final function register() {
-    TestModule::Bootstrap($this);
+    (new TestModule())->initialize($this);
   }
 
   final function startup() {
@@ -632,7 +632,7 @@ class TestModule {
   function getProducer() {
     if (\NULL === $this->_producer) {
       throw new Narvalo\InvalidOperationException(
-        'Looks like you didn\'t initialize '.__CLASS__.' with a TestProducer.');
+        'Looks like you forgot to initialize '.__CLASS__.' with a TestProducer.');
     }
     return $this->_producer;
   }
@@ -647,10 +647,6 @@ class TestModule {
 
   function canInitialize() {
     return \NULL === $this->_producer || !$this->_producer->busy();
-  }
-
-  static function Bootstrap(TestProducer $_producer_) {
-    (new self())->initialize($_producer_);
   }
 }
 
