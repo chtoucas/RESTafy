@@ -579,6 +579,72 @@ class Container {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// IO
+// =================================================================================================
+
+// {{{ IOException
+
+class IOException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ FileHandle
+
+class FileHandle {
+  private
+    $_handle,
+    $_opened = \FALSE;
+
+  function __construct($_handle_) {
+    $this->_handle = $handle;
+    $this->_opened = \TRUE;
+  }
+
+  function __destruct() {
+    $this->cleanup_(\FALSE);
+  }
+
+  static function FromPath($_path_, $_mode_) {
+    $handle = \fopen($_path_, $_mode_);
+    if (\FALSE === $handle) {
+      throw new IOException(\sprintf('Unable to open "%s" for writing', $_path_));
+    }
+    return new static($handle);
+  }
+
+  function close() {
+    $this->cleanup_(\TRUE);
+  }
+
+  function opened() {
+    return $this->_opened;
+  }
+
+  function canWrite() {
+    return $this->_opened && 0 === \fwrite($this->_handle, '');
+  }
+
+  function write($_value_) {
+    return \fwrite($this->_handle, $_value_);
+  }
+
+  function writeLine($_value_) {
+    return $this->write($_value_ . \PHP_EOL);
+  }
+
+  protected function cleanup_($_disposing_) {
+    if (\NULL === $this->_handle) {
+      return;
+    }
+    if (\TRUE === \fclose($this->_handle)) {
+      $this->_handle = \NULL;
+      $this->_opened = \FALSE;
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // Caching
 // =================================================================================================
 
