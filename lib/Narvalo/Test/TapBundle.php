@@ -8,9 +8,11 @@
 
 namespace Narvalo\Test\Tap;
 
+require_once 'NarvaloBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 
+use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
 
@@ -27,10 +29,16 @@ define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 
 // {{{ TapStream
 
-class TapStream extends Framework\FileStreamWriter {
+class TapStream {
   // FIXME: TapStream should be internal.
 
-  private $_indent = '';
+  private
+    $_handle,
+    $_indent = '';
+
+  function __construct(Narvalo\FileHandle $_handle_) {
+    $this->_handle = $_handle_;
+  }
 
   function reset() {
     $this->_indent = '';
@@ -45,7 +53,7 @@ class TapStream extends Framework\FileStreamWriter {
   }
 
   protected function writeTapLine_($_value_) {
-    return $this->writeLine_($this->_indent . $_value_);
+    return $this->_handle->writeLine($this->_indent . $_value_);
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
@@ -73,8 +81,8 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 
   private $_verbose;
 
-  function __construct($_path_, $_verbose_) {
-    parent::__construct($_path_);
+  function __construct(Narvalo\FileHandle $_handle_, $_verbose_) {
+    parent::__construct($_handle_);
 
     $this->_verbose = $_verbose_;
   }
@@ -165,56 +173,65 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 // {{{ TapHarnessStream
 
-final class TapHarnessStream
-  extends Framework\FileStreamWriter
-  implements Runner\TestHarnessStream
-  {
-    function writeResult($_name_, Framework\TestSetResult $_result_) {
-      if ($_result_->passed) {
-        $status = 'ok';
+final class TapHarnessStream implements Runner\TestHarnessStream {
+  private
+    $_handle,
+    $_indent = '';
+
+  function __construct(Narvalo\FileHandle $_handle_) {
+    $this->_handle = $_handle_;
+  }
+
+  static function GetDefault() {
+    return new self(new Narvalo\StandardOutput());
+  }
+
+  function writeResult($_name_, Framework\TestSetResult $_result_) {
+    if ($_result_->passed) {
+      $status = 'ok';
+    } else {
+      if ($_result_->bailedOut) {
+        $status = 'BAILED OUT!';
       } else {
-        if ($_result_->bailedOut) {
-          $status = 'BAILED OUT!';
-        } else {
-          $status = 'KO';
-        }
-      }
-
-      if ($_result_->runtimeErrorsCount > 0) {
-        $status .= ' DUBIOUS';
-      }
-
-      if (($dotlen = 40 - \strlen($_name_)) > 0) {
-        $statusLine = $_name_ . \str_repeat('.', $dotlen) . ' ' . $status;
-      } else {
-        $statusLine = $_name_ . '... '. $status;
-      }
-
-      $this->writeLine_($statusLine);
-
-      if (!$_result_->passed) {
-        $this->writeLine_(
-          \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
+        $status = 'KO';
       }
     }
 
-    function writeSummary(Runner\TestHarnessSummary $_summary_) {
-      if ($_summary_->passed) {
-        $this->writeLine_('All tests successful.');
-      }
-      $this->writeLine_(
-        \sprintf(
-          'Sets=%s, Failures=%s',
-          $_summary_->setsCount,
-          $_summary_->failedSetsCount));
-      $this->writeLine_(
-        \sprintf(
-          'Tests=%s, Failures=%s',
-          $_summary_->testsCount,
-          $_summary_->failedTestsCount));
-      $this->writeLine_(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
+    if ($_result_->runtimeErrorsCount > 0) {
+      $status .= ' DUBIOUS';
+    }
+
+    if (($dotlen = 40 - \strlen($_name_)) > 0) {
+      $statusLine = $_name_ . \str_repeat('.', $dotlen) . ' ' . $status;
+    } else {
+      $statusLine = $_name_ . '... '. $status;
+    }
+
+    $this->_handle->writeLine($statusLine);
+
+    if (!$_result_->passed) {
+      $this->_handle->writeLine(
+        \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
     }
   }
+
+  function writeSummary(Runner\TestHarnessSummary $_summary_) {
+    if ($_summary_->passed) {
+      $this->_handle->writeLine('All tests successful.');
+    }
+    $this->_handle->writeLine(
+      \sprintf(
+        'Sets=%s, Failures=%s',
+        $_summary_->setsCount,
+        $_summary_->failedSetsCount));
+    $this->_handle->writeLine(
+      \sprintf(
+        'Tests=%s, Failures=%s',
+        $_summary_->testsCount,
+        $_summary_->failedTestsCount));
+    $this->_handle->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
+  }
+}
 
 // }}}
 
@@ -230,6 +247,13 @@ class TapProducer extends Framework\TestProducer {
 
   function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
     parent::__construct($_outStream_, $_errStream_);
+  }
+
+  // NB: If $_compatible_ is TRUE, return a producer compatible with prove from Test::Harness.
+  static function GetDefault($_compatible_) {
+    $outStream = new Narvalo\StandardOutput();
+    $errStream = $_compatible_ ? $outStream : new Narvalo\StandardError();
+    return new self(new TapOutStream($outStream, \TRUE), new TapErrStream($errStream));
   }
 
   protected function shutdownCore_() {

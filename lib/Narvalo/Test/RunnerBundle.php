@@ -65,8 +65,6 @@ class TestHarnessSummary {
 // {{{ TestHarnessStream
 
 interface TestHarnessStream {
-  function close();
-
   function writeResult($_name_, Framework\TestSetResult $_result_);
   function writeSummary(TestHarnessSummary $_summary_);
 }
@@ -182,10 +180,6 @@ final class RuntimeErrorCatcher {
 // {{{ NoopTestOutStream
 
 final class NoopTestOutStream implements Framework\TestOutStream {
-  function close() {
-    ;
-  }
-
   function reset() {
     ;
   }
@@ -239,10 +233,6 @@ final class NoopTestOutStream implements Framework\TestOutStream {
 // {{{ NoopTestErrStream
 
 final class NoopTestErrStream implements Framework\TestErrStream {
-  function close() {
-    ;
-  }
-
   function reset() {
     ;
   }

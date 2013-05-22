@@ -12,13 +12,9 @@ bootstrap();
 // ------------------------------------------------------------------------------------------------
 
 function bootstrap() {
-  // NB: This producer IS compatible with prove from Test::Harness.
-  $producer = new Tap\TapProducer(
-    new Tap\TapOutStream('php://stdout', \TRUE),
-    new Tap\TapErrStream('php://stdout')
-  );
-
+  $producer = Tap\TapProducer::GetDefault(\TRUE /* compatible */);
   $producer->register();
+
   $producer->startup();
 
   \register_shutdown_function(function() use ($producer) {

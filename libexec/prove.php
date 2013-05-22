@@ -21,17 +21,13 @@ class ProveApp {
 
   static function Main(array $_argv_) {
     $options = ProveOptions::Parse($_argv_);
-    $stream  = self::_GetHarnessStream();
+    $stream  = Tap\TapHarnessStream::GetDefault();
 
     (new self($stream))->run($options);
   }
 
   function run(ProveOptions $_options_) {
     $this->_harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
-  }
-
-  private static function _GetHarnessStream() {
-    return new Tap\TapHarnessStream('php://stdout');
   }
 }
 

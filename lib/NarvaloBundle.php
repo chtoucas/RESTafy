@@ -47,19 +47,15 @@ class ArgumentNullException extends ArgumentException { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ InvalidOperationException
-
-class InvalidOperationException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileNotFoundException
-
-class FileNotFoundException extends Exception { }
-
-// }}}
 // {{{ KeyNotFoundException
 
 class KeyNotFoundException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ InvalidOperationException
+
+class InvalidOperationException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ ApplicationException
@@ -587,13 +583,35 @@ class Container {
 class IOException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ FileNotFoundException
+
+class FileNotFoundException extends IOException { }
+
+// }}}
+
+// {{{ FileAccess
+
+final class FileAccess {
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ FileMode
+
+final class FileMode {
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ FileHandle
 
 class FileHandle {
   private $_handle;
 
-  function __construct($_handle_) {
+  function __construct($_path_, $_mode_) {
+    $handle = \fopen($_path_, $_mode_);
+    if (\FALSE === $handle) {
+      throw new IOException(\sprintf('Unable to open "%s" for writing.', $_path_));
+    }
     $this->_handle = $handle;
   }
 
@@ -601,33 +619,12 @@ class FileHandle {
     $this->cleanup_(\FALSE);
   }
 
-  static function FromPath($_path_, $_mode_) {
-    $handle = \fopen($_path_, $_mode_);
-    if (\FALSE === $handle) {
-      throw new IOException(\sprintf('Unable to open "%s" for writing', $_path_));
-    }
-    return new static($handle);
-  }
-
-  static function GetStdErr($_mode_) {
-    return static::FromPath('php://stderr', $_mode_);
-  }
-
-  static function GetStdOut($_mode_) {
-    return static::FromPath('php://stdout', $_mode_);
-  }
-
   function close() {
     $this->cleanup_(\TRUE);
   }
 
-  function opened() {
-    return \NULL !== $this->_handle;
-  }
-
   function canWrite() {
-    // XXX: Is this correct?
-    return $this->opened() && 0 === \fwrite($this->_handle, '');
+    return 0 === \fwrite($this->_handle, '');
   }
 
   function write($_value_) {
@@ -645,6 +642,34 @@ class FileHandle {
     if (\TRUE === \fclose($this->_handle)) {
       $this->_handle = \NULL;
     }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ StandardError
+
+class StandardError extends FileHandle {
+  function __construct() {
+    parent::__construct('php://stderr', 'w');
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ StandardOutput
+
+class StandardOutput extends FileHandle {
+  function __construct() {
+    parent::__construct('php://stdout', 'w');
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ StandardInput
+
+class StandardInput extends FileHandle {
+  function __construct() {
+    parent::__construct('php://stdin', 'r');
   }
 }
 

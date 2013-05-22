@@ -113,16 +113,9 @@ final class TestSetResult {
 // Test streams
 // =================================================================================================
 
-// {{{ FileStreamWriterException
-
-class FileStreamWriterException extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // {{{ TestOutStream
 
 interface TestOutStream {
-  function close();
   function reset();
 
   function startSubtest();
@@ -143,60 +136,12 @@ interface TestOutStream {
 // {{{ TestErrStream
 
 interface TestErrStream {
-  function close();
   function reset();
 
   function startSubtest();
   function endSubtest();
 
   function write($_value_);
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileStreamWriter
-
-class FileStreamWriter {
-  private
-    $_handle,
-    $_opened = \FALSE;
-
-  function __construct($_path_) {
-    $handle = \fopen($_path_, 'w');
-    if (\FALSE === $handle) {
-      throw new FileStreamWriterException(\sprintf('Unable to open "%s" for writing', $_path_));
-    }
-    $this->_opened = \TRUE;
-    $this->_handle = $handle;
-  }
-
-  function __destruct() {
-    $this->cleanup_(\FALSE);
-  }
-
-  function close() {
-    $this->cleanup_(\TRUE);
-  }
-
-  function opened() {
-    return $this->_opened;
-  }
-
-  protected function write_($_value_) {
-    return \fwrite($this->_handle, $_value_);
-  }
-
-  protected function writeLine_($_value_) {
-    return $this->write_($_value_ . \PHP_EOL);
-  }
-
-  protected function cleanup_($_disposing_) {
-    if (!$this->_opened) {
-      return;
-    }
-    if (\TRUE === \fclose($this->_handle)) {
-      $this->_opened = \FALSE;
-    }
-  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------

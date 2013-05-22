@@ -33,7 +33,7 @@ class RunTestApp {
       exit(1);
     }
 
-    $producer = self::_GetProducer();
+    $producer = Tap\TapProducer::GetDefault(\FALSE /* compatible */);
     $producer->register();
 
     (new self($producer))->run($options);
@@ -41,14 +41,6 @@ class RunTestApp {
 
   function run(RunTestOptions $_options_) {
     $this->_runner->run(new Sets\FileTestSet($_options_->getFilePath()));
-  }
-
-  private static function _GetProducer() {
-    // NB: This producer IS NOT compatible with prove from Test::Harness.
-    return new Tap\TapProducer(
-      new Tap\TapOutStream('php://stdout', \TRUE),
-      new Tap\TapErrStream('php://stderr')
-    );
   }
 }
 
