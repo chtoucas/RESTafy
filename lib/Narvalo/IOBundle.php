@@ -44,14 +44,14 @@ final class FileMode {
 // {{{ FileHandle
 
 class FileHandle {
-  private $_handle;
+  private $_fh;
 
   function __construct($_path_, $_mode_) {
-    $handle = \fopen($_path_, $_mode_);
-    if (\FALSE === $handle) {
+    $fh = \fopen($_path_, $_mode_);
+    if (\FALSE === $fh) {
       throw new IOException(\sprintf('Unable to open "%s" for writing.', $_path_));
     }
-    $this->_handle = $handle;
+    $this->_fh = $fh;
   }
 
   function __destruct() {
@@ -63,11 +63,11 @@ class FileHandle {
   }
 
   function canWrite() {
-    return 0 === \fwrite($this->_handle, '');
+    return 0 === \fwrite($this->_fh, '');
   }
 
   function write($_value_) {
-    return \fwrite($this->_handle, $_value_);
+    return \fwrite($this->_fh, $_value_);
   }
 
   function writeLine($_value_) {
@@ -75,13 +75,13 @@ class FileHandle {
   }
 
   protected function cleanup_($_disposing_) {
-    if (\NULL === $this->_handle) {
+    if (\NULL === $this->_fh) {
       return;
     }
-    if (\TRUE === \fclose($this->_handle)) {
-      $this->_handle = \NULL;
+    if (\TRUE === \fclose($this->_fh)) {
+      $this->_fh = \NULL;
     } else if (!$_disposing_) {
-      throw new IOException('Unable to close the handle.');
+      throw new IOException('Unable to close the file handle.');
     }
   }
 }

@@ -1,12 +1,14 @@
 <?php
 
-namespace RESTafy\Mysql;
+namespace Narvalo\Persistence;
 
-require_once 'RESTafyBundle.php';
+require_once 'NarvaloBundle.php';
 
-use RESTafy;
+use Narvalo;
 
-class PDO implements RESTafy\DBI {
+// {{{ MysqlPDO
+
+class MysqlPDO implements Narvalo\DBI {
   private $_dsn;
   protected $handle_;
 
@@ -16,7 +18,7 @@ class PDO implements RESTafy\DBI {
 
   function open() {
     if (NULL !== $this->handle_) {
-      throw new RESTafy\InvalidOperationException('XXX');
+      throw new Narvalo\InvalidOperationException('XXX');
     }
 
     try {
@@ -30,7 +32,7 @@ class PDO implements RESTafy\DBI {
           => "SET NAMES utf8"
         ));
     } catch (\PDOException $e) {
-      throw new RESTafy\DBIException('Unable to connect to MySQL.', $e);
+      throw new Narvalo\DBIException('Unable to connect to MySQL.', $e);
     }
 
     // Tell PDO to throw an exception on error.
@@ -42,7 +44,7 @@ class PDO implements RESTafy\DBI {
 
   function close() {
     if (NULL === $this->handle_) {
-      throw new RESTafy\InvalidOperationException('XXX');
+      throw new Narvalo\InvalidOperationException('XXX');
     }
 
     $this->handle_ = NULL;
@@ -67,7 +69,7 @@ class PDO implements RESTafy\DBI {
     try {
       $stmt = $this->handle_->prepare($_query_);
     } catch (\PDOException $e) {
-      throw new RESTafy\DBIException('Unable to prepare stmt MySQL.', $e);
+      throw new Narvalo\DBIException('Unable to prepare stmt MySQL.', $e);
     }
 
     return $stmt;
@@ -79,14 +81,17 @@ class PDO implements RESTafy\DBI {
     try {
       $result = $this->handle_->query($_query_);
     } catch (\PDOException $e) {
-      throw new RESTafy\DBIException('Unable to query MySQL.', $e);
+      throw new Narvalo\DBIException('Unable to query MySQL.', $e);
     }
 
     return $result;
   }
 }
 
-class Mysqli implements RESTafy\DBI {
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ Mysqli
+
+class Mysqli implements Narvalo\DBI {
   protected
     $database_,
     $host_,
@@ -103,14 +108,14 @@ class Mysqli implements RESTafy\DBI {
 
   function open() {
     if (NULL !== $this->handle_) {
-      throw new RESTafy\InvalidOperationException('XXX');
+      throw new Narvalo\InvalidOperationException('XXX');
     }
 
     $handle = new \mysqli($this->host_, $this->userName_,
       $this->password_, $this->database_);
 
     if (\mysqli_connect_errno()) {
-      throw new RESTafy\DBIException(
+      throw new Narvalo\DBIException(
         'Unable to connect to MySQL: ' . mysqli_connect_error());
     }
 
@@ -121,7 +126,7 @@ class Mysqli implements RESTafy\DBI {
 
   function close() {
     if (NULL === $this->handle_) {
-      throw new RESTafy\InvalidOperationException('XXX');
+      throw new Narvalo\InvalidOperationException('XXX');
     }
 
     if (\FALSE === $this->handle_->close()) {
@@ -158,7 +163,7 @@ class Mysqli implements RESTafy\DBI {
     $result = $this->handle_->multi_query($_queries_);
 
     if (\FALSE === $result) {
-      throw new RESTafy\DBIException(
+      throw new Narvalo\DBIException(
         'Unable to query MySQL: ' . $this->handle_->error);
     }
 
@@ -171,7 +176,7 @@ class Mysqli implements RESTafy\DBI {
     $result = $this->handle_->query($_query_);
 
     if (\FALSE === $result) {
-      throw new RESTafy\DBIException(
+      throw new Narvalo\DBIException(
         'Unable to query MySQL: ' . $this->handle_->error);
     }
 
@@ -182,5 +187,7 @@ class Mysqli implements RESTafy\DBI {
     return $this->handle_->store_result();
   }
 }
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // EOF
