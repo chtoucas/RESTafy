@@ -39,6 +39,53 @@ final class FileMode {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ File
+
+final class File {
+  /// Create the file with write-only access.
+  static function Create($_path_) {
+    return new FileHandle($_path_, FileMode::CreateNew);
+  }
+
+  /// Open the file with read-only access
+  /// and position the stream at the beginning of the file.
+  static function OpenRead($_path_) {
+    return new FileHandle($_path_, FileMode::Open);
+  }
+
+  /// Open or create the file with write-only access
+  /// and position the stream at the beginning of the file.
+  static function OpenWrite($_path_) {
+    return new FileHandle($_path_, FileMode::OpenOrCreate);
+  }
+
+  /// Open or create the file with write-only access
+  /// and position the stream at the end of the file.
+  static function OpenAppend($_path_) {
+    return new FileHandle($_path_, FileMode::Append);
+  }
+
+  /// Open or create the file with write-only access
+  /// and position the stream at the beginning of the file.
+  /// WARNING: This method is destructive, the file gets truncated.
+  static function OpenTruncate($_path_) {
+    return new FileHandle($_path_, FileMode::Truncate);
+  }
+
+  static function OpenStandardError() {
+    return self::OpenTruncate('php://stderr');
+  }
+
+  static function OpenStandardInput() {
+    return self::OpenRead('php://stdin');
+  }
+
+  static function OpenStandardOutput() {
+    return self::OpenTruncate('php://stdout');
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ FileHandle
 
 class FileHandle {
@@ -47,7 +94,7 @@ class FileHandle {
     $_fh;
 
   function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
-    $fh = \fopen($_path_, self::_GetFileModeString($_mode_, $_extended_));
+    $fh = \fopen($_path_, self::_ModeToString($_mode_, $_extended_));
     if (\FALSE === $fh) {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
@@ -97,13 +144,13 @@ class FileHandle {
     case FileMode::CreateNew:
     case FileMode::OpenOrCreate:
     case FileMode::Truncate:
-      return $_extended_ ? self::Write : (self::Read | self::Write);
+      return $_extended_ ? FileAccess::Write : (FileAccess::Read | FileAccess::Write);
     case FileMode::Open:
-      return $_extended_ ? self::Read  : (self::Read | self::Write);
+      return $_extended_ ? FileAccess::Read  : (FileAccess::Read | FileAccess::Write);
     }
   }
 
-  private static function _GetFileModeString($_mode_, $_extended_) {
+  private static function _ModeToString($_mode_, $_extended_) {
     switch ($_mode_) {
     case FileMode::Append:
       return $_extended_ ? 'a+' : 'a';
@@ -129,34 +176,6 @@ class FileHandle {
     case FileMode::Truncate:
       throw new IOException(\sprintf('Unable to open the file "%s" for writing.', $_path_));
     }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ StandardError
-
-class StandardError extends FileHandle {
-  function __construct() {
-    parent::__construct('php://stderr', FileMode::Truncate);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ StandardOutput
-
-class StandardOutput extends FileHandle {
-  function __construct() {
-    parent::__construct('php://stdout', FileMode::Truncate);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ StandardInput
-
-class StandardInput extends FileHandle {
-  function __construct() {
-    parent::__construct('php://stdin', FileMode::Open);
   }
 }
 

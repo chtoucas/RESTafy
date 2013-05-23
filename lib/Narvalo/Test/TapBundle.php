@@ -183,7 +183,7 @@ final class TapHarnessStream implements Runner\TestHarnessStream {
   }
 
   static function GetDefault() {
-    return new self(new IO\StandardOutput());
+    return new self(IO\File::OpenStandardOutput());
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
@@ -251,8 +251,8 @@ class TapProducer extends Framework\TestProducer {
 
   // NB: If $_compatible_ is TRUE, return a producer compatible with prove from Test::Harness.
   static function GetDefault($_compatible_) {
-    $outStream = new IO\StandardOutput();
-    $errStream = $_compatible_ ? $outStream : new IO\StandardError();
+    $outStream = IO\File::OpenStandardOutput();
+    $errStream = $_compatible_ ? $outStream : IO\File::OpenStandardError();
     return new self(new TapOutStream($outStream, \TRUE), new TapErrStream($errStream));
   }
 
