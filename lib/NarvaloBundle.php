@@ -607,15 +607,15 @@ interface Cache {
 // Persistence
 // =================================================================================================
 
-// {{{ DbiException
+// {{{ DBIException
 
-class DbiException extends Exception { }
+class DBIException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ Dbi
+// {{{ DBI
 
-interface Dbi {
+interface DBI {
   function open();
   function close();
   //function open($_opts_);

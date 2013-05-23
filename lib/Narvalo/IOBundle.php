@@ -21,9 +21,8 @@ class FileNotFoundException extends IOException { }
 
 final class FileAccess {
   const
-    Read      = 1,
-    Write     = 2;
-    //ReadWrite = 1 | 2;
+    Read  = 1,
+    Write = 2;
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -31,12 +30,11 @@ final class FileAccess {
 
 final class FileMode {
   const
-    CreateNew    = 1,
-    Create       = 2,
+    Append       = 1,
+    CreateNew    = 2,
     Open         = 3,
     OpenOrCreate = 4,
-    Truncate     = 5,
-    Append       = 6;
+    Truncate     = 5;
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -44,14 +42,17 @@ final class FileMode {
 // {{{ FileHandle
 
 class FileHandle {
-  private $_fh;
+  private
+    $_faccess,
+    $_fh;
 
-  function __construct($_path_, $_mode_) {
-    $fh = \fopen($_path_, $_mode_);
+  function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
+    $fh = \fopen($_path_, self::_GetFileModeString($_mode_, $_extended_));
     if (\FALSE === $fh) {
-      throw new IOException(\sprintf('Unable to open "%s" for writing.', $_path_));
+      self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
     $this->_fh = $fh;
+    $this->_faccess = self::_GetFileAccess($_mode_, $_extended_);
   }
 
   function __destruct() {
@@ -62,8 +63,13 @@ class FileHandle {
     $this->cleanup_(\TRUE);
   }
 
+  function canRead() {
+    return $this->_faccess & FileAccess::Read;
+  }
+
   function canWrite() {
-    return 0 === \fwrite($this->_fh, '');
+    return $this->_faccess & FileAccess::Write;
+    //return 0 === \fwrite($this->_fh, '');
   }
 
   function write($_value_) {
@@ -84,6 +90,46 @@ class FileHandle {
       throw new IOException('Unable to close the file handle.');
     }
   }
+
+  private static function _GetFileAccess($_mode_, $_extended_) {
+    switch ($_mode_) {
+    case FileMode::Append:
+    case FileMode::CreateNew:
+    case FileMode::OpenOrCreate:
+    case FileMode::Truncate:
+      return $_extended_ ? self::Write : (self::Read | self::Write);
+    case FileMode::Open:
+      return $_extended_ ? self::Read  : (self::Read | self::Write);
+    }
+  }
+
+  private static function _GetFileModeString($_mode_, $_extended_) {
+    switch ($_mode_) {
+    case FileMode::Append:
+      return $_extended_ ? 'a+' : 'a';
+    case FileMode::CreateNew:
+      return $_extended_ ? 'x+' : 'x';
+    case FileMode::Open:
+      return $_extended_ ? 'r+' : 'r';
+    case FileMode::OpenOrCreate:
+      return $_extended_ ? 'c+' : 'c';
+    case FileMode::Truncate:
+      return $_extended_ ? 'w+' : 'w';
+    }
+  }
+
+  private static function _ThrowOnFailedOpen($_path_, $_mode_) {
+    switch ($_mode_) {
+    case FileMode::CreateNew:
+      throw new IOException(\sprintf('Unable to create the file "%s".', $_path_));
+    case FileMode::Open:
+      throw new FileNotFoundException(\sprintf('Unable to open the file "%s".', $_path_));
+    case FileMode::Append:
+    case FileMode::OpenOrCreate:
+    case FileMode::Truncate:
+      throw new IOException(\sprintf('Unable to open the file "%s" for writing.', $_path_));
+    }
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -92,7 +138,7 @@ class FileHandle {
 
 class StandardError extends FileHandle {
   function __construct() {
-    parent::__construct('php://stderr', 'w');
+    parent::__construct('php://stderr', FileMode::Truncate);
   }
 }
 
@@ -101,7 +147,7 @@ class StandardError extends FileHandle {
 
 class StandardOutput extends FileHandle {
   function __construct() {
-    parent::__construct('php://stdout', 'w');
+    parent::__construct('php://stdout', FileMode::Truncate);
   }
 }
 
@@ -110,7 +156,7 @@ class StandardOutput extends FileHandle {
 
 class StandardInput extends FileHandle {
   function __construct() {
-    parent::__construct('php://stdin', 'r');
+    parent::__construct('php://stdin', FileMode::Open);
   }
 }
 

@@ -7,7 +7,7 @@ For instance, a call to mkdir under Cygwin might fail.
 Narvalo\Test
 ============
 
-* SKIP & TODO
+* SKIP & TODO, completely broken.
 * Abstract the directives TODO & SKIP to ease the creation of new directives.
 * Test the Test.
 * Comments & doc.
