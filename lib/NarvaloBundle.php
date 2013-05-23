@@ -20,6 +20,16 @@ class Exception extends \Exception {
 class RuntimeException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ InvalidOperationException
+
+class InvalidOperationException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ ApplicationException
+
+class ApplicationException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ ArgumentException
 
@@ -46,21 +56,9 @@ class ArgumentException extends Exception {
 class ArgumentNullException extends ArgumentException { }
 
 // }}} ---------------------------------------------------------------------------------------------
-
 // {{{ KeyNotFoundException
 
 class KeyNotFoundException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ InvalidOperationException
-
-class InvalidOperationException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ApplicationException
-
-class ApplicationException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
@@ -225,7 +223,7 @@ final class DynaLoader {
 
   static function LoadFile($_path_) {
     if (!self::TryLoadFile($_path_)) {
-      throw new FileNotFoundException(\sprintf('Unable to load the file: "%s".', $_path_));
+      throw new RuntimeException(\sprintf('Unable to load the file: "%s".', $_path_));
     }
   }
 
@@ -314,11 +312,9 @@ final class Guard {
 // Collections
 // =================================================================================================
 
-// {{{ ReadOnlyDictionary
+// {{{ Dictionary
 
-trait ReadOnlyDictionary {
-  // TODO: Not really ReadOnly, since the derived class can access the private property.
-
+trait Dictionary {
   private $_store = array();
 
   function has($_key_) {
@@ -330,19 +326,6 @@ trait ReadOnlyDictionary {
     return $this->_store[$_key_];
   }
 
-  private function _checkKey($_key_) {
-    if (!$this->has($_key_)) {
-      throw new KeyNotFoundException(\sprintf('The key "%s" does not exist.', $_key_));
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Dictionary
-
-trait Dictionary {
-  use ReadOnlyDictionary;
-
   function set($_key_, $_value_) {
     $this->_store[$_key_] = $_value_;
   }
@@ -350,6 +333,12 @@ trait Dictionary {
   function remove($_key_) {
     $this->_checkKey($_key_);
     unset($this->_store[$_key_]);
+  }
+
+  private function _checkKey($_key_) {
+    if (!$this->has($_key_)) {
+      throw new KeyNotFoundException(\sprintf('The key "%s" does not exist.', $_key_));
+    }
   }
 }
 
@@ -575,106 +564,6 @@ class Container {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// IO
-// =================================================================================================
-
-// {{{ IOException
-
-class IOException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileNotFoundException
-
-class FileNotFoundException extends IOException { }
-
-// }}}
-
-// {{{ FileAccess
-
-final class FileAccess {
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileMode
-
-final class FileMode {
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ FileHandle
-
-class FileHandle {
-  private $_handle;
-
-  function __construct($_path_, $_mode_) {
-    $handle = \fopen($_path_, $_mode_);
-    if (\FALSE === $handle) {
-      throw new IOException(\sprintf('Unable to open "%s" for writing.', $_path_));
-    }
-    $this->_handle = $handle;
-  }
-
-  function __destruct() {
-    $this->cleanup_(\FALSE);
-  }
-
-  function close() {
-    $this->cleanup_(\TRUE);
-  }
-
-  function canWrite() {
-    return 0 === \fwrite($this->_handle, '');
-  }
-
-  function write($_value_) {
-    return \fwrite($this->_handle, $_value_);
-  }
-
-  function writeLine($_value_) {
-    return $this->write($_value_ . \PHP_EOL);
-  }
-
-  protected function cleanup_($_disposing_) {
-    if (\NULL === $this->_handle) {
-      return;
-    }
-    if (\TRUE === \fclose($this->_handle)) {
-      $this->_handle = \NULL;
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ StandardError
-
-class StandardError extends FileHandle {
-  function __construct() {
-    parent::__construct('php://stderr', 'w');
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ StandardOutput
-
-class StandardOutput extends FileHandle {
-  function __construct() {
-    parent::__construct('php://stdout', 'w');
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ StandardInput
-
-class StandardInput extends FileHandle {
-  function __construct() {
-    parent::__construct('php://stdin', 'r');
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // Caching
 // =================================================================================================
 
@@ -718,15 +607,15 @@ interface Cache {
 // Persistence
 // =================================================================================================
 
-// {{{ DBIException
+// {{{ DbiException
 
-class DBIException extends Exception { }
+class DbiException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ DBI
+// {{{ Dbi
 
-interface DBI {
+interface Dbi {
   function open();
   function close();
   //function open($_opts_);

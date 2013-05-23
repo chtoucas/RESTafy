@@ -8,11 +8,11 @@
 
 namespace Narvalo\Test\Tap;
 
-require_once 'NarvaloBundle.php';
+require_once 'Narvalo/IOBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 
-use \Narvalo;
+use \Narvalo\IO;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
 
@@ -36,7 +36,7 @@ class TapStream {
     $_handle,
     $_indent = '';
 
-  function __construct(Narvalo\FileHandle $_handle_) {
+  function __construct(IO\FileHandle $_handle_) {
     $this->_handle = $_handle_;
   }
 
@@ -81,7 +81,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 
   private $_verbose;
 
-  function __construct(Narvalo\FileHandle $_handle_, $_verbose_) {
+  function __construct(IO\FileHandle $_handle_, $_verbose_) {
     parent::__construct($_handle_);
 
     $this->_verbose = $_verbose_;
@@ -178,12 +178,12 @@ final class TapHarnessStream implements Runner\TestHarnessStream {
     $_handle,
     $_indent = '';
 
-  function __construct(Narvalo\FileHandle $_handle_) {
+  function __construct(IO\FileHandle $_handle_) {
     $this->_handle = $_handle_;
   }
 
   static function GetDefault() {
-    return new self(new Narvalo\StandardOutput());
+    return new self(new IO\StandardOutput());
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
@@ -251,8 +251,8 @@ class TapProducer extends Framework\TestProducer {
 
   // NB: If $_compatible_ is TRUE, return a producer compatible with prove from Test::Harness.
   static function GetDefault($_compatible_) {
-    $outStream = new Narvalo\StandardOutput();
-    $errStream = $_compatible_ ? $outStream : new Narvalo\StandardError();
+    $outStream = new IO\StandardOutput();
+    $errStream = $_compatible_ ? $outStream : new IO\StandardError();
     return new self(new TapOutStream($outStream, \TRUE), new TapErrStream($errStream));
   }
 
