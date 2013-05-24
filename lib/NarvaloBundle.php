@@ -83,6 +83,8 @@ final class ObjectType {
     Dictionary = 11,
     Object     = 12,
     Resource   = 13;
+
+  private function __construct() { }
 }
 
 // }}} ---------------------------------------------------------------------------------------------

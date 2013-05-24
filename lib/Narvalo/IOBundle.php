@@ -26,6 +26,8 @@ final class FileMode {
     Open         = 3,
     OpenOrCreate = 4,
     Truncate     = 5;
+
+  private function __construct() { }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
