@@ -87,6 +87,10 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
     $this->_verbose = $_verbose_;
   }
 
+  static function GetDefault() {
+    return new self(IO\File::OpenStandardOutput(), \TRUE);
+  }
+
   function writeHeader() {
     if (self::Version > 12) {
       return $this->writeTapLine_(\sprintf('TAP version %s', self::Version));
@@ -164,6 +168,10 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 // {{{ TapErrStream
 
 final class TapErrStream extends TapStream implements Framework\TestErrStream {
+  static function GetDefault() {
+    return new self(IO\File::OpenStandardOutput());
+  }
+
   function write($_value_) {
     return $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
   }
@@ -249,11 +257,8 @@ class TapProducer extends Framework\TestProducer {
     parent::__construct($_outStream_, $_errStream_);
   }
 
-  // NB: If $_compatible_ is TRUE, return a producer compatible with prove from Test::Harness.
-  static function GetDefault($_compatible_) {
-    $outStream = IO\File::OpenStandardOutput();
-    $errStream = $_compatible_ ? $outStream : IO\File::OpenStandardError();
-    return new self(new TapOutStream($outStream, \TRUE), new TapErrStream($errStream));
+  static function GetDefault() {
+    return new self(TapOutStream::GetDefault(), TapErrStream::GetDefault());
   }
 
   protected function shutdownCore_() {

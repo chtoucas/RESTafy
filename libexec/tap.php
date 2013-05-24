@@ -12,7 +12,7 @@ bootstrap();
 // ------------------------------------------------------------------------------------------------
 
 function bootstrap() {
-  $producer = Tap\TapProducer::GetDefault(\TRUE /* compatible */);
+  $producer = Tap\TapProducer::GetDefault();
   $producer->register();
 
   $producer->startup();

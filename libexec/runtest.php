@@ -33,7 +33,7 @@ class RunTestApp {
       exit(1);
     }
 
-    $producer = Tap\TapProducer::GetDefault(\FALSE /* compatible */);
+    $producer = Tap\TapProducer::GetDefault();
     $producer->register();
 
     (new self($producer))->run($options);

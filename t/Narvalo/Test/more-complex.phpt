@@ -7,37 +7,36 @@ use \Narvalo\Test;
 
 $t = new Test\More();
 
-$t->plan(15);
+//$t->plan(14);
 //$t->skipAll('TEST');
 
-$t->ok(\TRUE, 'Passing test');
-//$t->ok(\FALSE, 'Failing test');
+$t->ok(\TRUE, 'Truth');
 
-$t->pass('Passing test');
-$t->fail('Failing test');
+$t->pass('Passed');
+//$t->fail('Failed');
 
-TODO: {
+/* TODO: {
   $t->startTodo('Sample todo tests');
   $t->pass('Passing test marked as TO-DO');
   $t->fail('Failing test marked as TO-DO');
   $t->endTodo();
-}
+} */
 
-$t->is(1, 1, 'Passing equal Numeric');
-$t->is(\NULL, '', "Passing equal NULL==''");
-$t->is(\NULL, \NULL, 'Passing equal NULL==NULL');
-$t->is(array(1, 1), array(1, 1), 'Passing equal array');
-$t->is(new \StdClass(), new \StdClass(), 'Failing equal anonymous object');
+$t->is(1, 1, '1 === 1');
+$t->isnt(\NULL, '', 'NULL !== ""');
+$t->is(\NULL, \NULL, 'NULL === NULL');
+$t->is(array(1, 1), array(1, 1), 'Simple array equality');
+$t->isnt(new \StdClass(), new \StdClass(), 'Anonymous object inequality');
 
-$t->like(" ", "{\s+}", 'Passing Regex');
+$t->like(" ", "{\s+}", 'Simple Regex');
 
-$t->canInclude('doesnotexist.php', 'Failing include does not exist');
+//$t->canInclude('doesnotexist.php', 'Failing include does not exist');
 //$t->canInclude('failed.php', 'Failing include failed');
 //$t->canInclude('returnfalse.php', 'Passing include returning FALSE');
 
 $t->subtest(function() use ($t) {
   //$t->plan(5);
-  $t->is(1, 2, 'Passing equal Numeric');
+  $t->isnt(1 === 2, 'Passing equal Numeric');
   $t->pass('Passing sub test');
   $t->pass('Passing sub test');
   //$s = new Test\Simple(1);

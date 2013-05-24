@@ -146,7 +146,7 @@ class FileHandle {
   }
 
   function read($_length_) {
-    if (!$this->_canRead) {
+    if (!$this->canRead()) {
       throw new Narvalo\NotSupportedException('XXX');
     } else if (\feof($this->_fh)) {
       throw new IOException('You already reached EOF.');
@@ -164,7 +164,7 @@ class FileHandle {
   }
 
   function write($_value_) {
-    if (!$this->_canWrite) {
+    if (!$this->canWrite()) {
       throw new Narvalo\NotSupportedException('XXX');
     }
 
