@@ -17,15 +17,6 @@ class FileNotFoundException extends IOException { }
 
 // }}}
 
-// {{{ FileAccess
-
-final class FileAccess {
-  const
-    Read  = 1,
-    Write = 2;
-}
-
-// }}} ---------------------------------------------------------------------------------------------
 // {{{ FileMode
 
 final class FileMode {
@@ -42,6 +33,8 @@ final class FileMode {
 // {{{ File
 
 final class File {
+  // Creational methods.
+
   /// Create the file with write-only access.
   static function Create($_path_) {
     return new FileHandle($_path_, FileMode::CreateNew);
@@ -83,6 +76,36 @@ final class File {
   static function OpenStandardOutput() {
     return self::OpenTruncate('php://stdout');
   }
+
+  //
+
+  static function Copy($_source_, $_dest_, $_overwrite_ = \FALSE) {
+    throw new Narvalo\NotImplementedException();
+  }
+
+  static function Delete($_path_) {
+    throw new Narvalo\NotImplementedException();
+  }
+
+  static function Exists($_path_) {
+    return \file_exists($_path_);
+  }
+
+  static function GetLastAccessTime($_path_) {
+    if (\FALSE !== ($atime = \fileatime($_path_))) {
+      return $atime;
+    } else {
+      throw new IOException('XXX');
+    }
+  }
+
+  static function GetLastWriteTime($_path_) {
+    if (\FALSE !== ($mtime = \filemtime($_path_))) {
+      return $mtime;
+    } else {
+      throw new IOException('XXX');
+    }
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -90,8 +113,9 @@ final class File {
 
 class FileHandle {
   private
-    $_faccess,
-    $_fh;
+    $_fh,
+    $_canRead  = \FALSE,
+    $_canWrite = \FALSE;
 
   function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
     $fh = \fopen($_path_, self::_ModeToString($_mode_, $_extended_));
@@ -99,7 +123,7 @@ class FileHandle {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
     $this->_fh = $fh;
-    $this->_faccess = self::_GetFileAccess($_mode_, $_extended_);
+    $this->_setFileAccess($_mode_, $_extended_);
   }
 
   function __destruct() {
@@ -111,16 +135,41 @@ class FileHandle {
   }
 
   function canRead() {
-    return $this->_faccess & FileAccess::Read;
+    return $this->_canRead;
   }
 
   function canWrite() {
-    return $this->_faccess & FileAccess::Write;
-    //return 0 === \fwrite($this->_fh, '');
+    return $this->_canWrite;
+  }
+
+  function read($_length_) {
+    if (!$this->_canRead) {
+      throw new Narvalo\NotSupportedException('XXX');
+    } else if (\feof($this->_fh)) {
+      throw new IOException('You already reached EOF.');
+    }
+
+    if (FALSE !== ($result = \fread($this->_fh, $_length_))) {
+      return $result;
+    } else {
+      throw new IOException(\sprintf('Unable to read "%s" bytes from the file.', $_length_));
+    }
+  }
+
+  function readLine($_length_ = 0) {
+    throw new Narvalo\NotImplementedException();
   }
 
   function write($_value_) {
-    return \fwrite($this->_fh, $_value_);
+    if (!$this->_canWrite) {
+      throw new Narvalo\NotSupportedException('XXX');
+    }
+
+    if (FALSE !== ($length = \fwrite($this->_fh, $_value_))) {
+      return $length;
+    } else {
+      throw new IOException('Unable to write to the file.');
+    }
   }
 
   function writeLine($_value_) {
@@ -131,22 +180,14 @@ class FileHandle {
     if (\NULL === $this->_fh) {
       return;
     }
+
+    $this->_canRead  = \FALSE;
+    $this->_canWrite = \FALSE;
+
     if (\TRUE === \fclose($this->_fh)) {
       $this->_fh = \NULL;
     } else if (!$_disposing_) {
       throw new IOException('Unable to close the file handle.');
-    }
-  }
-
-  private static function _GetFileAccess($_mode_, $_extended_) {
-    switch ($_mode_) {
-    case FileMode::Append:
-    case FileMode::CreateNew:
-    case FileMode::OpenOrCreate:
-    case FileMode::Truncate:
-      return $_extended_ ? FileAccess::Write : (FileAccess::Read | FileAccess::Write);
-    case FileMode::Open:
-      return $_extended_ ? FileAccess::Read  : (FileAccess::Read | FileAccess::Write);
     }
   }
 
@@ -177,8 +218,26 @@ class FileHandle {
       throw new IOException(\sprintf('Unable to open the file "%s" for writing.', $_path_));
     }
   }
+
+  private function _setFileAccess($_mode_, $_extended_) {
+    if ($_extended_) {
+      $this->_canRead  = \TRUE;
+      $this->_canWrite = \TRUE;
+    } else {
+      switch ($_mode_) {
+      case FileMode::Append:
+      case FileMode::CreateNew:
+      case FileMode::OpenOrCreate:
+      case FileMode::Truncate:
+        $this->_canWrite = \TRUE; break;
+      case FileMode::Open:
+        $this->_canRead  = \TRUE; break;
+      }
+    }
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
 
 // EOF
+

@@ -25,6 +25,11 @@ class RuntimeException extends Exception { }
 class InvalidOperationException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ NotSupportedException
+
+class NotSupportedException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ ApplicationException
 
 class ApplicationException extends Exception { }
