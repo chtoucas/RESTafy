@@ -33,7 +33,8 @@ final class FileMode {
 // {{{ File
 
 final class File {
-  // Creational methods.
+  // Creational methods
+  // ------------------
 
   /// Create the file with write-only access.
   static function Create($_path_) {
@@ -118,7 +119,7 @@ class FileHandle {
     $_canWrite = \FALSE;
 
   function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
-    $fh = \fopen($_path_, self::_ModeToString($_mode_, $_extended_));
+    $fh = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));
     if (\FALSE === $fh) {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
@@ -191,7 +192,7 @@ class FileHandle {
     }
   }
 
-  private static function _ModeToString($_mode_, $_extended_) {
+  private static function _FileModeToString($_mode_, $_extended_) {
     switch ($_mode_) {
     case FileMode::Append:
       return $_extended_ ? 'a+' : 'a';

@@ -748,11 +748,11 @@ class ControllerException extends Exception { }
 //
 //final class DebugLevel {
 //  const
-//    NONE       = 0,
-//    JAVASCRIPT = 1,
-//    STYLESHEET = 2,
-//    RUNTIME    = 4,
-//    DATABASE   = 8;
+//    NONE       = 0x00,
+//    JAVASCRIPT = 0x01,
+//    STYLESHEET = 0x02,
+//    RUNTIME    = 0x04,
+//    DATABASE   = 0x08;
 //
 //  /// Enable full debug.
 //  static function All() {
