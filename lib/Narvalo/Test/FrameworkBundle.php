@@ -775,31 +775,7 @@ final class TestWorkflow {
     $_todoLevel    = 0;
 
   function __destruct() {
-    $this->cleanup_(\FALSE);
-  }
-
-  protected function cleanup_($_disposing_) {
-    if ($this->_disposed) {
-      return;
-    }
-    // Check workflow's state.
-    switch ($this->_state) {
-      // Valid states.
-
-    case self::End:
-      break;
-    case self::Start:
-      // XXX reset() or no test at all.
-      break;
-
-      // Invalid states.
-
-    default:
-      // XXX: Is it wise to throw during cleanup.
-      throw new TestWorkflowException(
-        \sprintf('The workflow will end in an invalid state: "%s".', $this->_state));
-    }
-    $this->_disposed = \TRUE;
+    $this->dispose_(\TRUE);
   }
 
   function running() {
@@ -813,6 +789,10 @@ final class TestWorkflow {
 
   function inSubtest() {
     return $this->_subtestLevel > 0;
+  }
+
+  function close() {
+    $this->dispose_(\FALSE);
   }
 
   function reset() {
@@ -1114,6 +1094,30 @@ final class TestWorkflow {
     default:
       break;
     }
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+    // Check workflow's state.
+    switch ($this->_state) {
+      // Valid states.
+
+    case self::Start:
+    case self::End:
+      // XXX reset() or no test at all.
+      break;
+
+      // Invalid states.
+
+    default:
+      Narvalo\Failure::ThrowOrReport(
+        new TestWorkflowException(\sprintf(
+          'The workflow will end in an invalid state: "%s".', $this->_state)),
+        $_disposing_);
+    }
+    $this->_disposed = \TRUE;
   }
 }
 

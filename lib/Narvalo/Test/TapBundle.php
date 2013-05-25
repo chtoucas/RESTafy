@@ -34,10 +34,19 @@ class TapStream {
 
   private
     $_writer,
-    $_indent = '';
+    $_disposed = \FALSE,
+    $_indent   = '';
 
   function __construct(IO\TextWriter $_writer_) {
     $this->_writer = $_writer_;
+  }
+
+  function __destruct() {
+    $this->dispose_(\TRUE);
+  }
+
+  function close() {
+    $this->dispose_(\FALSE);
   }
 
   function reset() {
@@ -50,6 +59,21 @@ class TapStream {
 
   function endSubtest() {
     $this->_unindent();
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
+    if ($_disposing_) {
+      $this->_writer->__destruct();
+    } else {
+      $this->_writer->close();
+    }
+
+    $this->_writer   = \NULL;
+    $this->_disposed = \TRUE;
   }
 
   protected function writeTapLine_($_value_) {
@@ -144,7 +168,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
     // Escape EOL.
     $desc = \preg_replace(_CRLF_REGEX, '¤', $_desc_);
     // Escape leading unsafe chars.
-    $desc = \preg_replace('{^[\d\s]+}', '¤', $desc);
+    $desc = \preg_replace('{^\s+}', '¤', $desc);
     // Escape #.
     $desc = \str_replace('#', '\\#', $desc);
     if ($desc != $_desc_) {

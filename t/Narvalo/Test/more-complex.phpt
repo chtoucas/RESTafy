@@ -36,7 +36,7 @@ $t->like(" ", "{\s+}", 'Simple Regex');
 
 $t->subtest(function() use ($t) {
   //$t->plan(5);
-  $t->isnt(1 === 2, 'Passing equal Numeric');
+  $t->isnt(1,  2, 'Passing equal Numeric');
   $t->pass('Passing sub test');
   $t->pass('Passing sub test');
   //$s = new Test\Simple(1);

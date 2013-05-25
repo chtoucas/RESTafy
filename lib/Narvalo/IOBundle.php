@@ -39,44 +39,50 @@ final class File {
 
   /// Create the file with write-only access.
   static function Create($_path_) {
-    return new FileHandle($_path_, FileMode::CreateNew, \FALSE);
+    return new FileHandle($_path_, FileMode::CreateNew);
   }
 
   /// Open the file with read-only access
   /// and position the stream at the beginning of the file.
   static function OpenRead($_path_) {
-    return new FileHandle($_path_, FileMode::Open, \FALSE);
+    return new FileHandle($_path_, FileMode::Open);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   static function OpenWrite($_path_) {
-    return new FileHandle($_path_, FileMode::OpenOrCreate, \FALSE);
+    return new FileHandle($_path_, FileMode::OpenOrCreate);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the end of the file.
   static function OpenAppend($_path_) {
-    return new FileHandle($_path_, FileMode::Append, \FALSE);
+    return new FileHandle($_path_, FileMode::Append);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   /// WARNING: This method is destructive, the file gets truncated.
   static function OpenTruncate($_path_) {
-    return new FileHandle($_path_, FileMode::Truncate, \FALSE);
+    return new FileHandle($_path_, FileMode::Truncate);
   }
 
-  //
+  // Common file operations
+  // ----------------------
 
   static function Copy($_source_, $_dest_, $_overwrite_ = \FALSE) {
-    throw new Narvalo\NotImplementedException();
+    if (!$_overwrite_ && File::Exists($_dest_)) {
+      throw new IOException(\sprintf('The file "%s" already exists.', $_dest_));
+    }
+    return \copy($_source_, $_dest_);
   }
 
   static function Delete($_path_) {
-    throw new Narvalo\NotImplementedException();
+    return \unlink($_path_);
   }
 
+  /// WARNING: This method does not report on exceptional conditions
+  /// like an authorization failure.
   static function Exists($_path_) {
     return \file_exists($_path_);
   }
@@ -85,7 +91,7 @@ final class File {
     if (\FALSE !== ($atime = \fileatime($_path_))) {
       return $atime;
     } else {
-      throw new IOException('XXX');
+      throw new IOException(\sprintf('Unable to stat "%s" for last access time.', $_path_));
     }
   }
 
@@ -93,7 +99,7 @@ final class File {
     if (\FALSE !== ($mtime = \filemtime($_path_))) {
       return $mtime;
     } else {
-      throw new IOException('XXX');
+      throw new IOException(\sprintf('Unable to stat "%s" for last modification time.', $_path_));
     }
   }
 }
@@ -104,10 +110,11 @@ final class File {
 class FileHandle {
   private
     $_fh,
+    $_disposed = \FALSE,
     $_canRead  = \FALSE,
     $_canWrite = \FALSE;
 
-  function __construct($_path_, $_mode_, $_extended_) {
+  function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
     // FIXME: Binary mode?
     $fh = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));
     if (\FALSE === $fh) {
@@ -118,11 +125,7 @@ class FileHandle {
   }
 
   function __destruct() {
-    $this->cleanup_(\FALSE);
-  }
-
-  function close() {
-    $this->cleanup_(\TRUE);
+    $this->dispose_(\TRUE);
   }
 
   function canRead() {
@@ -133,11 +136,18 @@ class FileHandle {
     return $this->_canWrite;
   }
 
+  function close() {
+    $this->dispose_(\FALSE);
+  }
+
   function endOfFile() {
+    $this->throwIfDisposed_();
     return \feof($this->_fh);
   }
 
   function read($_length_) {
+    $this->throwIfDisposed_();
+
     if (!$this->canRead()) {
       throw new Narvalo\NotSupportedException('Can not read a file opened in write-only mode.');
     }
@@ -150,6 +160,8 @@ class FileHandle {
   }
 
   function write($_value_) {
+    $this->throwIfDisposed_();
+
     if (!$this->canWrite()) {
       throw new Narvalo\NotSupportedException('Can not read a file opened in read-only mode.');
     }
@@ -161,18 +173,25 @@ class FileHandle {
     }
   }
 
-  protected function cleanup_($_disposing_) {
-    if (\NULL === $this->_fh) {
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
       return;
     }
 
+    if (\FALSE === \fclose($this->_fh)) {
+      Narvalo\Failure::ThrowOrReport(
+        new IOException('Unable to close the file handle.'), $_disposing_);
+    }
+
+    $this->_fh       = \NULL;
     $this->_canRead  = \FALSE;
     $this->_canWrite = \FALSE;
+    $this->_disposed = \TRUE;
+  }
 
-    if (\TRUE === \fclose($this->_fh)) {
-      $this->_fh = \NULL;
-    } else if (!$_disposing_) {
-      throw new IOException('Unable to close the file handle.');
+  protected function throwIfDisposed_() {
+    if ($this->_disposed) {
+      throw new Narvalo\ObjectDisposedException();
     }
   }
 
@@ -229,24 +248,29 @@ class FileHandle {
 class TextWriter {
   private
     $_handle,
+    $_disposed  = \FALSE,
     $_endOfLine = \PHP_EOL;
 
   function __construct(FileHandle $_handle_) {
     $this->_handle = $_handle_;
   }
 
+  function __destruct() {
+    $this->dispose_(\TRUE);
+  }
+
   static function FromPath($_path_, $_append_) {
     return $_append_
-      ? new self(File::OpenAppend($_path_, \FALSE))
-      : new self(File::OpenTruncate($_path_, \FALSE));
+      ? new self(File::OpenAppend($_path_))
+      : new self(File::OpenTruncate($_path_));
   }
 
   static function GetStandardError() {
-    return new self(File::OpenTruncate('php://stderr', \FALSE));
+    return new self(File::OpenTruncate('php://stderr'));
   }
 
   static function GetStandardOutput() {
-    return new self(File::OpenTruncate('php://stdout', \FALSE));
+    return new self(File::OpenTruncate('php://stdout'));
   }
 
   function getEndOfLine() {
@@ -257,12 +281,39 @@ class TextWriter {
     $this->_endOfLine = $_value_;
   }
 
+  function close() {
+    $this->dispose_(\FALSE);
+  }
+
   function write($_value_) {
+    $this->throwIfDisposed_();
     return $this->_handle->write($_value_);
   }
 
   function writeLine($_value_) {
+    $this->throwIfDisposed_();
     return $this->_handle->write($_value_ . $this->_endOfLine);
+  }
+
+  protected function throwIfDisposed_() {
+    if ($this->_disposed) {
+      throw new Narvalo\ObjectDisposedException();
+    }
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
+    if ($_disposing_) {
+      $this->_handle->__destruct();
+    } else {
+      $this->_handle->close();
+    }
+
+    $this->_handle   = \NULL;
+    $this->_disposed = \TRUE;
   }
 }
 

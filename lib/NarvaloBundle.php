@@ -15,6 +15,11 @@ class Exception extends \Exception {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ ObjectDisposedException
+
+class ObjectDisposedException extends Exception { }
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ RuntimeException
 
 class RuntimeException extends Exception { }
@@ -298,6 +303,19 @@ final class DynaLoader {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ Failure
+
+final class Failure {
+  static function ThrowOrReport(\Exception $_ex_, $_disposing_) {
+    if ($_disposing_) {
+      \trigger_error($_ex_->getMessage(), \E_USER_ERROR);
+    } else {
+      throw $_ex_;
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ Guard
 
 final class Guard {
