@@ -74,11 +74,15 @@ final class File {
     if (!$_overwrite_ && File::Exists($_dest_)) {
       throw new IOException(\sprintf('The file "%s" already exists.', $_dest_));
     }
-    return \copy($_source_, $_dest_);
+    if (!\copy($_source_, $_dest_)) {
+      throw new IOException(\sprintf('Unable to copy the file "%s" to "%s".', $_source_, $_dest_));
+    }
   }
 
   static function Delete($_path_) {
-    return \unlink($_path_);
+    if (!\unlink($_path_)) {
+      throw new IOException(\sprintf('Unable to delete the file "%s".', $_path_));
+    }
   }
 
   /// WARNING: This method does not report on exceptional conditions
@@ -286,19 +290,11 @@ class TextWriter {
   }
 
   function write($_value_) {
-    $this->throwIfDisposed_();
     return $this->_handle->write($_value_);
   }
 
   function writeLine($_value_) {
-    $this->throwIfDisposed_();
     return $this->_handle->write($_value_ . $this->_endOfLine);
-  }
-
-  protected function throwIfDisposed_() {
-    if ($this->_disposed) {
-      throw new Narvalo\ObjectDisposedException();
-    }
   }
 
   protected function dispose_($_disposing_) {
