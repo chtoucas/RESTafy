@@ -31,7 +31,6 @@ final class FileMode {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-
 // {{{ File
 
 final class File {
@@ -40,44 +39,32 @@ final class File {
 
   /// Create the file with write-only access.
   static function Create($_path_) {
-    return new FileHandle($_path_, FileMode::CreateNew);
+    return new FileHandle($_path_, FileMode::CreateNew, \FALSE);
   }
 
   /// Open the file with read-only access
   /// and position the stream at the beginning of the file.
   static function OpenRead($_path_) {
-    return new FileHandle($_path_, FileMode::Open);
+    return new FileHandle($_path_, FileMode::Open, \FALSE);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   static function OpenWrite($_path_) {
-    return new FileHandle($_path_, FileMode::OpenOrCreate);
+    return new FileHandle($_path_, FileMode::OpenOrCreate, \FALSE);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the end of the file.
   static function OpenAppend($_path_) {
-    return new FileHandle($_path_, FileMode::Append);
+    return new FileHandle($_path_, FileMode::Append, \FALSE);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   /// WARNING: This method is destructive, the file gets truncated.
   static function OpenTruncate($_path_) {
-    return new FileHandle($_path_, FileMode::Truncate);
-  }
-
-  static function OpenStandardError() {
-    return self::OpenTruncate('php://stderr');
-  }
-
-  static function OpenStandardInput() {
-    return self::OpenRead('php://stdin');
-  }
-
-  static function OpenStandardOutput() {
-    return self::OpenTruncate('php://stdout');
+    return new FileHandle($_path_, FileMode::Truncate, \FALSE);
   }
 
   //
@@ -120,7 +107,8 @@ class FileHandle {
     $_canRead  = \FALSE,
     $_canWrite = \FALSE;
 
-  function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
+  function __construct($_path_, $_mode_, $_extended_) {
+    // FIXME: Binary mode?
     $fh = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));
     if (\FALSE === $fh) {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
@@ -145,11 +133,13 @@ class FileHandle {
     return $this->_canWrite;
   }
 
+  function endOfFile() {
+    return \feof($this->_fh);
+  }
+
   function read($_length_) {
     if (!$this->canRead()) {
-      throw new Narvalo\NotSupportedException('XXX');
-    } else if (\feof($this->_fh)) {
-      throw new IOException('You already reached EOF.');
+      throw new Narvalo\NotSupportedException('Can not read a file opened in write-only mode.');
     }
 
     if (FALSE !== ($result = \fread($this->_fh, $_length_))) {
@@ -159,13 +149,9 @@ class FileHandle {
     }
   }
 
-  function readLine($_length_ = 0) {
-    throw new Narvalo\NotImplementedException();
-  }
-
   function write($_value_) {
     if (!$this->canWrite()) {
-      throw new Narvalo\NotSupportedException('XXX');
+      throw new Narvalo\NotSupportedException('Can not read a file opened in read-only mode.');
     }
 
     if (FALSE !== ($length = \fwrite($this->_fh, $_value_))) {
@@ -173,10 +159,6 @@ class FileHandle {
     } else {
       throw new IOException('Unable to write to the file.');
     }
-  }
-
-  function writeLine($_value_) {
-    return $this->write($_value_ . \PHP_EOL);
   }
 
   protected function cleanup_($_disposing_) {
@@ -242,5 +224,48 @@ class FileHandle {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// EOF
+// {{{ TextWriter
 
+class TextWriter {
+  private
+    $_handle,
+    $_endOfLine = \PHP_EOL;
+
+  function __construct(FileHandle $_handle_) {
+    $this->_handle = $_handle_;
+  }
+
+  static function FromPath($_path_, $_append_) {
+    return $_append_
+      ? new self(File::OpenAppend($_path_, \FALSE))
+      : new self(File::OpenTruncate($_path_, \FALSE));
+  }
+
+  static function GetStandardError() {
+    return new self(File::OpenTruncate('php://stderr', \FALSE));
+  }
+
+  static function GetStandardOutput() {
+    return new self(File::OpenTruncate('php://stdout', \FALSE));
+  }
+
+  function getEndOfLine() {
+    return $this->_endOfLine;
+  }
+
+  function setEndOfLine($_value_) {
+    $this->_endOfLine = $_value_;
+  }
+
+  function write($_value_) {
+    return $this->_handle->write($_value_);
+  }
+
+  function writeLine($_value_) {
+    return $this->_handle->write($_value_ . $this->_endOfLine);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// EOF

@@ -33,11 +33,11 @@ class TapStream {
   // FIXME: TapStream should be internal.
 
   private
-    $_handle,
+    $_writer,
     $_indent = '';
 
-  function __construct(IO\FileHandle $_handle_) {
-    $this->_handle = $_handle_;
+  function __construct(IO\TextWriter $_writer_) {
+    $this->_writer = $_writer_;
   }
 
   function reset() {
@@ -53,11 +53,11 @@ class TapStream {
   }
 
   protected function writeTapLine_($_value_) {
-    return $this->_handle->writeLine($this->_indent . $_value_);
+    return $this->_writer->writeLine($this->_indent . $_value_);
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
-    $prefix = \PHP_EOL . $this->_indent . $_prefix_;
+    $prefix = $this->_writer->getEndOfLine() . $this->_indent . $_prefix_;
     $value = \preg_replace(_TRAILING_CRLF_REGEX, '', $_value_);
 
     return $_prefix_ . \preg_replace(_MULTILINE_CRLF_REGEX, $prefix, $_value_);
@@ -81,14 +81,14 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 
   private $_verbose;
 
-  function __construct(IO\FileHandle $_handle_, $_verbose_) {
-    parent::__construct($_handle_);
+  function __construct(IO\TextWriter $_writer_, $_verbose_) {
+    parent::__construct($_writer_);
 
     $this->_verbose = $_verbose_;
   }
 
   static function GetDefault() {
-    return new self(IO\File::OpenStandardOutput(), \TRUE);
+    return new self(IO\TextWriter::GetStandardOutput(), \TRUE);
   }
 
   function writeHeader() {
@@ -169,7 +169,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 
 final class TapErrStream extends TapStream implements Framework\TestErrStream {
   static function GetDefault() {
-    return new self(IO\File::OpenStandardOutput());
+    return new self(IO\TextWriter::GetStandardOutput());
   }
 
   function write($_value_) {
@@ -183,15 +183,15 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 final class TapHarnessStream implements Runner\TestHarnessStream {
   private
-    $_handle,
+    $_writer,
     $_indent = '';
 
-  function __construct(IO\FileHandle $_handle_) {
-    $this->_handle = $_handle_;
+  function __construct(IO\TextWriter $_writer_) {
+    $this->_writer = $_writer_;
   }
 
   static function GetDefault() {
-    return new self(IO\File::OpenStandardOutput());
+    return new self(IO\TextWriter::GetStandardOutput());
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
@@ -215,29 +215,29 @@ final class TapHarnessStream implements Runner\TestHarnessStream {
       $statusLine = $_name_ . '... '. $status;
     }
 
-    $this->_handle->writeLine($statusLine);
+    $this->_writer->writeLine($statusLine);
 
     if (!$_result_->passed) {
-      $this->_handle->writeLine(
+      $this->_writer->writeLine(
         \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
     }
   }
 
   function writeSummary(Runner\TestHarnessSummary $_summary_) {
     if ($_summary_->passed) {
-      $this->_handle->writeLine('All tests successful.');
+      $this->_writer->writeLine('All tests successful.');
     }
-    $this->_handle->writeLine(
+    $this->_writer->writeLine(
       \sprintf(
         'Sets=%s, Failures=%s',
         $_summary_->setsCount,
         $_summary_->failedSetsCount));
-    $this->_handle->writeLine(
+    $this->_writer->writeLine(
       \sprintf(
         'Tests=%s, Failures=%s',
         $_summary_->testsCount,
         $_summary_->failedTestsCount));
-    $this->_handle->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
+    $this->_writer->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
   }
 }
 
