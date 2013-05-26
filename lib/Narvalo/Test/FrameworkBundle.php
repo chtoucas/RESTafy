@@ -158,9 +158,9 @@ final class TestSetResult {
 // Test streams
 // =================================================================================================
 
-// {{{ TestOutStream
+// {{{ ITestOutStream
 
-interface TestOutStream {
+interface ITestOutStream {
   function reset();
 
   function startSubtest();
@@ -177,9 +177,9 @@ interface TestOutStream {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TestErrStream
+// {{{ ITestErrStream
 
-interface TestErrStream {
+interface ITestErrStream {
   function reset();
 
   function startSubtest();
@@ -232,7 +232,7 @@ class TestProducer {
     /// TO-DO stack
     $_todoStack         = array();
 
-  function __construct(TestOutStream $_outStream_, TestErrStream $_errStream_) {
+  function __construct(ITestOutStream $_outStream_, ITestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
     // NB: Until we have a plan, we use a dynamic test set.
@@ -667,7 +667,7 @@ abstract class AbstractTestResultSet {
     return $this->_failuresCount;
   }
 
-  abstract function close(Framework\TestErrStream $_errStream_);
+  abstract function close(Framework\ITestErrStream $_errStream_);
 
   abstract function passed();
 
@@ -702,7 +702,7 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
     return \TRUE;
   }
 
-  function close(Framework\TestErrStream $_errStream_) {
+  function close(Framework\ITestErrStream $_errStream_) {
     ;
   }
 
@@ -723,7 +723,7 @@ final class DynamicTestResultSet extends AbstractTestResultSet {
     ;
   }
 
-  function close(Framework\TestErrStream $_errStream_) {
+  function close(Framework\ITestErrStream $_errStream_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       if (($failures_count = $this->getFailuresCount()) > 0) {
@@ -772,7 +772,7 @@ final class FixedSizeTestResultSet extends AbstractTestResultSet {
       && 0 === $this->getExtrasCount();
   }
 
-  function close(Framework\TestErrStream $_errStream_) {
+  function close(Framework\ITestErrStream $_errStream_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();

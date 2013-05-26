@@ -26,7 +26,7 @@ class TestRunner {
     $this->_errorCatcher = new _\RuntimeErrorCatcher($_producer_);
   }
 
-  function run(Sets\TestSet $_set_) {
+  function run(Sets\ITestSet $_set_) {
     Narvalo\Guard::NotNull($_set_, 'set');
 
     $this->_producer->startup();
@@ -50,6 +50,14 @@ class TestRunner {
 // Test harness
 // =================================================================================================
 
+// {{{ ITestHarnessStream
+
+interface ITestHarnessStream {
+  function writeResult($_name_, Framework\TestSetResult $_result_);
+  function writeSummary(TestHarnessSummary $_summary_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ TestHarnessSummary
 
 class TestHarnessSummary {
@@ -62,14 +70,6 @@ class TestHarnessSummary {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TestHarnessStream
-
-interface TestHarnessStream {
-  function writeResult($_name_, Framework\TestSetResult $_result_);
-  function writeSummary(TestHarnessSummary $_summary_);
-}
-
-// }}} ---------------------------------------------------------------------------------------------
 // {{{ TestHarness
 
 class TestHarness {
@@ -78,9 +78,9 @@ class TestHarness {
     $_runner;
 
   function __construct(
-    TestHarnessStream       $_stream_,
-    Framework\TestOutStream $_outStream_ = \NULL,
-    Framework\TestErrStream $_errStream_ = \NULL
+    ITestHarnessStream       $_stream_,
+    Framework\ITestOutStream $_outStream_ = \NULL,
+    Framework\ITestErrStream $_errStream_ = \NULL
   ) {
     $this->_stream = $_stream_;
 
@@ -179,7 +179,7 @@ final class RuntimeErrorCatcher {
 
 // {{{ NoopTestOutStream
 
-final class NoopTestOutStream implements Framework\TestOutStream {
+final class NoopTestOutStream implements Framework\ITestOutStream {
   function reset() {
     ;
   }
@@ -228,7 +228,7 @@ final class NoopTestOutStream implements Framework\TestOutStream {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ NoopTestErrStream
 
-final class NoopTestErrStream implements Framework\TestErrStream {
+final class NoopTestErrStream implements Framework\ITestErrStream {
   function reset() {
     ;
   }

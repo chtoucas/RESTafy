@@ -100,7 +100,7 @@ class TapStream {
 
 // {{{ TapOutStream
 
-final class TapOutStream extends TapStream implements Framework\TestOutStream {
+final class TapOutStream extends TapStream implements Framework\ITestOutStream {
   const Version = 12;
 
   private $_verbose;
@@ -192,7 +192,7 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TapErrStream
 
-final class TapErrStream extends TapStream implements Framework\TestErrStream {
+final class TapErrStream extends TapStream implements Framework\ITestErrStream {
   static function GetDefault() {
     return new self(IO\TextWriter::GetStandardOutput());
   }
@@ -206,7 +206,7 @@ final class TapErrStream extends TapStream implements Framework\TestErrStream {
 
 // {{{ TapHarnessStream
 
-final class TapHarnessStream implements Runner\TestHarnessStream {
+final class TapHarnessStream implements Runner\ITestHarnessStream {
   private
     $_writer,
     $_indent = '';

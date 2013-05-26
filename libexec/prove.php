@@ -15,7 +15,7 @@ ProveApp::Main($argv);
 class ProveApp {
   private $_harness;
 
-  function __construct(TestHarnessStream $_stream_) {
+  function __construct(ITestHarnessStream $_stream_) {
     $this->_harness = new TestHarness($_stream_);
   }
 

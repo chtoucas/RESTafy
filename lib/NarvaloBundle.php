@@ -434,9 +434,9 @@ class DictionaryBorg {
 // Observer pattern
 // =================================================================================================
 
-// {{{ Observer
+// {{{ IObserver
 
-interface Observer {
+interface IObserver {
   function update(Observable $_observable_);
 }
 
@@ -450,11 +450,11 @@ class Observable {
     $this->_observers = new \SplObjectStorage();
   }
 
-  function attach(Observer $_observer_) {
+  function attach(IObserver $_observer_) {
     $this->_observers->attach($_observer_);
   }
 
-  function detach(Observer $_observer_) {
+  function detach(IObserver $_observer_) {
     $this->_observers->detach($_observer_);
   }
 
@@ -519,9 +519,9 @@ class ConfigurationException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ Configuration
+// {{{ IConfiguration
 
-interface Configuration {
+interface IConfiguration {
   function GetSection($_sectionName_);
 }
 
@@ -540,7 +540,7 @@ final class ConfigurationManager {
     return self::$_Current->GetSection($_sectionName_);
   }
 
-  static function Initialize(Configuration $_config_) {
+  static function Initialize(IConfiguration $_config_) {
     if (self::$_Initialized) {
       throw new ConfigurationException('XXX');
     }
@@ -592,9 +592,9 @@ class Container {
 // Caching
 // =================================================================================================
 
-// {{{ Cache
+// {{{ ICache
 
-interface Cache {
+interface ICache {
   /// Return TRUE if cache exists, FALSE otherwise.
   /// $_id_ (string) Cache Id
   /// $_namespace_ (string) Cache namespace
@@ -638,9 +638,9 @@ class DBIException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ DBI
+// {{{ IDBI
 
-interface DBI {
+interface IDBI {
   function open();
   function close();
   //function open($_opts_);

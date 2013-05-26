@@ -11,9 +11,9 @@ use \Narvalo\Web;
 // Assets
 // =================================================================================================
 
-// {{{ AssetProvider
+// {{{ IAssetProvider
 
-interface AssetProvider {
+interface IAssetProvider {
   /// \return string
   function getImageUrl($_relativePath_);
 
@@ -27,7 +27,7 @@ interface AssetProvider {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ SimpleAssetProvider
 
-class SimpleAssetProvider implements AssetProvider {
+class SimpleAssetProvider implements IAssetProvider {
   function getImageUrl($_relativePath_) {
     return \sprintf('/assets/img/%s', $_relativePath_);
   }
@@ -72,7 +72,7 @@ class DefaultAssetProviderParams {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ DefaultAssetProvider
 
-class DefaultAssetProvider implements AssetProvider {
+class DefaultAssetProvider implements IAssetProvider {
   private $_params;
 
   function __construct($_params_) {
@@ -217,16 +217,16 @@ final class AssetHelper {
 // Instrumentation
 // =================================================================================================
 
-// {{{ HttpHandlerFactory
+// {{{ IHttpHandlerFactory
 
-interface HttpHandlerFactory {
+interface IHttpHandlerFactory {
   function getHandler(HttpContext $_context_, $_requestType_, $_url_, $_pathTranslated_);
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ HttpModule
+// {{{ IHttpModule
 
-interface HttpModule {
+interface IHttpModule {
   function init(HttpApplication $_context_);
 }
 
@@ -372,7 +372,7 @@ class HttpServer {
     $this->_httpApplication = $_httpApplication_;
   }
 
-  static function AddModule(HttpModule $_module_) {
+  static function AddModule(IHttpModule $_module_) {
     self::$_Modules[] = $_module_;
   }
 
@@ -1268,7 +1268,7 @@ class ControllerException extends Exception { }
 //// }}} ---------------------------------------------------------------------------------------------
 //// {{{ UrlRoutingModule
 //
-//class UrlRoutingModule implements HttpModule {
+//class UrlRoutingModule implements IHttpModule {
 //  public
 //    /// \var RouteCollection
 //    $routeCollection;

@@ -16,18 +16,18 @@ class TestSetException extends Narvalo\Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TestSet
+// {{{ ITestSet
 
-interface TestSet {
+interface ITestSet {
   function getName();
 
   function run();
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TestFixture
+// {{{ ITestFixture
 
-interface TestFixture {
+interface ITestFixture {
   function setup();
   function teardown();
 }
@@ -37,7 +37,7 @@ interface TestFixture {
 // {{{ TestSuite
 
 /// A very simple xUnit-like test set.
-class TestSuite implements TestSet, TestFixture {
+class TestSuite implements ITestSet, ITestFixture {
   private static $_MethodNamesToExclude;
   private
     $_name,
@@ -108,7 +108,7 @@ class TestSuite implements TestSet, TestFixture {
 
 // {{{ FileTestSet
 
-class FileTestSet implements TestSet {
+class FileTestSet implements ITestSet {
   private
     $_name,
     $_path;

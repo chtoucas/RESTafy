@@ -277,7 +277,7 @@ class HttpResponse {
 
 // {{{ Addr
 
-interface Addr {
+interface IAddr {
   function getUrl();
 }
 
