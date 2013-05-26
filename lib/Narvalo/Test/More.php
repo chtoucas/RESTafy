@@ -159,7 +159,7 @@ class More extends Framework\TestModule {
 
   // Utilities.
 
-  function subtest(\Closure $_fun_, $_name_) {
+  function subtest($_name_, \Closure $_fun_) {
     return $this->getProducer()->subTest($_fun_, $_name_);
   }
 
@@ -172,11 +172,13 @@ class More extends Framework\TestModule {
   }
 
   function skip($_how_many_, $_reason_) {
-    return $this->getProducer()->skip($_how_many_, $_reason_);
+    return $this->getProducer()
+      ->bypass($_how_many_, new Framework\SkipTestDirective($_reason_));
   }
 
-  function skipSubtest(\Closure $_fun_, $_name_, $_reason_) {
-    return $this->getProducer()->skipSubtest($_reason_);
+  function skipTodo($_how_many_, $_reason_) {
+    return $this->getProducer()
+      ->bypass($_how_many_, new Framework\SkipTodoTestDirective($_reason_));
   }
 
   function bailOut($_reason_) {

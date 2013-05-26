@@ -7,50 +7,20 @@ require_once 'NarvaloBundle.php';
 use \Narvalo;
 use \Narvalo\Test\Framework\Internal as _;
 
-// Test results
+// Test directives
 // =================================================================================================
 
-// {{{ TestCaseResult
+// {{{ AbstractTestDirective
 
-interface TestCaseResult {
-  /// The test's description.
-  function getDescription();
-
-  /// TRUE if the test passed, FALSE otherwise.
-  function passed();
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTestCaseResult
-
-final class DefaultTestCaseResult implements TestCaseResult {
-  private
-    $_description,
-    $_passed;
-
-  function __construct($_description_, $_passed_) {
-    $this->_description = empty($_description_) ? 'Unnamed test.' : $_description_;
-    $this->_passed      = $_passed_;
-  }
-
-  function getDescription() {
-    return $this->_description;
-  }
-
-  function passed() {
-    return $this->_passed;
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ AbstractRegulatedTestCaseResult
-
-abstract class AbstractRegulatedTestCaseResult implements TestCaseResult {
+abstract class AbstractTestDirective {
   private $_reason;
 
   protected function __construct($_reason_) {
     $this->_reason = $_reason_;
   }
+
+  abstract function getName();
+  abstract function passed();
 
   function getReason() {
     return $this->_reason;
@@ -58,15 +28,15 @@ abstract class AbstractRegulatedTestCaseResult implements TestCaseResult {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipTestCaseResult
+// {{{ SkipTestDirective
 
-final class SkipTestCaseResult extends AbstractRegulatedTestCaseResult {
+class SkipTestDirective extends AbstractTestDirective {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
 
-  function getDescription() {
-    return '';
+  function getName() {
+    return 'SKIP';
   }
 
   function passed() {
@@ -75,23 +45,98 @@ final class SkipTestCaseResult extends AbstractRegulatedTestCaseResult {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TodoTestCaseResult
+// {{{ TodoTestDirective
 
-final class TodoTestCaseResult extends AbstractRegulatedTestCaseResult {
-  private $_inner;
-
-  function __construct(TestCaseResult $_inner_, $_reason_) {
+class TodoTestDirective extends AbstractTestDirective {
+  function __construct($_reason_) {
     parent::__construct($_reason_);
+  }
 
-    $this->_inner  = $_inner_;
+  function getName() {
+    return 'TODO';
+  }
+
+  function passed() {
+    return \FALSE;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ SkipTodoTestDirective
+
+class SkipTodoTestDirective extends AbstractTestDirective {
+  function __construct($_reason_) {
+    parent::__construct($_reason_);
+  }
+
+  function getName() {
+    return 'SKIP & TODO';
+  }
+
+  function passed() {
+    return \TRUE;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// Test results
+// =================================================================================================
+
+// {{{ TestCaseResult
+
+class TestCaseResult {
+  private
+    $_description,
+    $_passed;
+
+  function __construct($_description_, $_passed_) {
+    $this->_description = $_description_;
+    $this->_passed      = $_passed_;
+  }
+
+  /// The test's description.
+  function getDescription() {
+    return $this->_description;
+  }
+
+  /// TRUE if the test passed, FALSE otherwise.
+  function passed() {
+    return $this->_passed;
+  }
+
+  function regulate(AbstractTestDirective $_directive_) {
+    return new RegulatedTestCaseResult($this, $_directive_);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ RegulatedTestCaseResult
+
+class RegulatedTestCaseResult {
+  private
+    $_directive,
+    $_inner;
+
+  function __construct(TestCaseResult $_inner_, AbstractTestDirective $_directive_) {
+    $this->_inner     = $_inner_;
+    $this->_directive = $_directive_;
   }
 
   function getDescription() {
     return $this->_inner->getDescription();
   }
 
+  function getReason() {
+    return $this->_directive->getReason();
+  }
+
+  function getDirectiveName() {
+    return $this->_directive->getName();
+  }
+
   function passed() {
-    return $this->_inner->passed();
+    return $this->_directive->passed() || $this->_inner->passed();
   }
 }
 
@@ -126,8 +171,7 @@ interface TestOutStream {
   function writePlan($_num_of_tests_);
   function writeSkipAll($_reason_);
   function writeTestCaseResult(TestCaseResult $_test_, $_number_);
-  function writeTodoTestCaseResult(TodoTestCaseResult $_test_, $_number_);
-  function writeSkipTestCaseResult(SkipTestCaseResult $_test_, $_number_);
+  function writeRegulatedTestCaseResult(RegulatedTestCaseResult $_test_, $_number_);
   function writeBailOut($_reason_);
   function writeComment($_comment_);
 }
@@ -289,11 +333,11 @@ class TestProducer {
   }
 
   function assert($_test_, $_description_) {
-    $test = new DefaultTestCaseResult($_description_, \TRUE === $_test_);
+    $test = new TestCaseResult($_description_, \TRUE === $_test_);
     if ($this->_inTodo()) {
-      $test = new TodoTestCaseResult($test, $this->_todoReason);
-      $number = $this->_set->addTest($test);
-      $this->_addTodoTestCaseResult($test, $number);
+      $test = $test->regulate(new TodoTestDirective($this->_todoReason));
+      $number = $this->_set->addRegulatedTest($test);
+      $this->_addRegulatedTestCaseResult($test, $number);
     } else {
       $number = $this->_set->addTest($test);
       $this->_addTestCaseResult($test, $number);
@@ -301,17 +345,34 @@ class TestProducer {
 
     $passed = $test->passed();
 
+    /*
     if (!$passed) {
       $this->diagnose(\sprintf(
         'Failed %s: %s',
         $this->_inTodo() ? '(TODO) test' : 'test',
         $test->getDescription()));
     }
+     */
 
     return $passed;
   }
 
-  function skip($_how_many_, $_reason_) {
+  function bypass($_how_many_, AbstractTestDirective $_directive_) {
+    if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
+      throw new Narvalo\ArgumentException(
+        'how_many',
+        \sprintf(
+          'The number of regulated tests must be a strictly positive integer. You gave it "%s".',
+          $_how_many_));
+    }
+    $test = (new TestCaseResult('', \TRUE))->regulate($_directive_);
+    for ($i = 1; $i <= $_how_many_; $i++) {
+      $number = $this->_set->addRegulatedTest($test);
+      $this->_addRegulatedTestCaseResult($test, $number);
+    }
+  }
+
+  /* function skip($_how_many_, $_reason_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       throw new Narvalo\ArgumentException(
         'how_many',
@@ -324,12 +385,12 @@ class TestProducer {
       throw new Narvalo\InvalidOperationException(
         'You can not interlace a SKIP directive with a TO-DO block');
     }
-    $test = new SkipTestCaseResult($_reason_);
+    $test = (new TestCaseResult('', \TRUE))->regulate(new SkipTestDirective($_reason_));
     for ($i = 1; $i <= $_how_many_; $i++) {
-      $number = $this->_set->addTest($test);
-      $this->_addSkipTestCaseResult($test, $number);
+      $number = $this->_set->addRegulatedTest($test);
+      $this->_addRegulatedTestCaseResult($test, $number);
     }
-  }
+  } */
 
   function startTodo($_reason_) {
     $this->_startTodo();
@@ -364,17 +425,6 @@ class TestProducer {
     $this->_set = $set;
     // Report the result to the parent producer.
     $this->assert($passed, $_description_);
-  }
-
-  function skipSubtest($_reason_) {
-    // Notify outputs.
-    $this->_startSubtest();
-    // Skip all tests.
-    $this->_addSkipAll($_reason_);
-    // Restore outputs.
-    $this->_endSubtest();
-    // Report the result to the parent producer.
-    $this->skip(1, $_reason_);
   }
 
   function diagnose($_diag_) {
@@ -525,14 +575,9 @@ class TestProducer {
     $this->_outStream->writeTestCaseResult($_test_, $_number_);
   }
 
-  private function _addTodoTestCaseResult(TodoTestCaseResult $_test_, $_number_) {
+  private function _addRegulatedTestCaseResult(RegulatedTestCaseResult $_test_, $_number_) {
     $this->_workflow->enterTestCaseResult();
-    $this->_outStream->writeTodoTestCaseResult($_test_, $_number_);
-  }
-
-  private function _addSkipTestCaseResult(SkipTestCaseResult $_test_, $_number_) {
-    $this->_workflow->enterTestCaseResult();
-    $this->_outStream->writeSkipTestCaseResult($_test_, $_number_);
+    $this->_outStream->writeRegulatedTestCaseResult($_test_, $_number_);
   }
 
   private function _addBailOut($_reason_) {
@@ -634,6 +679,15 @@ abstract class AbstractTestResultSet {
     $this->_tests[$number] = $_test_;
     return 1 + $number;
   }
+
+  function addRegulatedTest(Framework\RegulatedTestCaseResult $_test_) {
+    if (!$_test_->passed()) {
+      $this->_failuresCount++;
+    }
+    $number = $this->getTestsCount();
+    $this->_tests[$number] = $_test_;
+    return 1 + $number;
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -653,6 +707,10 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
   }
 
   final function addTest(Framework\TestCaseResult $_test_) {
+    return 0;
+  }
+
+  final function addRegulatedTest(Framework\RegulatedTestCaseResult $_test_) {
     return 0;
   }
 }
@@ -1112,7 +1170,7 @@ final class TestWorkflow {
       // Invalid states.
 
     default:
-      Narvalo\Failure::ThrowOrReport(
+      Narvalo\Failure::ThrowOrReportInDispose(
         new TestWorkflowException(\sprintf(
           'The workflow will end in an invalid state: "%s".', $this->_state)),
         $_disposing_);

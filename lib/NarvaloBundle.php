@@ -306,7 +306,7 @@ final class DynaLoader {
 // {{{ Failure
 
 final class Failure {
-  static function ThrowOrReport(\Exception $_ex_, $_disposing_) {
+  static function ThrowOrReportInDispose(\Exception $_ex_, $_disposing_) {
     if ($_disposing_) {
       \trigger_error($_ex_->getMessage(), \E_USER_ERROR);
     } else {

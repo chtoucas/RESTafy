@@ -71,7 +71,7 @@ final class File {
   // ----------------------
 
   static function Copy($_source_, $_dest_, $_overwrite_ = \FALSE) {
-    if (!$_overwrite_ && File::Exists($_dest_)) {
+    if (!$_overwrite_ && self::Exists($_dest_)) {
       throw new IOException(\sprintf('The file "%s" already exists.', $_dest_));
     }
     if (!\copy($_source_, $_dest_)) {
@@ -183,7 +183,7 @@ class FileHandle {
     }
 
     if (\FALSE === \fclose($this->_fh)) {
-      Narvalo\Failure::ThrowOrReport(
+      Narvalo\Failure::ThrowOrReportInDispose(
         new IOException('Unable to close the file handle.'), $_disposing_);
     }
 

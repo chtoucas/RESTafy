@@ -212,11 +212,7 @@ final class NoopTestOutStream implements Framework\TestOutStream {
     ;
   }
 
-  function writeTodoTestCaseResult(Framework\TodoTestCaseResult $_test_, $_number_) {
-    ;
-  }
-
-  function writeSkipTestCaseResult(Framework\SkipTestCaseResult $_test_, $_number_) {
+  function writeRegulatedTestCaseResult(Framework\RegulatedTestCaseResult $_test_, $_number_) {
     ;
   }
 

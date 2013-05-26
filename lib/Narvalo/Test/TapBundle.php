@@ -134,22 +134,23 @@ final class TapOutStream extends TapStream implements Framework\TestOutStream {
   }
 
   function writeTestCaseResult(Framework\TestCaseResult $_test_, $_number_) {
-    $desc = self::_FormatDescription($_test_->getDescription());
-    $line = \sprintf('%s %d - %s', $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc);
+    $status = $_test_->passed() ? 'ok' : 'not ok';
+    if ('' !== ($desc = $_test_->getDescription())) {
+      $line = \sprintf('%s %d - %s', $status, $_number_, self::_FormatDescription($desc));
+    } else {
+      $line = \sprintf('%s %d', $status, $_number_);
+    }
     return $this->writeTapLine_($line);
   }
 
-  function writeTodoTestCaseResult(Framework\TodoTestCaseResult $_test_, $_number_) {
+  function writeRegulatedTestCaseResult(Framework\RegulatedTestCaseResult $_test_, $_number_) {
     $reason = self::_FormatReason($_test_->getReason());
-    $line = \sprintf('ok %d # SKIP %s', $_number_, $reason);
-    return $this->writeTapLine_($line);
-  }
-
-  function writeSkipTestCaseResult(Framework\SkipTestCaseResult $_test_, $_number_) {
-    $desc   = self::_FormatDescription($_test_->getDescription());
-    $reason = self::_FormatReason($_test_->getReason());
-    $line = \sprintf('%s %d - %s # TODO %s',
-      $_test_->passed() ? 'ok' : 'not ok', $_number_, $desc, $reason);
+    if ('' !== ($desc = $_test_->getDescription())) {
+      $line = \sprintf('ok %d - %s # %s %s',
+        $_number_, self::_FormatDescription($desc), $_test_->getDirectiveName(), $reason);
+    } else {
+      $line = \sprintf('ok %d # %s %s', $_number_, $_test_->getDirectiveName(), $reason);
+    }
     return $this->writeTapLine_($line);
   }
 
