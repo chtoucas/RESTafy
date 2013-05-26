@@ -143,7 +143,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
     return $this->writeTapLine_($line);
   }
 
-  function writeRegulatedTestCaseResult(Framework\RegulatedTestCaseResult $_test_, $_number_) {
+  function writeAlteredTestCaseResult(Framework\AlteredTestCaseResult $_test_, $_number_) {
     $reason = self::_FormatReason($_test_->getReason());
     if ('' !== ($desc = $_test_->getDescription())) {
       $line = \sprintf('ok %d - %s # %s %s',

@@ -212,7 +212,7 @@ final class NoopTestOutStream implements Framework\ITestOutStream {
     ;
   }
 
-  function writeRegulatedTestCaseResult(Framework\RegulatedTestCaseResult $_test_, $_number_) {
+  function writeAlteredTestCaseResult(Framework\AlteredTestCaseResult $_test_, $_number_) {
     ;
   }
 

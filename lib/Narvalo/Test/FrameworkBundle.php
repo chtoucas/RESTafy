@@ -10,9 +10,9 @@ use \Narvalo\Test\Framework\Internal as _;
 // Test directives
 // =================================================================================================
 
-// {{{ AbstractTestDirective
+// {{{ TestDirective_
 
-abstract class AbstractTestDirective {
+abstract class TestDirective_ {
   private $_reason;
 
   protected function __construct($_reason_) {
@@ -30,7 +30,7 @@ abstract class AbstractTestDirective {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ SkipTestDirective
 
-class SkipTestDirective extends AbstractTestDirective {
+class SkipTestDirective extends TestDirective_ {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
@@ -47,7 +47,7 @@ class SkipTestDirective extends AbstractTestDirective {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TodoTestDirective
 
-class TodoTestDirective extends AbstractTestDirective {
+class TodoTestDirective extends TestDirective_ {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
@@ -64,7 +64,7 @@ class TodoTestDirective extends AbstractTestDirective {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ SkipTodoTestDirective
 
-class SkipTodoTestDirective extends AbstractTestDirective {
+class SkipTodoTestDirective extends TestDirective_ {
   function __construct($_reason_) {
     parent::__construct($_reason_);
   }
@@ -105,20 +105,20 @@ class TestCaseResult {
     return $this->_passed;
   }
 
-  function regulate(AbstractTestDirective $_directive_) {
-    return new RegulatedTestCaseResult($this, $_directive_);
+  function regulate(TestDirective_ $_directive_) {
+    return new AlteredTestCaseResult($this, $_directive_);
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ RegulatedTestCaseResult
+// {{{ AlteredTestCaseResult
 
-class RegulatedTestCaseResult {
+class AlteredTestCaseResult {
   private
     $_directive,
     $_inner;
 
-  function __construct(TestCaseResult $_inner_, AbstractTestDirective $_directive_) {
+  function __construct(TestCaseResult $_inner_, TestDirective_ $_directive_) {
     $this->_inner     = $_inner_;
     $this->_directive = $_directive_;
   }
@@ -171,7 +171,7 @@ interface ITestOutStream {
   function writePlan($_num_of_tests_);
   function writeSkipAll($_reason_);
   function writeTestCaseResult(TestCaseResult $_test_, $_number_);
-  function writeRegulatedTestCaseResult(RegulatedTestCaseResult $_test_, $_number_);
+  function writeAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_);
   function writeBailOut($_reason_);
   function writeComment($_comment_);
 }
@@ -337,7 +337,7 @@ class TestProducer {
     if ($this->_inTodo()) {
       $test = $test->regulate(new TodoTestDirective($this->_todoReason));
       $number = $this->_set->addRegulatedTest($test);
-      $this->_addRegulatedTestCaseResult($test, $number);
+      $this->_addAlteredTestCaseResult($test, $number);
     } else {
       $number = $this->_set->addTest($test);
       $this->_addTestCaseResult($test, $number);
@@ -357,7 +357,7 @@ class TestProducer {
     return $passed;
   }
 
-  function bypass($_how_many_, AbstractTestDirective $_directive_) {
+  function bypass($_how_many_, TestDirective_ $_directive_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       throw new Narvalo\ArgumentException(
         'how_many',
@@ -368,7 +368,7 @@ class TestProducer {
     $test = (new TestCaseResult('', \TRUE))->regulate($_directive_);
     for ($i = 1; $i <= $_how_many_; $i++) {
       $number = $this->_set->addRegulatedTest($test);
-      $this->_addRegulatedTestCaseResult($test, $number);
+      $this->_addAlteredTestCaseResult($test, $number);
     }
   }
 
@@ -388,7 +388,7 @@ class TestProducer {
     $test = (new TestCaseResult('', \TRUE))->regulate(new SkipTestDirective($_reason_));
     for ($i = 1; $i <= $_how_many_; $i++) {
       $number = $this->_set->addRegulatedTest($test);
-      $this->_addRegulatedTestCaseResult($test, $number);
+      $this->_addAlteredTestCaseResult($test, $number);
     }
   } */
 
@@ -575,9 +575,9 @@ class TestProducer {
     $this->_outStream->writeTestCaseResult($_test_, $_number_);
   }
 
-  private function _addRegulatedTestCaseResult(RegulatedTestCaseResult $_test_, $_number_) {
+  private function _addAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
     $this->_workflow->enterTestCaseResult();
-    $this->_outStream->writeRegulatedTestCaseResult($_test_, $_number_);
+    $this->_outStream->writeAlteredTestCaseResult($_test_, $_number_);
   }
 
   private function _addBailOut($_reason_) {
@@ -680,7 +680,7 @@ abstract class AbstractTestResultSet {
     return 1 + $number;
   }
 
-  function addRegulatedTest(Framework\RegulatedTestCaseResult $_test_) {
+  function addRegulatedTest(Framework\AlteredTestCaseResult $_test_) {
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
@@ -710,7 +710,7 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
     return 0;
   }
 
-  final function addRegulatedTest(Framework\RegulatedTestCaseResult $_test_) {
+  final function addRegulatedTest(Framework\AlteredTestCaseResult $_test_) {
     return 0;
   }
 }
