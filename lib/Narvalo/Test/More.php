@@ -164,21 +164,19 @@ class More extends Framework\TestModule {
   }
 
   function startTodo($_reason_) {
-    return $this->getProducer()->startTodo($_reason_);
+    return $this->getProducer()->startMarking(new Framework\TodoTestDirective($_reason_));
   }
 
   function endTodo() {
-    return $this->getProducer()->endTodo();
+    return $this->getProducer()->endMarking();
   }
 
   function skip($_how_many_, $_reason_) {
-    return $this->getProducer()
-      ->bypass($_how_many_, new Framework\SkipTestDirective($_reason_));
+    return $this->getProducer()->ditch($_how_many_, new Framework\SkipTestDirective($_reason_));
   }
 
   function skipTodo($_how_many_, $_reason_) {
-    return $this->getProducer()
-      ->bypass($_how_many_, new Framework\SkipTodoTestDirective($_reason_));
+    return $this->getProducer()->ditch($_how_many_, new Framework\SkipTodoTestDirective($_reason_));
   }
 
   function bailOut($_reason_) {

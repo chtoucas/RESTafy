@@ -13,14 +13,20 @@ use \Narvalo\Test\Framework\Internal as _;
 // {{{ TestDirective_
 
 abstract class TestDirective_ {
-  private $_reason;
+  private
+    $_name,
+    $_reason;
 
-  protected function __construct($_reason_) {
+  protected function __construct($_reason_, $_name_) {
     $this->_reason = $_reason_;
+    $this->_name   = $_name_;
   }
 
-  abstract function getName();
-  abstract function passed();
+  abstract function apply(TestCaseResult $_test_);
+
+  function getName() {
+    return $this->_name;
+  }
 
   function getReason() {
     return $this->_reason;
@@ -28,53 +34,56 @@ abstract class TestDirective_ {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipTestDirective
+// {{{ MarkTestDirective
 
-class SkipTestDirective extends TestDirective_ {
-  function __construct($_reason_) {
-    parent::__construct($_reason_);
+class MarkTestDirective extends TestDirective_ {
+  function __construct($_reason_, $_name_) {
+    parent::__construct($_reason_, $_name_);
   }
 
-  function getName() {
-    return 'SKIP';
+  final function apply(TestCaseResult $_test_) {
+    return $_test_->passed();
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ DitchTestDirective
+
+class DitchTestDirective extends TestDirective_ {
+  function __construct($_reason_, $_name_) {
+    parent::__construct($_reason_, $_name_);
   }
 
-  function passed() {
+  final function apply(TestCaseResult $_test_) {
     return \TRUE;
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ TodoTestDirective
 
-class TodoTestDirective extends TestDirective_ {
+class TodoTestDirective extends MarkTestDirective {
   function __construct($_reason_) {
-    parent::__construct($_reason_);
+    parent::__construct($_reason_, 'TODO');
   }
+}
 
-  function getName() {
-    return 'TODO';
-  }
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ SkipTestDirective
 
-  function passed() {
-    return \FALSE;
+class SkipTestDirective extends DitchTestDirective {
+  function __construct($_reason_) {
+    parent::__construct($_reason_, 'SKIP');
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ SkipTodoTestDirective
 
-class SkipTodoTestDirective extends TestDirective_ {
+class SkipTodoTestDirective extends DitchTestDirective {
   function __construct($_reason_) {
-    parent::__construct($_reason_);
-  }
-
-  function getName() {
-    return 'SKIP & TODO';
-  }
-
-  function passed() {
-    return \TRUE;
+    parent::__construct($_reason_, 'SKIP & TODO');
   }
 }
 
@@ -105,7 +114,11 @@ class TestCaseResult {
     return $this->_passed;
   }
 
-  function regulate(TestDirective_ $_directive_) {
+  function ditch(DitchTestDirective $_directive_) {
+    return new AlteredTestCaseResult($this, $_directive_);
+  }
+
+  function mark(MarkTestDirective $_directive_) {
     return new AlteredTestCaseResult($this, $_directive_);
   }
 }
@@ -127,16 +140,16 @@ class AlteredTestCaseResult {
     return $this->_inner->getDescription();
   }
 
-  function getReason() {
-    return $this->_directive->getReason();
-  }
-
-  function getDirectiveName() {
+  function getAlterationName() {
     return $this->_directive->getName();
   }
 
+  function getAlterationReason() {
+    return $this->_directive->getReason();
+  }
+
   function passed() {
-    return $this->_directive->passed() || $this->_inner->passed();
+    return $this->_directive->apply($this->_inner);
   }
 }
 
@@ -222,15 +235,11 @@ class TestProducer {
     /// Test workflow.
     $_workflow,
     /// Was the producer interrupted?
-    $_interrupted       = \FALSE,
-    $_bailedOut         = \FALSE,
+    $_interrupted        = \FALSE,
+    $_bailedOut          = \FALSE,
     $_runtimeErrorsCount = 0,
-    /// TO-DO stack level
-    $_todoLevel         = 0,
-    /// TO-DO reason
-    $_todoReason        = '',
-    /// TO-DO stack
-    $_todoStack         = array();
+    $_currentMark,
+    $_markStack          = array();
 
   function __construct(ITestOutStream $_outStream_, ITestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
@@ -334,30 +343,19 @@ class TestProducer {
 
   function assert($_test_, $_description_) {
     $test = new TestCaseResult($_description_, \TRUE === $_test_);
-    if ($this->_inTodo()) {
-      $test = $test->regulate(new TodoTestDirective($this->_todoReason));
-      $number = $this->_set->addRegulatedTest($test);
+    if ($this->_inMark()) {
+      $test = $test->mark($this->_currentMark);
+      $number = $this->_set->addAlteredTest($test);
       $this->_addAlteredTestCaseResult($test, $number);
     } else {
       $number = $this->_set->addTest($test);
       $this->_addTestCaseResult($test, $number);
     }
 
-    $passed = $test->passed();
-
-    /*
-    if (!$passed) {
-      $this->diagnose(\sprintf(
-        'Failed %s: %s',
-        $this->_inTodo() ? '(TODO) test' : 'test',
-        $test->getDescription()));
-    }
-     */
-
-    return $passed;
+    return $test->passed();
   }
 
-  function bypass($_how_many_, TestDirective_ $_directive_) {
+  function ditch($_how_many_, DitchTestDirective $_directive_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       throw new Narvalo\ArgumentException(
         'how_many',
@@ -365,45 +363,30 @@ class TestProducer {
           'The number of regulated tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
-    $test = (new TestCaseResult('', \TRUE))->regulate($_directive_);
-    for ($i = 1; $i <= $_how_many_; $i++) {
-      $number = $this->_set->addRegulatedTest($test);
-      $this->_addAlteredTestCaseResult($test, $number);
-    }
-  }
-
-  /* function skip($_how_many_, $_reason_) {
-    if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
-      throw new Narvalo\ArgumentException(
-        'how_many',
-        \sprintf(
-          'The number of skipped tests must be a strictly positive integer. You gave it "%s".',
-          $_how_many_));
-    }
-    if ($this->_inTodo()) {
+    if ($this->_inMark()) {
       // XXX: Shouldn't this be handled by the workflow?
       throw new Narvalo\InvalidOperationException(
-        'You can not interlace a SKIP directive with a TO-DO block');
+        'You can not interlace a skip directive with a marking block');
     }
-    $test = (new TestCaseResult('', \TRUE))->regulate(new SkipTestDirective($_reason_));
+    $test = (new TestCaseResult('', \TRUE))->ditch($_directive_);
     for ($i = 1; $i <= $_how_many_; $i++) {
-      $number = $this->_set->addRegulatedTest($test);
+      $number = $this->_set->addAlteredTest($test);
       $this->_addAlteredTestCaseResult($test, $number);
     }
-  } */
-
-  function startTodo($_reason_) {
-    $this->_startTodo();
-    if ($this->_inTodo()) {
-      // Keep the upper-level TO-DO in memory.
-      \array_push($this->_todoStack, $this->_todoReason);
-    }
-    $this->_todoReason = $_reason_;
   }
 
-  function endTodo() {
-    $this->_endTodo();
-    $this->_todoReason = \array_pop($this->_todoStack);
+  function startMarking(MarkTestDirective $_mark_) {
+    $this->_startMarking();
+    if ($this->_inMark()) {
+      // Keep the upper-level mark in memory.
+      \array_push($this->_markStack, $this->_currentMark);
+    }
+    $this->_currentMark = $_mark_;
+  }
+
+  function endMarking() {
+    $this->_endMarking();
+    $this->_currentMark = \array_pop($this->_markStack);
   }
 
   function subtest(\Closure $_fun_, $_description_) {
@@ -428,7 +411,7 @@ class TestProducer {
   }
 
   function diagnose($_diag_) {
-    if ($this->_inTodo()) {
+    if ($this->_inMark()) {
       $this->_addComment($_diag_);
     } else {
       $this->_addError($_diag_);
@@ -468,8 +451,8 @@ class TestProducer {
     return $result;
   }
 
-  private function _inTodo() {
-    return $this->_workflow->inTodo();
+  private function _inMark() {
+    return $this->_workflow->inMark();
   }
 
   private function _postPlan() {
@@ -492,9 +475,7 @@ class TestProducer {
   private function _reset() {
     $this->_set                = new _\DynamicTestResultSet();
     $this->_bailedOut          = \FALSE;
-    $this->_todoLevel          = 0;
-    $this->_todoReason         = '';
-    $this->_todoStack          = array();
+    $this->_markStack          = array();
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
     $this->_errStream->reset();
@@ -548,16 +529,16 @@ class TestProducer {
     $this->_errStream->endSubtest();
   }
 
-  private function _startTodo() {
-    $this->_workflow->startTodo();
-    //$this->_outStream->startTodo();
-    //$this->_errStream->startTodo();
+  private function _startMarking() {
+    $this->_workflow->startMarking();
+    //$this->_outStream->startMarking();
+    //$this->_errStream->startMarking();
   }
 
-  private function _endTodo() {
-    $this->_workflow->endTodo();
-    //$this->_outStream->endTodo();
-    //$this->_errStream->endTodo();
+  private function _endMarking() {
+    $this->_workflow->endMarking();
+    //$this->_outStream->endMarking();
+    //$this->_errStream->endMarking();
   }
 
   private function _addPlan($_num_of_tests_) {
@@ -680,7 +661,7 @@ abstract class AbstractTestResultSet {
     return 1 + $number;
   }
 
-  function addRegulatedTest(Framework\AlteredTestCaseResult $_test_) {
+  function addAlteredTest(Framework\AlteredTestCaseResult $_test_) {
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
@@ -710,7 +691,7 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
     return 0;
   }
 
-  final function addRegulatedTest(Framework\AlteredTestCaseResult $_test_) {
+  final function addAlteredTest(Framework\AlteredTestCaseResult $_test_) {
     return 0;
   }
 }
@@ -829,8 +810,7 @@ final class TestWorkflow {
     $_state        = self::Start,
     $_subStates    = array(),
     $_subtestLevel = 0,
-    /// TO-DO stack level.
-    $_todoLevel    = 0;
+    $_markLevel    = 0;
 
   function __destruct() {
     $this->dispose_(\TRUE);
@@ -841,8 +821,8 @@ final class TestWorkflow {
     return self::Start !== $this->_state && self::End !== $this->_state;
   }
 
-  function inTodo() {
-    return $this->_todoLevel > 0;
+  function inMark() {
+    return $this->_markLevel > 0;
   }
 
   function inSubtest() {
@@ -857,7 +837,7 @@ final class TestWorkflow {
     $this->_state        = self::Start;
     $this->_subStates    = array();
     $this->_subtestLevel = 0;
-    $this->_todoLevel    = 0;
+    $this->_markLevel    = 0;
   }
 
   function enterHeader() {
@@ -902,10 +882,10 @@ final class TestWorkflow {
       throw new TestWorkflowException(
         \sprintf('There is still an opened subtest in the workflow: "%s".', $this->_subtestLevel));
     }
-    // Check TO-DO level.
-    if (0 !== $this->_todoLevel) {
+    // Check mark level.
+    if (0 !== $this->_markLevel) {
       throw new TestWorkflowException(
-        \sprintf('There is still an opened TO-DO in the workflow: "%s".', $this->_subtestLevel));
+        \sprintf('There is still an opened mark in the workflow: "%s".', $this->_subtestLevel));
     }
     $this->_state = self::End;
   }
@@ -937,7 +917,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    // FIXME: Reset TO-DO level?
+    // FIXME: Reset mark level?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::Header;
     return ++$this->_subtestLevel;
@@ -953,7 +933,7 @@ final class TestWorkflow {
     $this->_subtestLevel--;
   }
 
-  function startTodo() {
+  function startMarking() {
     switch ($this->_state) {
       // Valid states.
 
@@ -966,29 +946,29 @@ final class TestWorkflow {
       // Invalid states.
 
     case self::Start:
-      throw new TestWorkflowException('Unable to start a TO-DO: missing header.');
+      throw new TestWorkflowException('Unable to start a mark: missing header.');
     case self::End:
-      throw new TestWorkflowException('Unable to start a TO-DO: workflow ended.');
+      throw new TestWorkflowException('Unable to start a mark: workflow ended.');
     case self::DynamicPlanDecl:
       throw new TestWorkflowException(
-        'Unable to start a TO-DO: you already end your tests with a plan.');
+        'Unable to start a mark: you already end your tests with a plan.');
     case self::SkipAll:
       throw new TestWorkflowException(
-        'You can not start a TO-DO and skip all tests at the same time.');
+        'You can not start a mark and skip all tests at the same time.');
     case self::BailOut:
-      throw new TestWorkflowException('You can not start a TO-DO after bailing out.');
+      throw new TestWorkflowException('You can not start a mark after bailing out.');
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    return ++$this->_todoLevel;
+    return ++$this->_markLevel;
   }
 
-  function endTodo() {
+  function endMarking() {
     // FIXME: Valid states.
-    if (0 === $this->_todoLevel) {
-      throw new TestWorkflowException('You can not end a TO-DO if you did not start one before.');
+    if (0 === $this->_markLevel) {
+      throw new TestWorkflowException('You can not end a mark if you did not start one before.');
     }
-    $this->_todoLevel--;
+    $this->_markLevel--;
   }
 
   function enterPlan() {
