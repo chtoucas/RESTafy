@@ -22,7 +22,8 @@ class More extends Framework\TestModule {
     }
   }
 
-  // Test declaration of intentions.
+  // Test declaration of intentions
+  // ------------------------------
 
   function plan($_how_many_) {
     return $this->getProducer()->plan($_how_many_);
@@ -32,7 +33,8 @@ class More extends Framework\TestModule {
     return $this->getProducer()->skipAll($_reason_);
   }
 
-  // Basic test methods.
+  // Basic test methods
+  // ------------------
 
   function ok($_test_, $_name_) {
     return $this->getProducer()->assert($_test_, $_name_);
@@ -123,7 +125,8 @@ class More extends Framework\TestModule {
     return $passed;
   }
 
-  // Test library availability.
+  // Test library availability
+  // -------------------------
 
   /// WARNING: Does not work with includes that return FALSE.
   function canInclude($_library_, $_name_) {
@@ -157,18 +160,19 @@ class More extends Framework\TestModule {
     return $this->ok($test, $_name_);
   }
 
-  // Utilities.
+  // Utilities
+  // ---------
 
   function subtest($_name_, \Closure $_fun_) {
     return $this->getProducer()->subTest($_fun_, $_name_);
   }
 
   function startTodo($_reason_) {
-    return $this->getProducer()->startMarking(new Framework\TodoTestDirective($_reason_));
+    return $this->getProducer()->startTagging(new Framework\TodoTestDirective($_reason_));
   }
 
   function endTodo() {
-    return $this->getProducer()->endMarking();
+    return $this->getProducer()->endTagging();
   }
 
   function skip($_how_many_, $_reason_) {
@@ -187,7 +191,8 @@ class More extends Framework\TestModule {
     return $this->getProducer()->note($_note_);
   }
 
-  // Private methods.
+  // Private methods
+  // ---------------
 
   private function _diagnoseFailedEquality($_got_, $_expected_) {
     $got    = \NULL === $_got_      ? 'NULL' : (\is_object($_got_)      ? 'Object' : "'$_got_'");

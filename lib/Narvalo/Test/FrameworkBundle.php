@@ -238,8 +238,8 @@ class TestProducer {
     $_interrupted        = \FALSE,
     $_bailedOut          = \FALSE,
     $_runtimeErrorsCount = 0,
-    $_currentMark,
-    $_markStack          = array();
+    $_currentTag,
+    $_tagStack           = array();
 
   function __construct(ITestOutStream $_outStream_, ITestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
@@ -249,7 +249,8 @@ class TestProducer {
     $this->_workflow  = new _\TestWorkflow();
   }
 
-  // Properties.
+  // Properties
+  // ----------
 
   function bailedOut() {
     return $this->_bailedOut;
@@ -314,7 +315,8 @@ class TestProducer {
     $this->_addError($_error_);
   }
 
-  // Test methods.
+  // Test methods
+  // ------------
 
   function skipAll($_reason_) {
     $this->_set = new _\EmptyTestResultSet();
@@ -343,8 +345,9 @@ class TestProducer {
 
   function assert($_test_, $_description_) {
     $test = new TestCaseResult($_description_, \TRUE === $_test_);
-    if ($this->_inMark()) {
-      $test = $test->mark($this->_currentMark);
+
+    if ($this->_inTag()) {
+      $test = $test->mark($this->_currentTag);
       $number = $this->_set->addAlteredTest($test);
       $this->_addAlteredTestCaseResult($test, $number);
     } else {
@@ -360,13 +363,8 @@ class TestProducer {
       throw new Narvalo\ArgumentException(
         'how_many',
         \sprintf(
-          'The number of regulated tests must be a strictly positive integer. You gave it "%s".',
+          'The number of ditched tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
-    }
-    if ($this->_inMark()) {
-      // XXX: Shouldn't this be handled by the workflow?
-      throw new Narvalo\InvalidOperationException(
-        'You can not interlace a skip directive with a marking block');
     }
     $test = (new TestCaseResult('', \TRUE))->ditch($_directive_);
     for ($i = 1; $i <= $_how_many_; $i++) {
@@ -375,18 +373,18 @@ class TestProducer {
     }
   }
 
-  function startMarking(MarkTestDirective $_mark_) {
-    $this->_startMarking();
-    if ($this->_inMark()) {
-      // Keep the upper-level mark in memory.
-      \array_push($this->_markStack, $this->_currentMark);
+  function startTagging(MarkTestDirective $_directive_) {
+    $this->_startTagging();
+    if ($this->_inTag()) {
+      // Keep the upper-level tag in memory.
+      \array_push($this->_tagStack, $this->_currentTag);
     }
-    $this->_currentMark = $_mark_;
+    $this->_currentTag = $_directive_;
   }
 
-  function endMarking() {
-    $this->_endMarking();
-    $this->_currentMark = \array_pop($this->_markStack);
+  function endTagging() {
+    $this->_endTagging();
+    $this->_currentTag = \array_pop($this->_tagStack);
   }
 
   function subtest(\Closure $_fun_, $_description_) {
@@ -411,7 +409,7 @@ class TestProducer {
   }
 
   function diagnose($_diag_) {
-    if ($this->_inMark()) {
+    if ($this->_inTag()) {
       $this->_addComment($_diag_);
     } else {
       $this->_addError($_diag_);
@@ -434,7 +432,8 @@ class TestProducer {
     ;
   }
 
-  // Utilities.
+  // Utilities
+  // ---------
 
   private static function _IsStrictlyPositiveInteger($_value_) {
     return (int)$_value_ === $_value_ && $_value_ > 0;
@@ -451,8 +450,8 @@ class TestProducer {
     return $result;
   }
 
-  private function _inMark() {
-    return $this->_workflow->inMark();
+  private function _inTag() {
+    return $this->_workflow->inTag();
   }
 
   private function _postPlan() {
@@ -475,7 +474,7 @@ class TestProducer {
   private function _reset() {
     $this->_set                = new _\DynamicTestResultSet();
     $this->_bailedOut          = \FALSE;
-    $this->_markStack          = array();
+    $this->_tagStack           = array();
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
     $this->_errStream->reset();
@@ -483,7 +482,8 @@ class TestProducer {
     $this->_workflow->reset();
   }
 
-  // Producer interrupts.
+  // Producer interrupts
+  // -------------------
 
   private function _interrupt() {
     $this->_interrupted = \TRUE;
@@ -505,7 +505,8 @@ class TestProducer {
     throw new SkipAllTestProducerInterrupt();
   }
 
-  // Core methods.
+  // Core methods
+  // ------------
 
   private function _addHeader() {
     $this->_workflow->enterHeader();
@@ -529,16 +530,16 @@ class TestProducer {
     $this->_errStream->endSubtest();
   }
 
-  private function _startMarking() {
-    $this->_workflow->startMarking();
-    //$this->_outStream->startMarking();
-    //$this->_errStream->startMarking();
+  private function _startTagging() {
+    $this->_workflow->startTagging();
+    //$this->_outStream->startTagging();
+    //$this->_errStream->startTagging();
   }
 
-  private function _endMarking() {
-    $this->_workflow->endMarking();
-    //$this->_outStream->endMarking();
-    //$this->_errStream->endMarking();
+  private function _endTagging() {
+    $this->_workflow->endTagging();
+    //$this->_outStream->endTagging();
+    //$this->_errStream->endTagging();
   }
 
   private function _addPlan($_num_of_tests_) {
@@ -810,7 +811,7 @@ final class TestWorkflow {
     $_state        = self::Start,
     $_subStates    = array(),
     $_subtestLevel = 0,
-    $_markLevel    = 0;
+    $_tagLevel     = 0;
 
   function __destruct() {
     $this->dispose_(\TRUE);
@@ -821,8 +822,8 @@ final class TestWorkflow {
     return self::Start !== $this->_state && self::End !== $this->_state;
   }
 
-  function inMark() {
-    return $this->_markLevel > 0;
+  function inTag() {
+    return $this->_tagLevel > 0;
   }
 
   function inSubtest() {
@@ -837,7 +838,7 @@ final class TestWorkflow {
     $this->_state        = self::Start;
     $this->_subStates    = array();
     $this->_subtestLevel = 0;
-    $this->_markLevel    = 0;
+    $this->_tagLevel    = 0;
   }
 
   function enterHeader() {
@@ -880,12 +881,12 @@ final class TestWorkflow {
     // Check subtests' level.
     if (0 !== $this->_subtestLevel) {
       throw new TestWorkflowException(
-        \sprintf('There is still an opened subtest in the workflow: "%s".', $this->_subtestLevel));
+        \sprintf('There is still "%s" opened subtest in the workflow.', $this->_subtestLevel));
     }
-    // Check mark level.
-    if (0 !== $this->_markLevel) {
+    // Check tag level.
+    if (0 !== $this->_tagLevel) {
       throw new TestWorkflowException(
-        \sprintf('There is still an opened mark in the workflow: "%s".', $this->_subtestLevel));
+        \sprintf('There is still "%s" opened tag in the workflow.', $this->_tagLevel));
     }
     $this->_state = self::End;
   }
@@ -917,7 +918,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    // FIXME: Reset mark level?
+    // FIXME: Reset tag level?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::Header;
     return ++$this->_subtestLevel;
@@ -933,7 +934,7 @@ final class TestWorkflow {
     $this->_subtestLevel--;
   }
 
-  function startMarking() {
+  function startTagging() {
     switch ($this->_state) {
       // Valid states.
 
@@ -946,29 +947,29 @@ final class TestWorkflow {
       // Invalid states.
 
     case self::Start:
-      throw new TestWorkflowException('Unable to start a mark: missing header.');
+      throw new TestWorkflowException('Unable to start a tag: missing header.');
     case self::End:
-      throw new TestWorkflowException('Unable to start a mark: workflow ended.');
+      throw new TestWorkflowException('Unable to start a tag: workflow ended.');
     case self::DynamicPlanDecl:
       throw new TestWorkflowException(
-        'Unable to start a mark: you already end your tests with a plan.');
+        'Unable to start a tag: you already end your tests with a plan.');
     case self::SkipAll:
       throw new TestWorkflowException(
-        'You can not start a mark and skip all tests at the same time.');
+        'You can not start a tag and skip all tests at the same time.');
     case self::BailOut:
-      throw new TestWorkflowException('You can not start a mark after bailing out.');
+      throw new TestWorkflowException('You can not start a tag after bailing out.');
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    return ++$this->_markLevel;
+    return ++$this->_tagLevel;
   }
 
-  function endMarking() {
+  function endTagging() {
     // FIXME: Valid states.
-    if (0 === $this->_markLevel) {
-      throw new TestWorkflowException('You can not end a mark if you did not start one before.');
+    if (0 === $this->_tagLevel) {
+      throw new TestWorkflowException('You can not end a tag if you did not start one before.');
     }
-    $this->_markLevel--;
+    $this->_tagLevel--;
   }
 
   function enterPlan() {
@@ -1153,7 +1154,7 @@ final class TestWorkflow {
       Narvalo\Failure::ThrowOrReportInDispose(
         new TestWorkflowException(\sprintf(
           'The workflow will end in an invalid state: "%s".', $this->_state)),
-        $_disposing_);
+          $_disposing_);
     }
     $this->_disposed = \TRUE;
   }
