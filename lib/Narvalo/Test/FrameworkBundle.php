@@ -118,8 +118,8 @@ class TestCaseResult {
     return new AlteredTestCaseResult($this, $_directive_);
   }
 
-  function mark(MarkTestDirective $_directive_) {
-    return new AlteredTestCaseResult($this, $_directive_);
+  function mark(MarkTestDirective $_tagger_) {
+    return new AlteredTestCaseResult($this, $_tagger_);
   }
 }
 
@@ -234,12 +234,11 @@ class TestProducer {
     $_set,
     /// Test workflow.
     $_workflow,
+    $_tagger             = \NULL,
     /// Was the producer interrupted?
     $_interrupted        = \FALSE,
     $_bailedOut          = \FALSE,
-    $_runtimeErrorsCount = 0,
-    $_currentTag,
-    $_tagStack           = array();
+    $_runtimeErrorsCount = 0;
 
   function __construct(ITestOutStream $_outStream_, ITestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
@@ -346,8 +345,8 @@ class TestProducer {
   function assert($_test_, $_description_) {
     $test = new TestCaseResult($_description_, \TRUE === $_test_);
 
-    if ($this->_inTag()) {
-      $test = $test->mark($this->_currentTag);
+    if (\NULL !== $this->_tagger) {
+      $test = $test->mark($this->_tagger);
       $number = $this->_set->addAlteredTest($test);
       $this->_addAlteredTestCaseResult($test, $number);
     } else {
@@ -373,18 +372,16 @@ class TestProducer {
     }
   }
 
-  function startTagging(MarkTestDirective $_directive_) {
-    $this->_startTagging();
-    if ($this->_inTag()) {
-      // Keep the upper-level tag in memory.
-      \array_push($this->_tagStack, $this->_currentTag);
-    }
-    $this->_currentTag = $_directive_;
+  function startTagging(MarkTestDirective $_tagger_) {
+    $this->_startTagging($_tagger_);
+    $this->_tagger = $_tagger_;
   }
 
-  function endTagging() {
-    $this->_endTagging();
-    $this->_currentTag = \array_pop($this->_tagStack);
+  function endTagging($_tagger_) {
+    if ($_tagger_ !== $this->_tagger) {
+      throw new Narvalo\InvalidOperationException('You can not interlinked tagging directives.');
+    }
+    $this->_tagger = $this->_endTagging();
   }
 
   function subtest(\Closure $_fun_, $_description_) {
@@ -409,7 +406,7 @@ class TestProducer {
   }
 
   function diagnose($_diag_) {
-    if ($this->_inTag()) {
+    if (\NULL !== $this->_tagger) {
       $this->_addComment($_diag_);
     } else {
       $this->_addError($_diag_);
@@ -450,10 +447,6 @@ class TestProducer {
     return $result;
   }
 
-  private function _inTag() {
-    return $this->_workflow->inTag();
-  }
-
   private function _postPlan() {
     if ($this->_set instanceof _\DynamicTestResultSet
       && ($tests_count = $this->_set->getTestsCount()) > 0
@@ -474,9 +467,9 @@ class TestProducer {
   private function _reset() {
     $this->_set                = new _\DynamicTestResultSet();
     $this->_bailedOut          = \FALSE;
-    $this->_tagStack           = array();
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
+    $this->_tagger             = \NULL;
     $this->_errStream->reset();
     $this->_outStream->reset();
     $this->_workflow->reset();
@@ -530,14 +523,14 @@ class TestProducer {
     $this->_errStream->endSubtest();
   }
 
-  private function _startTagging() {
-    $this->_workflow->startTagging();
+  private function _startTagging(MarkTestDirective $_tagger_) {
+    $this->_workflow->startTagging($_tagger_);
     //$this->_outStream->startTagging();
     //$this->_errStream->startTagging();
   }
 
   private function _endTagging() {
-    $this->_workflow->endTagging();
+    return $this->_workflow->endTagging();
     //$this->_outStream->endTagging();
     //$this->_errStream->endTagging();
   }
@@ -811,7 +804,8 @@ final class TestWorkflow {
     $_state        = self::Start,
     $_subStates    = array(),
     $_subtestLevel = 0,
-    $_tagLevel     = 0;
+    $_taggerStack  = array(),
+    $_taggerLevel  = 0;
 
   function __destruct() {
     $this->dispose_(\TRUE);
@@ -820,10 +814,6 @@ final class TestWorkflow {
   function running() {
     // TODO: Check this.
     return self::Start !== $this->_state && self::End !== $this->_state;
-  }
-
-  function inTag() {
-    return $this->_tagLevel > 0;
   }
 
   function inSubtest() {
@@ -838,7 +828,8 @@ final class TestWorkflow {
     $this->_state        = self::Start;
     $this->_subStates    = array();
     $this->_subtestLevel = 0;
-    $this->_tagLevel    = 0;
+    $this->_taggerStack  = array();
+    $this->_taggerLevel  = 0;
   }
 
   function enterHeader() {
@@ -884,9 +875,9 @@ final class TestWorkflow {
         \sprintf('There is still "%s" opened subtest in the workflow.', $this->_subtestLevel));
     }
     // Check tag level.
-    if (0 !== $this->_tagLevel) {
+    if (0 !== $this->_taggerLevel) {
       throw new TestWorkflowException(
-        \sprintf('There is still "%s" opened tag in the workflow.', $this->_tagLevel));
+        \sprintf('There is still "%s" opened tag in the workflow.', $this->_taggerLevel));
     }
     $this->_state = self::End;
   }
@@ -918,7 +909,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    // FIXME: Reset tag level?
+    // FIXME: Reset tag stack?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::Header;
     return ++$this->_subtestLevel;
@@ -934,7 +925,7 @@ final class TestWorkflow {
     $this->_subtestLevel--;
   }
 
-  function startTagging() {
+  function startTagging(Framework\MarkTestDirective $_tagger_) {
     switch ($this->_state) {
       // Valid states.
 
@@ -961,15 +952,20 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    return ++$this->_tagLevel;
+    if (0 !== $this->_taggerLevel) {
+      // Keep the upper-level directive in memory.
+      \array_push($this->_taggerStack, $_tagger_);
+    }
+    $this->_taggerLevel++;
   }
 
   function endTagging() {
     // FIXME: Valid states.
-    if (0 === $this->_tagLevel) {
+    if (0 === $this->_taggerLevel) {
       throw new TestWorkflowException('You can not end a tag if you did not start one before.');
     }
-    $this->_tagLevel--;
+    $this->_taggerLevel--;
+    return \array_pop($this->_taggerStack);
   }
 
   function enterPlan() {

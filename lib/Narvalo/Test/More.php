@@ -125,6 +125,10 @@ class More extends Framework\TestModule {
     return $passed;
   }
 
+  function subtest($_name_, \Closure $_fun_) {
+    return $this->getProducer()->subTest($_fun_, $_name_);
+  }
+
   // Test library availability
   // -------------------------
 
@@ -163,32 +167,30 @@ class More extends Framework\TestModule {
   // Utilities
   // ---------
 
-  function subtest($_name_, \Closure $_fun_) {
-    return $this->getProducer()->subTest($_fun_, $_name_);
-  }
-
   function startTodo($_reason_) {
-    return $this->getProducer()->startTagging(new Framework\TodoTestDirective($_reason_));
+    $todo = new Framework\TodoTestDirective($_reason_);
+    $this->getProducer()->startTagging($todo);
+    return $todo;
   }
 
-  function endTodo() {
-    return $this->getProducer()->endTagging();
+  function endTodo($_todo_) {
+    $this->getProducer()->endTagging($_todo_);
   }
 
   function skip($_how_many_, $_reason_) {
-    return $this->getProducer()->ditch($_how_many_, new Framework\SkipTestDirective($_reason_));
+    $this->getProducer()->ditch($_how_many_, new Framework\SkipTestDirective($_reason_));
   }
 
   function skipTodo($_how_many_, $_reason_) {
-    return $this->getProducer()->ditch($_how_many_, new Framework\SkipTodoTestDirective($_reason_));
+    $this->getProducer()->ditch($_how_many_, new Framework\SkipTodoTestDirective($_reason_));
   }
 
   function bailOut($_reason_) {
-    return $this->getProducer()->bailOut($_reason_);
+    $this->getProducer()->bailOut($_reason_);
   }
 
   function note($_note_) {
-    return $this->getProducer()->note($_note_);
+    $this->getProducer()->note($_note_);
   }
 
   // Private methods
