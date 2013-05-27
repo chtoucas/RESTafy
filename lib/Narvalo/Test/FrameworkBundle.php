@@ -588,9 +588,9 @@ use \Narvalo\Test\Framework;
 // Test result sets
 // =================================================================================================
 
-// {{{ AbstractTestResultSet
+// {{{ TestResultSet_
 
-abstract class AbstractTestResultSet {
+abstract class TestResultSet_ {
   private
     $_errStream,
     /// Number of failed tests.
@@ -640,7 +640,7 @@ abstract class AbstractTestResultSet {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ EmptyTestResultSet
 
-final class EmptyTestResultSet extends AbstractTestResultSet {
+final class EmptyTestResultSet extends TestResultSet_ {
   function __construct() {
     ;
   }
@@ -653,19 +653,19 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
     ;
   }
 
-  final function addTest(Framework\TestCaseResult $_test_) {
-    return 0;
+  function addTest(Framework\TestCaseResult $_test_) {
+    throw new Narvalo\NotSupportedException('You can not add a test to '.__CLASS__);
   }
 
-  final function addAlteredTest(Framework\AlteredTestCaseResult $_test_) {
-    return 0;
+  function addAlteredTest(Framework\AlteredTestCaseResult $_test_) {
+    throw new Narvalo\NotSupportedException('You can not add an altered test to '.__CLASS__);
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ DynamicTestResultSet
 
-final class DynamicTestResultSet extends AbstractTestResultSet {
+final class DynamicTestResultSet extends TestResultSet_ {
   function __construct(Framework\ITestErrStream $_errStream_) {
     parent::__construct($_errStream_);
   }
@@ -697,7 +697,7 @@ final class DynamicTestResultSet extends AbstractTestResultSet {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ FixedSizeTestResultSet
 
-final class FixedSizeTestResultSet extends AbstractTestResultSet {
+final class FixedSizeTestResultSet extends TestResultSet_ {
   /// Number of expected tests.
   private $_length;
 
