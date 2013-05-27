@@ -5,7 +5,7 @@ require_once 'Narvalo/Test/More.php';
 
 use \Narvalo\Test;
 
-$t = new Test\More();
+$t = new Test\More(3);
 
 $t->pass('First test');
 

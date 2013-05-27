@@ -31,6 +31,10 @@ abstract class TestDirective_ {
   function getReason() {
     return $this->_reason;
   }
+
+  function alter(TestCaseResult $_test_) {
+    return new AlteredTestCaseResult($_test_, $this);
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -61,34 +65,6 @@ class DitchTestDirective extends TestDirective_ {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TodoTestDirective
-
-class TodoTestDirective extends MarkTestDirective {
-  function __construct($_reason_) {
-    parent::__construct($_reason_, 'TODO');
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipTestDirective
-
-class SkipTestDirective extends DitchTestDirective {
-  function __construct($_reason_) {
-    parent::__construct($_reason_, 'SKIP');
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipTodoTestDirective
-
-class SkipTodoTestDirective extends DitchTestDirective {
-  function __construct($_reason_) {
-    parent::__construct($_reason_, 'SKIP & TODO');
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test results
 // =================================================================================================
 
@@ -112,14 +88,6 @@ class TestCaseResult {
   /// TRUE if the test passed, FALSE otherwise.
   function passed() {
     return $this->_passed;
-  }
-
-  function ditch(DitchTestDirective $_directive_) {
-    return new AlteredTestCaseResult($this, $_directive_);
-  }
-
-  function mark(MarkTestDirective $_tagger_) {
-    return new AlteredTestCaseResult($this, $_tagger_);
   }
 }
 
@@ -234,7 +202,6 @@ class TestProducer {
     $_set,
     /// Test workflow.
     $_workflow,
-    $_tagger             = \NULL,
     /// Was the producer interrupted?
     $_interrupted        = \FALSE,
     $_bailedOut          = \FALSE,
@@ -273,6 +240,10 @@ class TestProducer {
 
   function busy() {
     return $this->_workflow->running();
+  }
+
+  protected function getTagger_() {
+    return $this->_workflow->getTagger();
   }
 
   //
@@ -345,8 +316,8 @@ class TestProducer {
   function assert($_test_, $_description_) {
     $test = new TestCaseResult($_description_, \TRUE === $_test_);
 
-    if (\NULL !== $this->_tagger) {
-      $test = $test->mark($this->_tagger);
+    if (\NULL !== ($tagger = $this->getTagger_())) {
+      $test = $tagger->alter($test);
       $number = $this->_set->addAlteredTest($test);
       $this->_addAlteredTestCaseResult($test, $number);
     } else {
@@ -365,7 +336,7 @@ class TestProducer {
           'The number of ditched tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
-    $test = (new TestCaseResult('', \TRUE))->ditch($_directive_);
+    $test = $_directive_->alter(new TestCaseResult('', \TRUE));
     for ($i = 1; $i <= $_how_many_; $i++) {
       $number = $this->_set->addAlteredTest($test);
       $this->_addAlteredTestCaseResult($test, $number);
@@ -374,14 +345,10 @@ class TestProducer {
 
   function startTagging(MarkTestDirective $_tagger_) {
     $this->_startTagging($_tagger_);
-    $this->_tagger = $_tagger_;
   }
 
-  function endTagging($_tagger_) {
-    if ($_tagger_ !== $this->_tagger) {
-      throw new Narvalo\InvalidOperationException('You can not interlinked tagging directives.');
-    }
-    $this->_tagger = $this->_endTagging();
+  function endTagging(MarkTestDirective $_tagger_) {
+    $this->_endTagging($_tagger_);
   }
 
   function subtest(\Closure $_fun_, $_description_) {
@@ -406,7 +373,8 @@ class TestProducer {
   }
 
   function diagnose($_diag_) {
-    if (\NULL !== $this->_tagger) {
+    // XXX: Why check the tagger?
+    if (\NULL !== $this->getTagger_()) {
       $this->_addComment($_diag_);
     } else {
       $this->_addError($_diag_);
@@ -469,7 +437,6 @@ class TestProducer {
     $this->_bailedOut          = \FALSE;
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
-    $this->_tagger             = \NULL;
     $this->_errStream->reset();
     $this->_outStream->reset();
     $this->_workflow->reset();
@@ -529,8 +496,8 @@ class TestProducer {
     //$this->_errStream->startTagging();
   }
 
-  private function _endTagging() {
-    return $this->_workflow->endTagging();
+  private function _endTagging($_tagger_) {
+    $this->_workflow->endTagging($_tagger_);
     //$this->_outStream->endTagging();
     //$this->_errStream->endTagging();
   }
@@ -804,20 +771,20 @@ final class TestWorkflow {
     $_state        = self::Start,
     $_subStates    = array(),
     $_subtestLevel = 0,
-    $_taggerStack  = array(),
-    $_taggerLevel  = 0;
+    $_tagger       = \NULL,
+    $_taggerStack  = array();
 
   function __destruct() {
     $this->dispose_(\TRUE);
   }
 
+  function getTagger() {
+    return $this->_tagger;
+  }
+
   function running() {
     // TODO: Check this.
     return self::Start !== $this->_state && self::End !== $this->_state;
-  }
-
-  function inSubtest() {
-    return $this->_subtestLevel > 0;
   }
 
   function close() {
@@ -828,8 +795,8 @@ final class TestWorkflow {
     $this->_state        = self::Start;
     $this->_subStates    = array();
     $this->_subtestLevel = 0;
+    $this->_tagger       = \NULL;
     $this->_taggerStack  = array();
-    $this->_taggerLevel  = 0;
   }
 
   function enterHeader() {
@@ -874,10 +841,9 @@ final class TestWorkflow {
       throw new TestWorkflowException(
         \sprintf('There is still "%s" opened subtest in the workflow.', $this->_subtestLevel));
     }
-    // Check tag level.
-    if (0 !== $this->_taggerLevel) {
-      throw new TestWorkflowException(
-        \sprintf('There is still "%s" opened tag in the workflow.', $this->_taggerLevel));
+    // Is any tag left opened?
+    if (\NULL !== $this->_tagger) {
+      throw new TestWorkflowException('There is still opened tag in the workflow.');
     }
     $this->_state = self::End;
   }
@@ -912,7 +878,7 @@ final class TestWorkflow {
     // FIXME: Reset tag stack?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::Header;
-    return ++$this->_subtestLevel;
+    $this->_subtestLevel++;
   }
 
   /// \return void
@@ -952,20 +918,22 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
-    if (0 !== $this->_taggerLevel) {
-      // Keep the upper-level directive in memory.
+    // Keep the upper-level directive in memory.
+    if (\NULL === $this->_tagger) {
+      $this->_tagger = $_tagger_;
+    } else {
       \array_push($this->_taggerStack, $_tagger_);
     }
-    $this->_taggerLevel++;
   }
 
-  function endTagging() {
+  function endTagging(Framework\MarkTestDirective $_tagger_) {
     // FIXME: Valid states.
-    if (0 === $this->_taggerLevel) {
+    if (\NULL === $this->_tagger) {
       throw new TestWorkflowException('You can not end a tag if you did not start one before.');
+    } else if ($_tagger_ !== $this->_tagger) {
+      throw new TestWorkflowException('You can not interlinked tagging directives.');
     }
-    $this->_taggerLevel--;
-    return \array_pop($this->_taggerStack);
+    $this->_tagger = \array_pop($this->_taggerStack);
   }
 
   function enterPlan() {

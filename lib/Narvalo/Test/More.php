@@ -168,7 +168,7 @@ class More extends Framework\TestModule {
   // ---------
 
   function startTodo($_reason_) {
-    $todo = new Framework\TodoTestDirective($_reason_);
+    $todo = new Framework\MarkTestDirective($_reason_, 'TODO');
     $this->getProducer()->startTagging($todo);
     return $todo;
   }
@@ -178,11 +178,13 @@ class More extends Framework\TestModule {
   }
 
   function skip($_how_many_, $_reason_) {
-    $this->getProducer()->ditch($_how_many_, new Framework\SkipTestDirective($_reason_));
+    $this->getProducer()->ditch(
+      $_how_many_, new Framework\DitchTestDirective($_reason_, 'SKIP'));
   }
 
   function skipTodo($_how_many_, $_reason_) {
-    $this->getProducer()->ditch($_how_many_, new Framework\SkipTodoTestDirective($_reason_));
+    $this->getProducer()->ditch(
+      $_how_many_, new Framework\DitchTestDirective($_reason_, 'SKIP & TODO'));
   }
 
   function bailOut($_reason_) {
