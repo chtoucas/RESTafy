@@ -10,8 +10,8 @@ $t = new Test\More(3);
 $t->pass('First test');
 
 $t->subtest('Second test, a subtest', function() {
-  $t = new Test\More(1);
-  $t->pass('First test');
+  $s = new Test\Simple(1);
+  $s->ok(\TRUE, 'Simple test');
 });
 
 $t->pass('Third test');

@@ -6,10 +6,6 @@ use \Narvalo\Test;
 
 $t = new Test\More();
 
-$t->plan(2);
-
-$t->ok(TRUE, 'OK');
-
-throw new Exception("exception");
+$t->pass('Unique test');
 
 // EOF

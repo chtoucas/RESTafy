@@ -143,10 +143,16 @@ use \Narvalo\Test\Framework;
 // {{{ RuntimeErrorCatcher
 
 final class RuntimeErrorCatcher {
-  private $_producer;
+  private
+    $_producer,
+    $_disposed = \FALSE;
 
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer = $_producer_;
+  }
+
+  function __destruct() {
+    $this->dispose_(\TRUE);
   }
 
   function start() {
@@ -161,14 +167,27 @@ final class RuntimeErrorCatcher {
     // Override the error handler.
     \set_error_handler(
       function($errno , $errstr, $errfile, $errline, $errcontext) use ($producer) {
+        if (\NULL === $producer) {
+          return;
+        }
         $producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
   }
 
   function stop() {
+    $this->dispose_(\FALSE);
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
     // Restore the error handler.
     \restore_error_handler();
+
+    $this->_disposed = \TRUE;
   }
 }
 

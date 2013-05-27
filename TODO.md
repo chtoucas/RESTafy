@@ -7,11 +7,12 @@ For instance, a call to mkdir under Cygwin might fail.
 Narvalo\Test
 ============
 
+* canInclude is broken when there is a compile error.
+* the whole thing break when there is an exit.
 * Interlinked directives and interlaced tags.
 * Test the Test.
 * Comments & doc.
 * Review all FIXME & TODO.
-* Currently, one can not create a new test module inside a subtest.
 * Failed include directive produce two error messages.
 * Add timers to Harness & Runner
 * Add OnTestCompleted event?

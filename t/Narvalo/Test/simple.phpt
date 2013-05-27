@@ -6,6 +6,6 @@ use \Narvalo\Test;
 
 $t = new Test\Simple(1);
 
-$t->ok(\TRUE, "OK");
+$t->ok(\TRUE, 'Unique test');
 
 // EOF

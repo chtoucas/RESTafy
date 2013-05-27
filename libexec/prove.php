@@ -45,7 +45,7 @@ class ProveOptions {
   static function Parse(array $_argv_) {
     $self = new self();
     if (\array_key_exists(1, $_argv_)) {
-      $self>setDirectoryPath($_argv_[1]);
+      $self->setDirectoryPath($_argv_[1]);
     }
     return $self;
   }

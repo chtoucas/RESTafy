@@ -6,8 +6,6 @@ use \Narvalo\Test;
 
 $t = new Test\More();
 
-$t->plan(1);
-
-$t->ok(\TRUE, 'OK');
+$t->like(' ', '{\s+}', 'Simple Regex');
 
 // EOF

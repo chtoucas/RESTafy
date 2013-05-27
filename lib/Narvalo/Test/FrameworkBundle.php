@@ -883,6 +883,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
     }
+
     // FIXME: Reset tag stack?
     \array_push($this->_subStates, $this->_state);
     $this->_state = self::Header;
