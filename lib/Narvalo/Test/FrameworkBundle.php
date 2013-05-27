@@ -38,28 +38,28 @@ abstract class TestDirective_ {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ MarkTestDirective
+// {{{ SkipTestDirective
 
-class MarkTestDirective extends TestDirective_ {
-  function __construct($_reason_, $_name_) {
-    parent::__construct($_reason_, $_name_);
-  }
-
-  final function apply(TestCaseResult $_test_) {
-    return $_test_->passed();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DitchTestDirective
-
-class DitchTestDirective extends TestDirective_ {
+class SkipTestDirective extends TestDirective_ {
   function __construct($_reason_, $_name_) {
     parent::__construct($_reason_, $_name_);
   }
 
   final function apply(TestCaseResult $_test_) {
     return \TRUE;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ TagTestDirective
+
+class TagTestDirective extends TestDirective_ {
+  function __construct($_reason_, $_name_) {
+    parent::__construct($_reason_, $_name_);
+  }
+
+  final function apply(TestCaseResult $_test_) {
+    return $_test_->passed();
   }
 }
 
@@ -328,12 +328,12 @@ class TestProducer {
     return $test->passed();
   }
 
-  function ditch($_how_many_, DitchTestDirective $_directive_) {
+  function skip($_how_many_, SkipTestDirective $_directive_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
       throw new Narvalo\ArgumentException(
         'how_many',
         \sprintf(
-          'The number of ditched tests must be a strictly positive integer. You gave it "%s".',
+          'The number of skipped tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
     $test = $_directive_->alter(new TestCaseResult('', \TRUE));
@@ -343,11 +343,11 @@ class TestProducer {
     }
   }
 
-  function startTagging(MarkTestDirective $_tagger_) {
+  function startTagging(TagTestDirective $_tagger_) {
     $this->_startTagging($_tagger_);
   }
 
-  function endTagging(MarkTestDirective $_tagger_) {
+  function endTagging(TagTestDirective $_tagger_) {
     $this->_endTagging($_tagger_);
   }
 
@@ -490,7 +490,7 @@ class TestProducer {
     $this->_errStream->endSubtest();
   }
 
-  private function _startTagging(MarkTestDirective $_tagger_) {
+  private function _startTagging(TagTestDirective $_tagger_) {
     $this->_workflow->startTagging($_tagger_);
     //$this->_outStream->startTagging();
     //$this->_errStream->startTagging();
@@ -899,7 +899,7 @@ final class TestWorkflow {
     $this->_subtestLevel--;
   }
 
-  function startTagging(Framework\MarkTestDirective $_tagger_) {
+  function startTagging(Framework\TagTestDirective $_tagger_) {
     switch ($this->_state) {
       // Valid states.
 
@@ -934,7 +934,7 @@ final class TestWorkflow {
     }
   }
 
-  function endTagging(Framework\MarkTestDirective $_tagger_) {
+  function endTagging(Framework\TagTestDirective $_tagger_) {
     // FIXME: Valid states.
     if (\NULL === $this->_tagger) {
       throw new TestWorkflowException('You can not end a tag if you did not start one before.');
