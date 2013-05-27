@@ -211,7 +211,7 @@ class TestProducer {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
     // NB: Until we have a plan, we use a dynamic test set.
-    $this->_set       = new _\DynamicTestResultSet();
+    $this->_set       = new _\DynamicTestResultSet($_errStream_);
     $this->_workflow  = new _\TestWorkflow();
   }
 
@@ -309,7 +309,7 @@ class TestProducer {
         \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
-    $this->_set = new _\FixedSizeTestResultSet($_how_many_);
+    $this->_set = new _\FixedSizeTestResultSet($this->_errStream, $_how_many_);
     $this->_addPlan($_how_many_);
   }
 
@@ -355,7 +355,7 @@ class TestProducer {
     // FIXME: If the subtest exit, it will stop the whole test.
     // Switch to a new TestResultSet.
     $set = $this->_set;
-    $this->_set = new _\DynamicTestResultSet();
+    $this->_set = new _\DynamicTestResultSet($this->_errStream);
     // Notify outputs.
     $this->_startSubtest();
     // Execute the subtests.
@@ -427,13 +427,13 @@ class TestProducer {
   private function _endTestResultSet() {
     // Print helpful messages if something went wrong.
     // NB: This must stay above _postPlan().
-    $this->_set->close($this->_errStream);
+    $this->_set->close();
 
     $this->_postPlan();
   }
 
   private function _reset() {
-    $this->_set                = new _\DynamicTestResultSet();
+    $this->_set                = new _\DynamicTestResultSet($this->_errStream);
     $this->_bailedOut          = \FALSE;
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
@@ -592,13 +592,14 @@ use \Narvalo\Test\Framework;
 
 abstract class AbstractTestResultSet {
   private
+    $_errStream,
     /// Number of failed tests.
     $_failuresCount = 0,
     /// List of tests.
     $_tests = array();
 
-  protected function __construct() {
-    ;
+  protected function __construct(Framework\ITestErrStream $_errStream_) {
+    $this->_errStream = $_errStream_;
   }
 
   function getTestsCount() {
@@ -609,7 +610,11 @@ abstract class AbstractTestResultSet {
     return $this->_failuresCount;
   }
 
-  abstract function close(Framework\ITestErrStream $_errStream_);
+  protected function getErrStream_() {
+    return $this->_errStream;
+  }
+
+  abstract function close();
 
   abstract function passed();
 
@@ -644,7 +649,7 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
     return \TRUE;
   }
 
-  function close(Framework\ITestErrStream $_errStream_) {
+  function close() {
     ;
   }
 
@@ -661,24 +666,25 @@ final class EmptyTestResultSet extends AbstractTestResultSet {
 // {{{ DynamicTestResultSet
 
 final class DynamicTestResultSet extends AbstractTestResultSet {
-  function __construct() {
-    ;
+  function __construct(Framework\ITestErrStream $_errStream_) {
+    parent::__construct($_errStream_);
   }
 
-  function close(Framework\ITestErrStream $_errStream_) {
+  function close() {
+    $errStream = $this->getErrStream_();
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
-        $_errStream_->write(
+        $errStream->write(
           \sprintf('Looks like you failed %s test%s of %s run.',
             $failures_count, $s, $tests_count));
       }
-      $_errStream_->write('No plan!');
+      $errStream->write('No plan!');
     } else {
       // No tests run.
-      $_errStream_->write('No plan. No tests run!');
+      $errStream->write('No plan. No tests run!');
     }
   }
 
@@ -695,7 +701,8 @@ final class FixedSizeTestResultSet extends AbstractTestResultSet {
   /// Number of expected tests.
   private $_length;
 
-  function __construct($_length_) {
+  function __construct(Framework\ITestErrStream $_errStream_, $_length_) {
+    parent::__construct($_errStream_);
     $this->_length = $_length_;
   }
 
@@ -714,14 +721,15 @@ final class FixedSizeTestResultSet extends AbstractTestResultSet {
       && 0 === $this->getExtrasCount();
   }
 
-  function close(Framework\ITestErrStream $_errStream_) {
+  function close() {
+    $errStream = $this->getErrStream_();
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
       if ($extras_count != 0) {
         // Count missmatch.
         $s = $this->_length > 1 ? 's' : '';
-        $_errStream_->write(
+        $errStream->write(
           \sprintf('Looks like you planned %s test%s but ran %s.',
             $this->_length, $s, $tests_count));
       }
@@ -729,13 +737,13 @@ final class FixedSizeTestResultSet extends AbstractTestResultSet {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
         $qualifier = 0 == $extras_count ? '' : ' run';
-        $_errStream_->write(
+        $errStream->write(
           \sprintf('Looks like you failed %s test%s of %s%s.',
             $failures_count, $s, $tests_count, $qualifier));
       }
     } else {
       // No tests run.
-      $_errStream_->write('No tests run!');
+      $errStream->write('No tests run!');
     }
   }
 }
