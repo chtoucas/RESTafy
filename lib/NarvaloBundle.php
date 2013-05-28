@@ -79,6 +79,56 @@ interface IDisposable {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ Disposable
+
+trait Disposable {
+  private $_disposed = \FALSE;
+
+  final function __destruct() {
+    $this->_dispose(\FALSE);
+  }
+
+  final function dispose() {
+    $this->_dispose(\TRUE);
+  }
+
+  /// Only happens when dispose() is called explicitly.
+  /// Dispose all disposable fields in the object, additionally nullify those that it created.
+  protected function dispose_() {
+    ;
+  }
+
+  /// This method always run when we call dispose() or when the runtime call the destructor.
+  /// - release all external resources hold by the object
+  /// - nullify large fields
+  /// - restore ambient context, if changed. For instance, the object might have changed
+  ///   the runtime using set_error_handler().
+  protected function release_() {
+    ;
+  }
+
+  protected function throwIfDisposed_() {
+    if ($this->_disposed) {
+      throw new ObjectDisposedException();
+    }
+  }
+
+  final private function _dispose($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
+    if ($_disposing_) {
+      $this->dispose_();
+    }
+
+    $this->release_();
+
+    $this->_disposed = \TRUE;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // {{{ ObjectType
 

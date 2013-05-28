@@ -62,7 +62,7 @@ interface ITestHarnessStream {
 
 class TestHarnessSummary {
   public
-    $passed           = \FALSE,
+    $passed           = \TRUE,
     $setsCount        = 0,
     $failedSetsCount  = 0,
     $testsCount       = 0,
@@ -108,7 +108,6 @@ class TestHarness {
 
   protected function execute_(\Iterator $_it_) {
     $summary = new TestHarnessSummary();
-    $summary->passed = \TRUE;
 
     foreach ($_it_ as $set) {
       $result = $this->_runner->run($set);
@@ -145,25 +144,18 @@ use \Narvalo\Test\Framework;
 // {{{ RuntimeErrorCatcher
 
 final class RuntimeErrorCatcher implements Narvalo\IDisposable {
+  use Narvalo\Disposable;
+
   private
     $_producer,
-    $_running  = \FALSE,
-    $_disposed = \FALSE;
+    $_active = \FALSE;
 
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer = $_producer_;
   }
 
-  function __destruct() {
-    $this->dispose_(\FALSE);
-  }
-
-  function dispose() {
-    $this->dispose_(\TRUE);
-  }
-
   function start() {
-    // Beware one can not catch all errors.
+    // Beware one can not catch all type of errors.
     // Cf. http://php.net/manual/en/function.set-error-handler.php
     // The following error types cannot be handled with a user defined function:
     // E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
@@ -174,40 +166,29 @@ final class RuntimeErrorCatcher implements Narvalo\IDisposable {
     // Override the error handler.
     \set_error_handler(
       function($errno , $errstr, $errfile, $errline, $errcontext) use ($producer) {
-        //if (\NULL === $producer) {
-        //  return;
-        //}
         $producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
 
-    $this->_running = \TRUE;
+    $this->_active = \TRUE;
+
+    \register_shutdown_function(function() {
+      // In case, something bad appended and the destructor was not called.
+      $this->stop();
+    });
   }
 
   function stop() {
-    if (!$this->_running) {
-      throw new Narvalo\InvalidOperationException('XXX');
-    }
-
-    // Restore the error handler.
-    \restore_error_handler();
-
-    $this->_running = \FALSE;
-  }
-
-  protected function dispose_($_disposing_) {
-    if ($this->_disposed) {
-      return;
-    }
-
-    if ($this->_running) {
+    if ($this->_active) {
       // Restore the error handler.
       \restore_error_handler();
 
-      $this->_running = \FALSE;
+      $this->_active = \FALSE;
     }
+  }
 
-    $this->_disposed = \TRUE;
+  protected function release_() {
+    $this->stop();
   }
 }
 

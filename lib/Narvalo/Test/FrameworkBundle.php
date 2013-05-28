@@ -761,7 +761,7 @@ class TestWorkflowException extends Narvalo\Exception { }
 
 // {{{ TestWorkflow
 
-final class TestWorkflow implements Narvalo\IDisposable {
+final class TestWorkflow {
   const
     Start            = 0,
     Header           = 1,
@@ -775,16 +775,11 @@ final class TestWorkflow implements Narvalo\IDisposable {
     End              = 8;
 
   private
-    $_disposed     = \FALSE,
     $_state        = self::Start,
     $_subStates    = array(),
     $_subtestLevel = 0,
     $_tagger       = \NULL,
     $_taggerStack  = array();
-
-  function __destruct() {
-    $this->dispose_(\FALSE);
-  }
 
   function getTagger() {
     return $this->_tagger;
@@ -795,15 +790,9 @@ final class TestWorkflow implements Narvalo\IDisposable {
     return self::Start !== $this->_state && self::End !== $this->_state;
   }
 
-  function dispose() {
-    $this->dispose_(\TRUE);
-  }
-
-  function close() {
-    $this->dispose_(\TRUE);
-  }
-
   function reset() {
+    $this->_checkStateBeforeReset();
+
     $this->_state        = self::Start;
     $this->_subStates    = array();
     $this->_subtestLevel = 0;
@@ -1112,11 +1101,7 @@ final class TestWorkflow implements Narvalo\IDisposable {
     }
   }
 
-  protected function dispose_($_disposing_) {
-    if ($this->_disposed) {
-      return;
-    }
-
+  private function _checkStateBeforeReset() {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid states.
@@ -1129,11 +1114,9 @@ final class TestWorkflow implements Narvalo\IDisposable {
       // Invalid states.
 
     default:
-      Narvalo\Failure::Trigger(\sprintf(
+      throw new TestWorkflowException(\sprintf(
         'The workflow will end in an invalid state: "%s".', $this->_state));
     }
-
-    $this->_disposed = \TRUE;
   }
 }
 

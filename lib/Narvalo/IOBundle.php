@@ -112,9 +112,10 @@ final class File {
 // {{{ FileHandle
 
 class FileHandle implements Narvalo\IDisposable {
+  use Narvalo\Disposable;
+
   private
     $_fh,
-    $_disposed = \FALSE,
     $_canRead  = \FALSE,
     $_canWrite = \FALSE;
 
@@ -128,10 +129,6 @@ class FileHandle implements Narvalo\IDisposable {
     $this->_setFileAccess($_mode_, $_extended_);
   }
 
-  function __destruct() {
-    $this->dispose_(\FALSE);
-  }
-
   function canRead() {
     return $this->_canRead;
   }
@@ -140,12 +137,8 @@ class FileHandle implements Narvalo\IDisposable {
     return $this->_canWrite;
   }
 
-  function dispose() {
-    $this->dispose_(\TRUE);
-  }
-
   function close() {
-    $this->dispose_(\TRUE);
+    $this->dispose();
   }
 
   function endOfFile() {
@@ -181,29 +174,18 @@ class FileHandle implements Narvalo\IDisposable {
     }
   }
 
-  protected function dispose_($_disposing_) {
-    if ($this->_disposed) {
-      return;
-    }
-
-    if ($_disposing_) {
-      if (\NULL !== $this->_fh) {
-        if (\FALSE === \fclose($this->_fh)) {
-          Narvalo\Failure::Trigger('Unable to close the file handle.');
-        }
-
-        $this->_fh = \NULL;
-      }
-    }
-
+  protected function dispose_() {
     $this->_canRead  = \FALSE;
     $this->_canWrite = \FALSE;
-    $this->_disposed = \TRUE;
   }
 
-  protected function throwIfDisposed_() {
-    if ($this->_disposed) {
-      throw new Narvalo\ObjectDisposedException();
+  protected function release_() {
+    if (\NULL !== $this->_fh) {
+      if (\FALSE === \fclose($this->_fh)) {
+        Narvalo\Failure::Trigger('Unable to close the file handle.');
+      }
+
+      $this->_fh = \NULL;
     }
   }
 
@@ -258,17 +240,14 @@ class FileHandle implements Narvalo\IDisposable {
 // {{{ TextWriter
 
 class TextWriter implements Narvalo\IDisposable {
+  use Narvalo\Disposable;
+
   private
     $_handle,
-    $_disposed  = \FALSE,
     $_endOfLine = \PHP_EOL;
 
   function __construct(FileHandle $_handle_) {
     $this->_handle = $_handle_;
-  }
-
-  function __destruct() {
-    $this->dispose_(\FALSE);
   }
 
   static function FromPath($_path_, $_append_) {
@@ -293,35 +272,25 @@ class TextWriter implements Narvalo\IDisposable {
     $this->_endOfLine = $_value_;
   }
 
-  function dispose() {
-    $this->dispose_(\TRUE);
-  }
-
   function close() {
-    $this->dispose_(\TRUE);
+    $this->dispose();
   }
 
   function write($_value_) {
+    $this->throwIfDisposed_();
     return $this->_handle->write($_value_);
   }
 
   function writeLine($_value_) {
+    $this->throwIfDisposed_();
     return $this->_handle->write($_value_ . $this->_endOfLine);
   }
 
-  protected function dispose_($_disposing_) {
-    if ($this->_disposed) {
-      return;
+  protected function dispose_() {
+    if (\NULL !== $this->_handle) {
+      $this->_handle->close();
+      //$this->_handle = \NULL;
     }
-
-    if ($_disposing_) {
-      if (\NULL !== $this->_handle) {
-        $this->_handle->dispose();
-        $this->_handle = \NULL;
-      }
-    }
-
-    $this->_disposed = \TRUE;
   }
 }
 

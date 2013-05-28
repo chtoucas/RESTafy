@@ -31,28 +31,20 @@ define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 
 // {{{ TapStream
 
-class TapStream {
+class TapStream implements Narvalo\IDisposable {
   // FIXME: TapStream should be internal.
+  use Narvalo\Disposable;
 
   private
     $_writer,
-    $_disposed = \FALSE,
     $_indent   = '';
 
   function __construct(IO\TextWriter $_writer_) {
     $this->_writer = $_writer_;
   }
 
-  function __destruct() {
-    $this->dispose_(\FALSE);
-  }
-
-  function dispose() {
-    $this->dispose_(\TRUE);
-  }
-
   function close() {
-    $this->dispose_(\TRUE);
+    $this->dispose();
   }
 
   function reset() {
@@ -67,19 +59,11 @@ class TapStream {
     $this->_unindent();
   }
 
-  protected function dispose_($_disposing_) {
-    if ($this->_disposed) {
-      return;
+  protected function dispose_() {
+    if (\NULL !== $this->_writer) {
+      $this->_writer->close();
+      //$this->_writer = \NULL;
     }
-
-    if ($_disposing_) {
-      if (\NULL !== $this->_writer) {
-        $this->_writer->dispose();
-        $this->_writer = \NULL;
-      }
-    }
-
-    $this->_disposed = \TRUE;
   }
 
   protected function writeTapLine_($_value_) {
