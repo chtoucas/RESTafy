@@ -10,7 +10,6 @@ Narvalo\Test
 * canInclude is broken when there is a compile error.
 * the whole thing break when there is an exit.
 * Interlinked directives and interlaced tags.
-* Test the Test.
 * Comments & doc.
 * Review all FIXME & TODO.
 * Failed include directive produce two error messages.

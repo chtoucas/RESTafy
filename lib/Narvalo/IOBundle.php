@@ -111,7 +111,7 @@ final class File {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ FileHandle
 
-class FileHandle {
+class FileHandle implements Narvalo\IDisposable {
   private
     $_fh,
     $_disposed = \FALSE,
@@ -129,7 +129,7 @@ class FileHandle {
   }
 
   function __destruct() {
-    $this->dispose_(\TRUE);
+    $this->dispose_(\FALSE);
   }
 
   function canRead() {
@@ -140,8 +140,12 @@ class FileHandle {
     return $this->_canWrite;
   }
 
+  function dispose() {
+    $this->dispose_(\TRUE);
+  }
+
   function close() {
-    $this->dispose_(\FALSE);
+    $this->dispose_(\TRUE);
   }
 
   function endOfFile() {
@@ -182,12 +186,16 @@ class FileHandle {
       return;
     }
 
-    if (\FALSE === \fclose($this->_fh)) {
-      Narvalo\Failure::ThrowOrReportInDispose(
-        new IOException('Unable to close the file handle.'), $_disposing_);
+    if ($_disposing_) {
+      if (\NULL !== $this->_fh) {
+        if (\FALSE === \fclose($this->_fh)) {
+          Narvalo\Failure::Trigger('Unable to close the file handle.');
+        }
+
+        $this->_fh = \NULL;
+      }
     }
 
-    $this->_fh       = \NULL;
     $this->_canRead  = \FALSE;
     $this->_canWrite = \FALSE;
     $this->_disposed = \TRUE;
@@ -249,7 +257,7 @@ class FileHandle {
 
 // {{{ TextWriter
 
-class TextWriter {
+class TextWriter implements Narvalo\IDisposable {
   private
     $_handle,
     $_disposed  = \FALSE,
@@ -260,7 +268,7 @@ class TextWriter {
   }
 
   function __destruct() {
-    $this->dispose_(\TRUE);
+    $this->dispose_(\FALSE);
   }
 
   static function FromPath($_path_, $_append_) {
@@ -285,8 +293,12 @@ class TextWriter {
     $this->_endOfLine = $_value_;
   }
 
+  function dispose() {
+    $this->dispose_(\TRUE);
+  }
+
   function close() {
-    $this->dispose_(\FALSE);
+    $this->dispose_(\TRUE);
   }
 
   function write($_value_) {
@@ -303,12 +315,12 @@ class TextWriter {
     }
 
     if ($_disposing_) {
-      $this->_handle->__destruct();
-    } else {
-      $this->_handle->close();
+      if (\NULL !== $this->_handle) {
+        $this->_handle->dispose();
+        $this->_handle = \NULL;
+      }
     }
 
-    $this->_handle   = \NULL;
     $this->_disposed = \TRUE;
   }
 }

@@ -72,6 +72,14 @@ class KeyNotFoundException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ IDisposable
+
+interface IDisposable {
+  function dispose();
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // {{{ ObjectType
 
 final class ObjectType {
@@ -306,12 +314,8 @@ final class DynaLoader {
 // {{{ Failure
 
 final class Failure {
-  static function ThrowOrReportInDispose(\Exception $_ex_, $_disposing_) {
-    if ($_disposing_) {
-      \trigger_error($_ex_->getMessage(), \E_USER_ERROR);
-    } else {
-      throw $_ex_;
-    }
+  static function Trigger($_msg_) {
+    \trigger_error($_msg_, \E_USER_ERROR);
   }
 }
 

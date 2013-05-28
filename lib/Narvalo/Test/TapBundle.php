@@ -8,10 +8,12 @@
 
 namespace Narvalo\Test\Tap;
 
+require_once 'NarvaloBundle.php';
 require_once 'Narvalo/IOBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 
+use \Narvalo;
 use \Narvalo\IO;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
@@ -42,11 +44,15 @@ class TapStream {
   }
 
   function __destruct() {
+    $this->dispose_(\FALSE);
+  }
+
+  function dispose() {
     $this->dispose_(\TRUE);
   }
 
   function close() {
-    $this->dispose_(\FALSE);
+    $this->dispose_(\TRUE);
   }
 
   function reset() {
@@ -67,12 +73,12 @@ class TapStream {
     }
 
     if ($_disposing_) {
-      $this->_writer->__destruct();
-    } else {
-      $this->_writer->close();
+      if (\NULL !== $this->_writer) {
+        $this->_writer->dispose();
+        $this->_writer = \NULL;
+      }
     }
 
-    $this->_writer   = \NULL;
     $this->_disposed = \TRUE;
   }
 

@@ -136,6 +136,7 @@ class TestHarness {
 
 namespace Narvalo\Test\Runner\Internal;
 
+use \Narvalo;
 use \Narvalo\Test\Framework;
 
 // Utilities
@@ -143,9 +144,10 @@ use \Narvalo\Test\Framework;
 
 // {{{ RuntimeErrorCatcher
 
-final class RuntimeErrorCatcher {
+final class RuntimeErrorCatcher implements Narvalo\IDisposable {
   private
     $_producer,
+    $_running  = \FALSE,
     $_disposed = \FALSE;
 
   function __construct(Framework\TestProducer $_producer_) {
@@ -153,6 +155,10 @@ final class RuntimeErrorCatcher {
   }
 
   function __destruct() {
+    $this->dispose_(\FALSE);
+  }
+
+  function dispose() {
     $this->dispose_(\TRUE);
   }
 
@@ -168,16 +174,25 @@ final class RuntimeErrorCatcher {
     // Override the error handler.
     \set_error_handler(
       function($errno , $errstr, $errfile, $errline, $errcontext) use ($producer) {
-        if (\NULL === $producer) {
-          return;
-        }
+        //if (\NULL === $producer) {
+        //  return;
+        //}
         $producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
+
+    $this->_running = \TRUE;
   }
 
   function stop() {
-    $this->dispose_(\FALSE);
+    if (!$this->_running) {
+      throw new Narvalo\InvalidOperationException('XXX');
+    }
+
+    // Restore the error handler.
+    \restore_error_handler();
+
+    $this->_running = \FALSE;
   }
 
   protected function dispose_($_disposing_) {
@@ -185,8 +200,12 @@ final class RuntimeErrorCatcher {
       return;
     }
 
-    // Restore the error handler.
-    \restore_error_handler();
+    if ($this->_running) {
+      // Restore the error handler.
+      \restore_error_handler();
+
+      $this->_running = \FALSE;
+    }
 
     $this->_disposed = \TRUE;
   }
