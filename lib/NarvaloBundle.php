@@ -362,33 +362,6 @@ final class DynaLoader {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ Failure
-
-final class Failure {
-  static function Trigger($_msg_) {
-    \trigger_error($_msg_, \E_USER_ERROR);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Guard
-
-final class Guard {
-  static function NotEmpty($_value_, $_paramName_) {
-    if (empty($_value_)) {
-      throw new ArgumentException($_paramName_, 'Value can not be empty.');
-    }
-  }
-
-  static function NotNull($_value_, $_paramName_) {
-    if (\NULL === $_value_) {
-      throw new ArgumentNullException($_paramName_, 'Value can not be null.');
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // Collections
 // =================================================================================================
 
@@ -612,20 +585,49 @@ final class ConfigurationManager {
 // Diagnostics
 // ================================================================================================
 
+// {{{ Failure
+
+final class Failure {
+  static function Trigger($_msg_) {
+    \trigger_error($_msg_, \E_USER_ERROR);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ Guard
+
+final class Guard {
+  static function NotEmpty($_value_, $_paramName_) {
+    if (empty($_value_)) {
+      throw new ArgumentException($_paramName_, 'Value can not be empty.');
+    }
+  }
+
+  static function NotNull($_value_, $_paramName_) {
+    if (\NULL === $_value_) {
+      throw new ArgumentNullException($_paramName_, 'Value can not be null.');
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // Workflows
 // =================================================================================================
 
 // {{{ StartStopWorkflow_
 
 abstract class StartStopWorkflow_ {
-  private $_active = \FALSE;
+  private
+    $_auto,
+    $_active = \FALSE;
 
-  protected function __construct() {
-    ;
+  protected function __construct($_auto_) {
+    $this->_auto = $_auto_;
   }
 
   function __destruct() {
-    $this->stop_(\TRUE /* stopping */);
+    $this->stop_($this->_auto /* stopping */);
   }
 
   final function start() {
