@@ -161,12 +161,11 @@ final class RuntimeErrorCatcher implements Narvalo\IDisposable {
     // E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
     // E_COMPILE_ERROR, E_COMPILE_WARNING, and most of E_STRICT raised in
     // the file where set_error_handler() is called.
-    $producer = $this->_producer;
 
     // Override the error handler.
     \set_error_handler(
-      function($errno , $errstr, $errfile, $errline, $errcontext) use ($producer) {
-        $producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
+      function($errno , $errstr, $errfile, $errline, $errcontext) {
+        $this->_producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
       }
     );
 

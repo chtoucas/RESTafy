@@ -94,6 +94,8 @@ trait Disposable {
 
   /// Only happens when dispose() is called explicitly.
   /// Dispose all disposable fields in the object, additionally nullify those that it created.
+  /// WARNING: For the safety of your script, this method should NEVER throw or catch
+  /// an exception.
   protected function dispose_() {
     ;
   }
@@ -103,6 +105,8 @@ trait Disposable {
   /// - nullify large fields
   /// - restore ambient context, if changed. For instance, the object might have changed
   ///   the runtime using set_error_handler().
+  /// WARNING: For the safety of your script, this method should NEVER throw or catch
+  /// an exception.
   protected function release_() {
     ;
   }
@@ -325,8 +329,8 @@ final class DynaLoader {
      return eval('return self::TryLoadFile($_path_);');
   }
 
-
-  // Private methods.
+  // Private methods
+  // ---------------
 
   private static function _NameToPath($_name_) {
     return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;

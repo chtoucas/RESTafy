@@ -289,7 +289,6 @@ class TextWriter implements Narvalo\IDisposable {
   protected function dispose_() {
     if (\NULL !== $this->_handle) {
       $this->_handle->close();
-      //$this->_handle = \NULL;
     }
   }
 }

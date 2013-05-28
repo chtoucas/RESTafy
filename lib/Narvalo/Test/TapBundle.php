@@ -62,7 +62,6 @@ class TapStream implements Narvalo\IDisposable {
   protected function dispose_() {
     if (\NULL !== $this->_writer) {
       $this->_writer->close();
-      //$this->_writer = \NULL;
     }
   }
 
