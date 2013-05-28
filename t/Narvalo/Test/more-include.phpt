@@ -6,6 +6,6 @@ use \Narvalo\Test;
 
 $t = new Test\More(1);
 
-$t->canInclude('_fake_include.php', 'Include a file');
+$t->canInclude(__DIR__.'/incs/fake.php', 'Include a file');
 
 // EOF

@@ -108,6 +108,7 @@ class TestHarness {
 
   protected function execute_(\Iterator $_it_) {
     $summary = new TestHarnessSummary();
+    $summary->passed = \TRUE;
 
     foreach ($_it_ as $set) {
       $result = $this->_runner->run($set);
