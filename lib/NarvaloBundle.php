@@ -85,16 +85,16 @@ trait Disposable {
   private $_disposed = \FALSE;
 
   final function __destruct() {
-    $this->_dispose(\FALSE);
+    $this->_dispose(\FALSE /* disposing */);
   }
 
   final function dispose() {
-    $this->_dispose(\TRUE);
+    $this->_dispose(\TRUE /* disposing */);
   }
 
   /// Only happens when dispose() is called explicitly.
   /// Dispose all disposable fields in the object, additionally nullify those that it created.
-  /// WARNING: For the safety of your script, this method should NEVER throw or catch an exception.
+  /// WARNING: This method should NEVER throw or catch an exception.
   protected function dispose_() {
     ;
   }
@@ -102,10 +102,8 @@ trait Disposable {
   /// This method always run when we call dispose() or when the runtime call the destructor.
   /// - release all external resources hold by the object
   /// - nullify large fields
-  /// - restore ambient context, if changed. For instance, the object might have changed
-  ///   the runtime using set_error_handler().
-  /// WARNING: For the safety of your script, this method should NEVER throw or catch an exception.
-  protected function release_() {
+  /// WARNING: This method should NEVER throw or catch an exception.
+  protected function free_() {
     ;
   }
 
@@ -124,7 +122,7 @@ trait Disposable {
       $this->dispose_();
     }
 
-    $this->release_();
+    $this->free_();
 
     $this->_disposed = \TRUE;
   }
@@ -281,6 +279,7 @@ final class Type {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+
 // {{{ DynaLoader
 
 /// WARNING: Only works if the target files do not return FALSE.
@@ -612,6 +611,58 @@ final class ConfigurationManager {
 
 // Diagnostics
 // ================================================================================================
+
+// Workflows
+// =================================================================================================
+
+// {{{ StartStopWorkflow_
+
+abstract class StartStopWorkflow_ {
+  private $_active = \FALSE;
+
+  protected function __construct() {
+    ;
+  }
+
+  function __destruct() {
+    $this->stop_(\TRUE /* stopping */);
+  }
+
+  final function start() {
+    $this->startCore_();
+
+    $this->_active = \TRUE;
+
+    \register_shutdown_function(function() {
+      // In case, something bad happened and the destructor was not called.
+      $this->stop_(\FALSE /* stopping */);
+    });
+  }
+
+  final function stop() {
+    $this->stop_(\TRUE /* stopping */);
+  }
+
+  abstract protected function startCore_();
+
+  /// WARNING: This method should NEVER throw or catch an exception.
+  abstract protected function stopCore_();
+
+  protected function stop_($_stopping_) {
+    if ($this->_active) {
+      $this->stopCore_();
+
+      if ($_stopping_) {
+        $this->_active = \FALSE;
+      } else {
+        Failure::Trigger('XXX stop() is mandatory.');
+      }
+
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // DI container
 // =================================================================================================

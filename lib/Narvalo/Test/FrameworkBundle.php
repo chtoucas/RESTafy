@@ -791,7 +791,7 @@ final class TestWorkflow {
   }
 
   function reset() {
-    $this->_checkStateBeforeReset();
+    $this->_check();
 
     $this->_state        = self::Start;
     $this->_subStates    = array();
@@ -1101,7 +1101,8 @@ final class TestWorkflow {
     }
   }
 
-  private function _checkStateBeforeReset() {
+  // FIXME
+  function _check() {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid states.

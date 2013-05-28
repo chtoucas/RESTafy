@@ -179,7 +179,7 @@ class FileHandle implements Narvalo\IDisposable {
     $this->_canWrite = \FALSE;
   }
 
-  protected function release_() {
+  protected function free_() {
     if (\NULL !== $this->_fh) {
       if (\FALSE === \fclose($this->_fh)) {
         Narvalo\Failure::Trigger('Unable to close the file handle.');

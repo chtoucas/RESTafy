@@ -143,51 +143,31 @@ use \Narvalo\Test\Framework;
 
 // {{{ RuntimeErrorCatcher
 
-final class RuntimeErrorCatcher implements Narvalo\IDisposable {
-  use Narvalo\Disposable;
-
-  private
-    $_producer,
-    $_active = \FALSE;
+final class RuntimeErrorCatcher extends Narvalo\StartStopWorkflow_ {
+  private $_producer;
 
   function __construct(Framework\TestProducer $_producer_) {
     $this->_producer = $_producer_;
   }
 
-  function start() {
-    // Beware one can not catch all type of errors.
+  protected function startCore_() {
+    // We override the error handler, but beware, one can not catch all type of errors.
     // Cf. http://php.net/manual/en/function.set-error-handler.php
     // The following error types cannot be handled with a user defined function:
     // E_ERROR, E_PARSE, E_CORE_ERROR, E_CORE_WARNING,
     // E_COMPILE_ERROR, E_COMPILE_WARNING, and most of E_STRICT raised in
     // the file where set_error_handler() is called.
 
-    // Override the error handler.
     \set_error_handler(
       function($errno , $errstr, $errfile, $errline, $errcontext) {
-        $this->_producer->captureRuntimeError("Error at {$errfile} line {$errline}.\n$errstr");
+        $this->_producer->captureRuntimeError(
+          \sprintf('Error at %s line %s.%s%s', $errfile, $errline, \PHP_EOL, $errstr));
       }
     );
-
-    $this->_active = \TRUE;
-
-    \register_shutdown_function(function() {
-      // In case, something bad appended and the destructor was not called.
-      $this->stop();
-    });
   }
 
-  function stop() {
-    if ($this->_active) {
-      // Restore the error handler.
-      \restore_error_handler();
-
-      $this->_active = \FALSE;
-    }
-  }
-
-  protected function release_() {
-    $this->stop();
+  protected function stopCore_() {
+    \restore_error_handler();
   }
 }
 
