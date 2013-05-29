@@ -102,6 +102,7 @@ trait Disposable {
   /// This method always run when we call dispose() or when the runtime call the destructor.
   /// - release all external resources hold by the object
   /// - nullify large fields
+  /// - reset the state of the object
   /// WARNING: This method should NEVER throw or catch an exception.
   protected function free_() {
     ;
@@ -362,6 +363,24 @@ final class DynaLoader {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ Guard
+
+final class Guard {
+  static function NotEmpty($_value_, $_paramName_) {
+    if (empty($_value_)) {
+      throw new ArgumentException($_paramName_, 'Value can not be empty.');
+    }
+  }
+
+  static function NotNull($_value_, $_paramName_) {
+    if (\NULL === $_value_) {
+      throw new ArgumentNullException($_paramName_, 'Value can not be null.');
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // Collections
 // =================================================================================================
 
@@ -582,85 +601,80 @@ final class ConfigurationManager {
 // Miscs
 // =================================================================================================
 
-// Diagnostics
-// ================================================================================================
+// {{{ StartStop_
 
-// {{{ Failure
-
-final class Failure {
-  static function Trigger($_msg_) {
-    \trigger_error($_msg_, \E_USER_ERROR);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Guard
-
-final class Guard {
-  static function NotEmpty($_value_, $_paramName_) {
-    if (empty($_value_)) {
-      throw new ArgumentException($_paramName_, 'Value can not be empty.');
-    }
-  }
-
-  static function NotNull($_value_, $_paramName_) {
-    if (\NULL === $_value_) {
-      throw new ArgumentNullException($_paramName_, 'Value can not be null.');
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// Workflows
-// =================================================================================================
-
-// {{{ StartStopWorkflow_
-
-abstract class StartStopWorkflow_ {
+abstract class StartStop_ implements IDisposable {
   private
-    $_auto,
-    $_active = \FALSE;
+    $_disposed = \FALSE,
+    $_active   = \FALSE;
 
-  protected function __construct($_auto_) {
-    $this->_auto = $_auto_;
+  protected function __construct() {
+    ;
   }
 
-  function __destruct() {
-    $this->stop_($this->_auto /* stopping */);
+  final function __destruct() {
+    $this->dispose_(\FALSE /* disposing */);
   }
 
   final function start() {
+    if ($this->_disposed) {
+      $this->reopen();
+    }
+
+    if ($this->_active) {
+      throw new InvalidOperationException(
+        \sprintf('You can not start an already running "%s" object.', __CLASS__));
+    }
+
     $this->startCore_();
 
     $this->_active = \TRUE;
 
-    \register_shutdown_function(function() {
-      // In case, something bad happened and the destructor was not called.
-      $this->stop_(\FALSE /* stopping */);
-    });
+//    \register_shutdown_function(function() {
+//      // In case, something bad happened and the destructor was not called.
+//      $this->dispose_(\FALSE /* stopping */);
+//    });
   }
 
   final function stop() {
-    $this->stop_(\TRUE /* stopping */);
+    $this->_stop(\TRUE /* stopping */);
+  }
+
+  final function dispose() {
+    $this->dispose_(\TRUE /* disposing */);
   }
 
   abstract protected function startCore_();
 
-  /// WARNING: This method should NEVER throw or catch an exception.
   abstract protected function stopCore_();
 
-  protected function stop_($_stopping_) {
+  protected function reopen() {
+    $this->_disposed = \FALSE;
+  }
+
+  private function _stop($_stopping_) {
     if ($this->_active) {
       $this->stopCore_();
+      $this->_active = \FALSE;
 
-      if ($_stopping_) {
-        $this->_active = \FALSE;
-      } else {
-        Failure::Trigger('XXX stop() is mandatory.');
+      if (!$_stopping_) {
+        \trigger_error(
+          \sprintf(
+            'Running "%s" forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
+            __CLASS__),
+          \E_USER_WARNING);
       }
-
     }
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
+    $this->_stop($_disposing_ /* stopping */);
+
+    $this->_disposed = \TRUE;
   }
 }
 
