@@ -612,10 +612,9 @@ abstract class StartStop_ {
 
   function __destruct() {
     if ($this->_running) {
-      \error_log(
-        \sprintf(
-          'Running "%s" forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
-          \get_class($this)));
+      \error_log(\sprintf(
+        '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
+        \get_class($this)));
     }
   }
 
@@ -626,7 +625,7 @@ abstract class StartStop_ {
   final function start() {
     if ($this->_running) {
       throw new InvalidOperationException(
-        \sprintf('You can not start a running "%s" object.', __CLASS__));
+        \sprintf('You can not start an already running %s.', \get_class($this)));
     }
 
     $this->startCore_();

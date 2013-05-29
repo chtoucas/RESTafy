@@ -777,11 +777,11 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     End              = 8;
 
   private
-    $_state        = self::Start,
-    $_subStates    = array(),
-    $_subtestLevel = 0,
-    $_tagger       = \NULL,
-    $_taggerStack  = array();
+    $_state,
+    $_subStates,
+    $_subtestLevel,
+    $_tagger,
+    $_taggerStack;
 
   function __construct() {
     ;
@@ -799,8 +799,9 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     } else {
       // Invalid states.
 
-      throw new TestWorkflowException(
-        \sprintf('The header must come first. Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'The header must come first. Invalid workflow state: "%s".',
+        self::_GetStateName($this->_state)));
     }
   }
 
@@ -824,14 +825,14 @@ final class TestWorkflow extends Narvalo\StartStop_ {
       //    case self::Header:
       //      throw new TestWorkflowException('The workflow will end prematurely.');
     default:
-      throw new TestWorkflowException(
-        \sprintf('Can not enter footer. The workflow will end in an invalid state: "%s".',
-        $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Can not enter footer. The workflow will end in an invalid state: "%s".',
+        self::_GetStateName($this->_state)));
     }
     // Check subtests' level.
     if (0 !== $this->_subtestLevel) {
-      throw new TestWorkflowException(
-        \sprintf('There is still "%s" opened subtest in the workflow.', $this->_subtestLevel));
+      throw new TestWorkflowException(\sprintf(
+        'There is still "%s" opened subtest in the workflow.', $this->_subtestLevel));
     }
     // Is any tag left opened?
     if (\NULL !== $this->_tagger) {
@@ -865,7 +866,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::BailOut:
       throw new TestWorkflowException('You can not start a subtest after bailing out.');
     default:
-      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
     }
 
     // FIXME: Reset tag stack?
@@ -909,7 +911,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::BailOut:
       throw new TestWorkflowException('You can not start a tag after bailing out.');
     default:
-      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
     }
     // Keep the upper-level directive in memory.
     if (\NULL === $this->_tagger) {
@@ -951,14 +954,16 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::DynamicPlanDecl:
     case self::StaticPlanDecl:
     case self::StaticPlanTests:
-      throw new TestWorkflowException(
-        \sprintf('You can not plan twice. Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'You can not plan twice. Invalid workflow state: "%s".',
+        self::_GetStateName($this->_state)));
     case self::SkipAll:
       throw new TestWorkflowException('You can not plan and skip all tests at the same time.');
     case self::BailOut:
       throw new TestWorkflowException('You can not plan after bailing out.');
     default:
-      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
     }
   }
 
@@ -982,16 +987,16 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::DynamicPlanDecl:
     case self::StaticPlanDecl:
     case self::StaticPlanTests:
-      throw new TestWorkflowException(
-        \sprintf('Unable to skip all tests: you already made a plan. Invalid workflow state: "%s".',
-        $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Unable to skip all tests: you already made a plan. Invalid workflow state: "%s".',
+        self::_GetStateName($this->_state)));
     case self::SkipAll:
       throw new TestWorkflowException('You already asked to skip all tests.');
     case self::BailOut:
       throw new TestWorkflowException('You can not skip all tests after bailing out.');
     default:
-      throw new TestWorkflowException(
-        \sprintf('Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
     }
   }
 
@@ -1028,7 +1033,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::BailOut:
       throw new TestWorkflowException('You can not register a test after bailing out.');
     default:
-      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
     }
   }
 
@@ -1054,7 +1060,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::BailOut:
       throw new TestWorkflowException('You can not bail out twice.');
     default:
-      throw new TestWorkflowException(\sprintf('Invalid workflow state: "%s".', $this->_state));
+      throw new TestWorkflowException(\sprintf(
+        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
     }
   }
 
@@ -1105,14 +1112,6 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   //  return self::Start !== $this->_state && self::End !== $this->_state;
   //}
 
-  //  function reset() {
-  //    $this->_state        = \NULL;
-  //    $this->_subStates    = array();
-  //    $this->_subtestLevel = 0;
-  //    $this->_tagger       = \NULL;
-  //    $this->_taggerStack  = array();
-  //  }
-
   protected function stopCore_() {
     // Check workflow's state.
     switch ($this->_state) {
@@ -1127,7 +1126,33 @@ final class TestWorkflow extends Narvalo\StartStop_ {
 
     default:
       throw new TestWorkflowException(\sprintf(
-        'The workflow will end in an invalid state: "%s".', $this->_state));
+        'The workflow will end in an invalid state: "%s".', 
+        self::_GetStateName($this->_state)));
+    }
+  }
+
+  private function _GetStateName() {
+    switch ($_state_) {
+    case self::Start:
+      return 'Start';
+    case self::Header:
+      return 'Header';
+    case self::StaticPlanDecl:
+      return 'StaticPlanDecl';
+    case self::DynamicPlanTests:
+      return 'DynamicPlanTests';
+    case self::DynamicPlanDecl:
+      return 'DynamicPlanDecl';
+    case self::StaticPlanTests:
+      return 'StaticPlanTests';
+    case self::SkipAll:
+      return 'SkipAll';
+    case self::BailOut:
+      return 'BailOut';
+    case self::End:
+      return 'End';
+    default:
+      return 'Unknown state';
     }
   }
 }
