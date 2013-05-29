@@ -603,79 +603,44 @@ final class ConfigurationManager {
 
 // {{{ StartStop_
 
-abstract class StartStop_ implements IDisposable {
-  private
-    $_disposed = \FALSE,
-    $_active   = \FALSE;
+abstract class StartStop_ {
+  private $_active = \FALSE;
 
   protected function __construct() {
     ;
   }
 
-  final function __destruct() {
-    $this->dispose_(\FALSE /* disposing */);
+  function __destruct() {
+    if ($this->_active) {
+      \trigger_error(
+        \sprintf(
+          'Running "%s" forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
+          __CLASS__),
+        \E_USER_WARNING);
+    }
   }
 
   final function start() {
-    if ($this->_disposed) {
-      $this->reopen();
-    }
-
     if ($this->_active) {
       throw new InvalidOperationException(
-        \sprintf('You can not start an already running "%s" object.', __CLASS__));
+        \sprintf('You can not start a running "%s" object.', __CLASS__));
     }
 
     $this->startCore_();
 
     $this->_active = \TRUE;
-
-//    \register_shutdown_function(function() {
-//      // In case, something bad happened and the destructor was not called.
-//      $this->dispose_(\FALSE /* stopping */);
-//    });
   }
 
   final function stop() {
-    $this->_stop(\TRUE /* stopping */);
-  }
-
-  final function dispose() {
-    $this->dispose_(\TRUE /* disposing */);
+    if ($this->_active) {
+      $this->stopCore_();
+      $this->_active = \FALSE;
+    }
   }
 
   abstract protected function startCore_();
 
   abstract protected function stopCore_();
-
-  protected function reopen() {
-    $this->_disposed = \FALSE;
-  }
-
-  private function _stop($_stopping_) {
-    if ($this->_active) {
-      $this->stopCore_();
-      $this->_active = \FALSE;
-
-      if (!$_stopping_) {
-        \trigger_error(
-          \sprintf(
-            'Running "%s" forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
-            __CLASS__),
-          \E_USER_WARNING);
-      }
-    }
-  }
-
-  protected function dispose_($_disposing_) {
-    if ($this->_disposed) {
-      return;
-    }
-
-    $this->_stop($_disposing_ /* stopping */);
-
-    $this->_disposed = \TRUE;
-  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------

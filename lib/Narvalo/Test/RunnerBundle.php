@@ -150,6 +150,12 @@ final class RuntimeErrorCatcher extends Narvalo\StartStop_ {
     $this->_producer = $_producer_;
   }
 
+  function __destruct() {
+    $this->stopCore_();
+
+    parent::__destruct();
+  }
+
   protected function startCore_() {
     // We override the error handler, but beware, one can not catch all type of errors.
     // Cf. http://php.net/manual/en/function.set-error-handler.php

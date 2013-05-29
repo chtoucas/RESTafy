@@ -18,7 +18,9 @@ function bootstrap() {
   $producer->startup();
 
   \register_shutdown_function(function() use ($producer) {
-    $producer->shutdown();
+    if (\NULL !== $producer) {
+      $producer->shutdown();
+    }
   });
 }
 
