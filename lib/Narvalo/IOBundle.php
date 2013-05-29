@@ -182,7 +182,7 @@ class FileHandle implements Narvalo\IDisposable {
   protected function free_() {
     if (\NULL !== $this->_fh) {
       if (\FALSE === \fclose($this->_fh)) {
-        \trigger_error('Unable to close the file handle.', \E_USER_WARNING);
+        \error_log('Unable to close the file handle.');
       }
 
       $this->_fh = \NULL;

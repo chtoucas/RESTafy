@@ -604,37 +604,40 @@ final class ConfigurationManager {
 // {{{ StartStop_
 
 abstract class StartStop_ {
-  private $_active = \FALSE;
+  private $_running = \FALSE;
 
   protected function __construct() {
     ;
   }
 
   function __destruct() {
-    if ($this->_active) {
-      \trigger_error(
+    if ($this->_running) {
+      \error_log(
         \sprintf(
           'Running "%s" forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
-          __CLASS__),
-        \E_USER_WARNING);
+          \get_class($this)));
     }
   }
 
+  function running() {
+    return $this->_running;
+  }
+
   final function start() {
-    if ($this->_active) {
+    if ($this->_running) {
       throw new InvalidOperationException(
         \sprintf('You can not start a running "%s" object.', __CLASS__));
     }
 
     $this->startCore_();
 
-    $this->_active = \TRUE;
+    $this->_running = \TRUE;
   }
 
   final function stop() {
-    if ($this->_active) {
+    if ($this->_running) {
       $this->stopCore_();
-      $this->_active = \FALSE;
+      $this->_running = \FALSE;
     }
   }
 

@@ -253,7 +253,7 @@ class TestProducer {
   }
 
   final function startup() {
-    $this->_addHeader();
+    $this->_start();
 
     $this->startupCore_();
   }
@@ -261,7 +261,7 @@ class TestProducer {
   final function shutdown() {
     if (!$this->_interrupted) {
       $this->_endTestResultSet();
-      $this->_addFooter();
+      $this->_stop();
     }
 
     $this->shutdownCore_();
@@ -276,7 +276,7 @@ class TestProducer {
   function bailOutOnException(\Exception $_ex_) {
     $this->_bailedOut = \TRUE;
     $this->_addBailOut($_ex_->getMessage());
-    $this->_addFooter();
+    $this->_stop();
     $this->_bailOutInterrupt(\FALSE);
   }
 
@@ -291,14 +291,14 @@ class TestProducer {
   function skipAll($_reason_) {
     $this->_set = new _\EmptyTestResultSet();
     $this->_addSkipAll($_reason_);
-    $this->_addFooter();
+    $this->_stop();
     $this->_skipAllInterrupt();
   }
 
   function bailOut($_reason_) {
     $this->_bailedOut = \TRUE;
     $this->_addBailOut($_reason_);
-    $this->_addFooter();
+    $this->_stop();
     $this->_bailOutInterrupt();
   }
 
@@ -307,7 +307,7 @@ class TestProducer {
       throw new Narvalo\ArgumentException(
         'how_many',
         \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
-          $_how_many_));
+        $_how_many_));
     }
     $this->_set = new _\FixedSizeTestResultSet($this->_errStream, $_how_many_);
     $this->_addPlan($_how_many_);
@@ -439,7 +439,7 @@ class TestProducer {
     $this->_interrupted        = \FALSE;
     $this->_errStream->reset();
     $this->_outStream->reset();
-    $this->_workflow->reset();
+    //$this->_workflow->reset();
   }
 
   // Producer interrupts
@@ -468,13 +468,15 @@ class TestProducer {
   // Core methods
   // ------------
 
-  private function _addHeader() {
+  private function _start() {
+    $this->_workflow->start();
     $this->_workflow->enterHeader();
     $this->_outStream->writeHeader();
   }
 
-  private function _addFooter() {
+  private function _stop() {
     $this->_workflow->enterFooter();
+    $this->_workflow->stop();
     $this->_outStream->writeFooter();
   }
 
@@ -679,7 +681,7 @@ final class DynamicTestResultSet extends TestResultSet_ {
         $s = $failures_count > 1 ? 's' : '';
         $errStream->write(
           \sprintf('Looks like you failed %s test%s of %s run.',
-            $failures_count, $s, $tests_count));
+          $failures_count, $s, $tests_count));
       }
       $errStream->write('No plan!');
     } else {
@@ -731,7 +733,7 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
         $s = $this->_length > 1 ? 's' : '';
         $errStream->write(
           \sprintf('Looks like you planned %s test%s but ran %s.',
-            $this->_length, $s, $tests_count));
+          $this->_length, $s, $tests_count));
       }
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
@@ -739,7 +741,7 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
         $qualifier = 0 == $extras_count ? '' : ' run';
         $errStream->write(
           \sprintf('Looks like you failed %s test%s of %s%s.',
-            $failures_count, $s, $tests_count, $qualifier));
+          $failures_count, $s, $tests_count, $qualifier));
       }
     } else {
       // No tests run.
@@ -761,7 +763,7 @@ class TestWorkflowException extends Narvalo\Exception { }
 
 // {{{ TestWorkflow
 
-final class TestWorkflow {
+final class TestWorkflow extends Narvalo\StartStop_ {
   const
     Start            = 0,
     Header           = 1,
@@ -781,23 +783,12 @@ final class TestWorkflow {
     $_tagger       = \NULL,
     $_taggerStack  = array();
 
+  function __construct() {
+    ;
+  }
+
   function getTagger() {
     return $this->_tagger;
-  }
-
-  function running() {
-    // TODO: Check this.
-    return self::Start !== $this->_state && self::End !== $this->_state;
-  }
-
-  function reset() {
-    $this->_check();
-
-    $this->_state        = self::Start;
-    $this->_subStates    = array();
-    $this->_subtestLevel = 0;
-    $this->_tagger       = \NULL;
-    $this->_taggerStack  = array();
   }
 
   function enterHeader() {
@@ -835,7 +826,7 @@ final class TestWorkflow {
     default:
       throw new TestWorkflowException(
         \sprintf('Can not enter footer. The workflow will end in an invalid state: "%s".',
-          $this->_state));
+        $this->_state));
     }
     // Check subtests' level.
     if (0 !== $this->_subtestLevel) {
@@ -993,7 +984,7 @@ final class TestWorkflow {
     case self::StaticPlanTests:
       throw new TestWorkflowException(
         \sprintf('Unable to skip all tests: you already made a plan. Invalid workflow state: "%s".',
-          $this->_state));
+        $this->_state));
     case self::SkipAll:
       throw new TestWorkflowException('You already asked to skip all tests.');
     case self::BailOut:
@@ -1101,8 +1092,28 @@ final class TestWorkflow {
     }
   }
 
-  // FIXME
-  function _check() {
+  protected function startCore_() {
+    $this->_state        = self::Start;
+    $this->_subStates    = array();
+    $this->_subtestLevel = 0;
+    $this->_tagger       = \NULL;
+    $this->_taggerStack  = array();
+  }
+
+  //function running() {
+  //  // TODO: Check this.
+  //  return self::Start !== $this->_state && self::End !== $this->_state;
+  //}
+
+  //  function reset() {
+  //    $this->_state        = \NULL;
+  //    $this->_subStates    = array();
+  //    $this->_subtestLevel = 0;
+  //    $this->_tagger       = \NULL;
+  //    $this->_taggerStack  = array();
+  //  }
+
+  protected function stopCore_() {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid states.
