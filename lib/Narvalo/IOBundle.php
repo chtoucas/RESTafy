@@ -278,12 +278,10 @@ class TextWriter implements Narvalo\IDisposable {
   }
 
   function write($_value_) {
-    $this->throwIfDisposed_();
     return $this->_handle->write($_value_);
   }
 
   function writeLine($_value_) {
-    $this->throwIfDisposed_();
     return $this->_handle->write($_value_ . $this->_endOfLine);
   }
 

@@ -294,7 +294,7 @@ final class DynaLoader {
     FileExtension      = '.php';
 
   static function LoadAndEvaluateFile($_path_) {
-     eval('self::LoadFile($_path_);');
+    eval('self::LoadFile($_path_);');
   }
 
   static function LoadFile($_path_) {
@@ -328,7 +328,7 @@ final class DynaLoader {
   }
 
   static function TryLoadAndEvaluateFile($_path_) {
-     return eval('return self::TryLoadFile($_path_);');
+    return eval('return self::TryLoadFile($_path_);');
   }
 
   // Private methods
@@ -388,8 +388,6 @@ final class Guard {
 // Diagnostics
 // =================================================================================================
 
-define('LOGGER_LEVEL_DEFAULT', LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice);
-
 // {{{ ILogger
 
 interface ILogger {
@@ -447,7 +445,7 @@ abstract class Logger_ implements ILogger {
   abstract protected function log_($_level_, $_msg_);
 
   function debug($_msg_) {
-    if (!$this->isLevelEnabled_(LoggerLevel::Debug)) {
+    if (!$this->isEnabled_(LoggerLevel::Debug)) {
       return;
     }
 
@@ -455,7 +453,7 @@ abstract class Logger_ implements ILogger {
   }
 
   function error($_msg_) {
-    if (!$this->isLevelEnabled_(LoggerLevel::Error)) {
+    if (!$this->isEnabled_(LoggerLevel::Error)) {
       return;
     }
 
@@ -463,7 +461,7 @@ abstract class Logger_ implements ILogger {
   }
 
   function notice($_msg_) {
-    if (!$this->isLevelEnabled_(LoggerLevel::Notice)) {
+    if (!$this->isEnabled_(LoggerLevel::Notice)) {
       return;
     }
 
@@ -471,14 +469,14 @@ abstract class Logger_ implements ILogger {
   }
 
   function warn($_msg_) {
-    if (!$this->isLevelEnabled_(LoggerLevel::Warning)) {
+    if (!$this->isEnabled_(LoggerLevel::Warning)) {
       return;
     }
 
     $this->log_(LoggerLevel::Warning, $_msg_);
   }
 
-  protected function isLevelEnabled_($_level_) {
+  protected function isEnabled_($_level_) {
     return ($_level_ & $this->_level) === $_level_;
   }
 }
@@ -487,7 +485,7 @@ abstract class Logger_ implements ILogger {
 // {{{ StandardLogger
 
 class StandardLogger extends Logger_ {
-  function __construct($_level_ = \LOGGER_LEVEL_DEFAULT) {
+  function __construct($_level_) {
     parent::__construct($_level_);
   }
 
@@ -504,28 +502,32 @@ final class Log {
   private static $_Logger;
 
   static function SetLogger(ILogger $_logger_) {
+    if (\NULL !== self::$_Logger) {
+      throw new InvalidOperationException('XXX');
+    }
     self::$_Logger = $_logger_;
   }
 
   static function Debug($_msg_) {
-    self::GetLogger_()->debug($_msg_);
+    self::_GetLogger()->debug($_msg_);
   }
 
   static function Error($_msg_) {
-    self::GetLogger_()->error($_msg_);
+    self::_GetLogger()->error($_msg_);
   }
 
   static function Warning($_msg_) {
-    self::GetLogger_()->warn($_msg_);
+    self::_GetLogger()->warn($_msg_);
   }
 
   static function Notice($_msg_) {
-    self::GetLogger_()->notice($_msg_);
+    self::_GetLogger()->notice($_msg_);
   }
 
-  protected static function GetLogger_() {
+  private static function _GetLogger() {
     if (\NULL === self::$_Logger) {
-      self::$_Logger = new StandardLogger();
+      self::SetLogger(new StandardLogger(
+        LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice));
     }
     return self::$_Logger;
   }
