@@ -37,7 +37,7 @@ class TapStream implements Narvalo\IDisposable {
 
   private
     $_writer,
-    $_indent   = '';
+    $_indent = '';
 
   function __construct(IO\TextWriter $_writer_) {
     $this->_writer = $_writer_;
@@ -66,7 +66,7 @@ class TapStream implements Narvalo\IDisposable {
   }
 
   protected function writeTapLine_($_value_) {
-    return $this->_writer->writeLine($this->_indent . $_value_);
+    $this->_writer->writeLine($this->_indent . $_value_);
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
@@ -106,7 +106,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
 
   function writeHeader() {
     if (self::Version > 12) {
-      return $this->writeTapLine_(\sprintf('TAP version %s', self::Version));
+      $this->writeTapLine_(\sprintf('TAP version %s', self::Version));
     }
   }
 
@@ -115,11 +115,11 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
   }
 
   function writePlan($_num_of_tests_) {
-    return $this->writeTapLine_('1..' . $_num_of_tests_);
+    $this->writeTapLine_('1..' . $_num_of_tests_);
   }
 
   function writeSkipAll($_reason_) {
-    return $this->writeTapLine_('1..0 skip ' . self::_FormatReason($_reason_));
+    $this->writeTapLine_('1..0 skip ' . self::_FormatReason($_reason_));
   }
 
   function writeTestCaseResult(Framework\TestCaseResult $_test_, $_number_) {
@@ -129,7 +129,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
     } else {
       $line = \sprintf('%s %d', $status, $_number_);
     }
-    return $this->writeTapLine_($line);
+    $this->writeTapLine_($line);
   }
 
   function writeAlteredTestCaseResult(Framework\AlteredTestCaseResult $_test_, $_number_) {
@@ -140,18 +140,18 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
     } else {
       $line = \sprintf('ok %d # %s %s', $_number_, $_test_->getAlterationName(), $reason);
     }
-    return $this->writeTapLine_($line);
+    $this->writeTapLine_($line);
   }
 
   function writeBailOut($_reason_) {
-    return $this->writeTapLine_('Bail out! ' . self::_FormatReason($_reason_));
+    $this->writeTapLine_('Bail out! ' . self::_FormatReason($_reason_));
   }
 
   function writeComment($_comment_) {
     if (!$this->_verbose) {
       return;
     }
-    return $this->writeTapLine_($this->formatMultiLine_('# ', $_comment_));
+    $this->writeTapLine_($this->formatMultiLine_('# ', $_comment_));
   }
 
   private static function _FormatDescription($_desc_) {
@@ -182,12 +182,23 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
 // {{{ TapErrStream
 
 final class TapErrStream extends TapStream implements Framework\ITestErrStream {
+  protected $_disposed = \FALSE;
+
   static function GetDefault() {
     return new self(IO\TextWriter::GetStandardOutput());
   }
 
   function write($_value_) {
-    return $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
+    if ($this->_disposed) {
+      // We want to make sure we do not lose any error message.
+      Narvalo\Log::Error($_value_);
+    } else {
+      $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
+    }
+  }
+
+  protected function free_() {
+    $this->_disposed = \TRUE;
   }
 }
 
