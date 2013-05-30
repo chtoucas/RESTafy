@@ -151,8 +151,9 @@ final class RuntimeErrorCatcher extends Narvalo\StartStop_ {
   }
 
   function __destruct() {
+    // If not already done, we restore the original error handler.
+    // NB: No need to call the parent __destruct().
     $this->stop();
-    parent::__destruct();
   }
 
   protected function startCore_() {
