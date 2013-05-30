@@ -388,6 +388,18 @@ final class Guard {
 // Diagnostics
 // =================================================================================================
 
+define('LOGGER_LEVEL_DEFAULT', LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice);
+
+// {{{ ILogger
+
+interface ILogger {
+  function debug($_msg_);
+  function error($_msg_);
+  function notice($_msg_);
+  function warn($_msg_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ LoggerLevel
 
 final class LoggerLevel {
@@ -415,8 +427,72 @@ final class LoggerLevel {
     case self::Debug:
       return 'Debug';
     default:
-      return 'Unknown logger level.';
+      // FIXME: Is it wise to throw inside a logger?!
+      throw new ArgumentException('XXX');
     }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ Logger_
+
+abstract class Logger_ implements ILogger {
+  private $_level;
+
+  protected function __construct($_level_) {
+    $this->_level = $_level_;
+  }
+
+  abstract protected function log_($_level_, $_msg_);
+
+  function debug($_msg_) {
+    if (!$this->isLevelEnabled_(LoggerLevel::Debug)) {
+      return;
+    }
+
+    $this->log_(LoggerLevel::Debug, $_msg_);
+  }
+
+  function error($_msg_) {
+    if (!$this->isLevelEnabled_(LoggerLevel::Error)) {
+      return;
+    }
+
+    $this->log_(LoggerLevel::Error, $_msg_);
+  }
+
+  function notice($_msg_) {
+    if (!$this->isLevelEnabled_(LoggerLevel::Notice)) {
+      return;
+    }
+
+    $this->log_(LoggerLevel::Notice, $_msg_);
+  }
+
+  function warn($_msg_) {
+    if (!$this->isLevelEnabled_(LoggerLevel::Warning)) {
+      return;
+    }
+
+    $this->log_(LoggerLevel::Warning, $_msg_);
+  }
+
+  protected function isLevelEnabled_($_level_) {
+    return ($_level_ & $this->_level) === $_level_;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ StandardLogger
+
+class StandardLogger extends Logger_ {
+  function __construct($_level_ = \LOGGER_LEVEL_DEFAULT) {
+    parent::__construct($_level_);
+  }
+
+  protected function log_($_level_, $_msg_) {
+    \error_log(\sprintf('[%s] %s', LoggerLevel::ToString($_level_), $_msg_));
   }
 }
 
@@ -425,26 +501,33 @@ final class LoggerLevel {
 // {{{ Log
 
 final class Log {
-  //static $Level = LoggerLevel::Warning | LoggerLevel::Error | LoggerLevel::Alert;
+  private static $_Logger;
 
-  static function Error($_msg_) {
-    self::_Log(LoggerLevel::Error, $_msg_);
-  }
-
-  static function Warning($_msg_) {
-    self::_Log(LoggerLevel::Warning, $_msg_);
-  }
-
-  static function Notice($_msg_) {
-    self::_Log(LoggerLevel::Notice, $_msg_);
+  static function SetLogger(ILogger $_logger_) {
+    self::$_Logger = $_logger_;
   }
 
   static function Debug($_msg_) {
-    self::_Log(LoggerLevel::Debug, $_msg_);
+    self::GetLogger_()->debug($_msg_);
   }
 
-  private static function _Log($_level_, $_msg_) {
-    \error_log(\sprintf('[%s] %s', LoggerLevel::ToString($_level_), $_msg_));
+  static function Error($_msg_) {
+    self::GetLogger_()->error($_msg_);
+  }
+
+  static function Warning($_msg_) {
+    self::GetLogger_()->warn($_msg_);
+  }
+
+  static function Notice($_msg_) {
+    self::GetLogger_()->notice($_msg_);
+  }
+
+  protected static function GetLogger_() {
+    if (\NULL === self::$_Logger) {
+      self::$_Logger = new StandardLogger();
+    }
+    return self::$_Logger;
   }
 }
 

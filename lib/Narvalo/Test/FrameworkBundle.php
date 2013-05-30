@@ -1154,7 +1154,7 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     }
   }
 
-  private function _GetStateName() {
+  private static function _GetStateName($_state_) {
     switch ($_state_) {
     case self::Start:
       return 'Start';
@@ -1175,7 +1175,7 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::End:
       return 'End';
     default:
-      return 'Unknown state.';
+      throw new Narvalo\ArgumentException('state', 'Unknown state.');
     }
   }
 }
