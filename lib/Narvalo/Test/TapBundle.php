@@ -276,7 +276,8 @@ final class TapHarnessStream implements Runner\ITestHarnessStream {
 class TapProducer extends Framework\TestProducer {
   const
     SuccessCode = 0,
-    FailureCode = 255;
+    // NB: TAP expects 255 but this is a reserved code for PHP.
+    FailureCode = 254;
 
   function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
     parent::__construct($_outStream_, $_errStream_);
