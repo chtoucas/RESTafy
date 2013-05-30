@@ -1175,7 +1175,7 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     case self::End:
       return 'End';
     default:
-      return 'Unknown state';
+      return 'Unknown state.';
     }
   }
 }

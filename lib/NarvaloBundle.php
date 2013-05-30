@@ -211,6 +211,10 @@ class TypeName {
 // {{{ Type
 
 final class Type {
+  static function Of($_obj_) {
+    return \get_class($_obj_);
+  }
+
   /// Return the datatype of $_value_
   ///
   /// Why create our own function? There is already gettype!
@@ -376,6 +380,80 @@ final class Guard {
     if (\NULL === $_value_) {
       throw new ArgumentNullException($_paramName_, 'Value can not be null.');
     }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// Diagnostics
+// =================================================================================================
+
+// {{{ LoggerLevel
+
+final class LoggerLevel {
+  const
+    None      = 0x00,
+    /// Immediat action required.
+    Alert     = 0x02,
+    /// Something wrong happened.
+    Error     = 0x04,
+    Warning   = 0x08,
+    Notice    = 0x16,
+    Debug     = 0x32;
+
+  private function __construct() {
+    ;
+  }
+
+  static function ToString($_level_) {
+    switch ($_level_) {
+    case self::None:
+      return 'None';
+    case self::Alert:
+      return 'Alert';
+    case self::Error:
+      return 'Error';
+    case self::Warning:
+      return 'Warning';
+    case self::Notice:
+      return 'Notice';
+    case self::Debug:
+      return 'Debug';
+    default:
+      return 'Unknown logger level.';
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ Logger
+
+final class Logger {
+  //static $Level = LoggerLevel::Warning | LoggerLevel::Error | LoggerLevel::Alert;
+
+  static function Alert($_msg_) {
+    self::_Log(LoggerLevel::Alert, $_msg_);
+  }
+
+  static function Error($_msg_) {
+    self::_Log(LoggerLevel::Error, $_msg_);
+  }
+
+  static function Warning($_msg_) {
+    self::_Log(LoggerLevel::Warning, $_msg_);
+  }
+
+  static function Notice($_msg_) {
+    self::_Log(LoggerLevel::Notice, $_msg_);
+  }
+
+  static function Debug($_msg_) {
+    self::_Log(LoggerLevel::Debug, $_msg_);
+  }
+
+  private static function _Log($_level_, $_msg_) {
+    \error_log(\sprintf('[%s] %s', LoggerLevel::ToString($_level_), $_msg_));
   }
 }
 
@@ -598,19 +676,6 @@ final class ConfigurationManager {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// Diagnostics
-// =================================================================================================
-
-// {{{ Logger
-
-final class Logger {
-  static function Log($_msg_) {
-    \error_log($_msg_);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // Miscs
 // =================================================================================================
 
@@ -625,9 +690,9 @@ abstract class StartStop_ {
 
   function __destruct() {
     if ($this->_running) {
-      Logger::Log(\sprintf(
+      Logger::Warning(\sprintf(
         '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
-        \get_class($this)));
+        Type::Of($this)));
     }
   }
 
@@ -638,7 +703,7 @@ abstract class StartStop_ {
   final function start() {
     if ($this->_running) {
       throw new InvalidOperationException(
-        \sprintf('You can not start an already running %s.', \get_class($this)));
+        \sprintf('You can not start an already running %s.', Type::Of($this)));
     }
 
     $this->startCore_();
@@ -660,7 +725,7 @@ abstract class StartStop_ {
   protected function throwIfStopped_() {
     if (!$this->_running) {
       throw new InvalidOperationException(
-        \sprintf('%s stopped. You forget to call start()?', \get_class($this)));
+        \sprintf('%s stopped. You forget to call start()?', Type::Of($this)));
     }
   }
 }
