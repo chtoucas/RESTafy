@@ -174,19 +174,17 @@ class FileHandle implements Narvalo\IDisposable {
     }
   }
 
-  protected function dispose_() {
-    $this->_canRead  = \FALSE;
-    $this->_canWrite = \FALSE;
-  }
-
   protected function free_() {
     if (\NULL !== $this->_fh) {
       if (\FALSE === \fclose($this->_fh)) {
-        Logger::Error('Unable to close the file handle.');
+        Narvalo\Log::Warning('Unable to close the file handle.');
       }
 
       $this->_fh = \NULL;
     }
+
+    $this->_canRead  = \FALSE;
+    $this->_canWrite = \FALSE;
   }
 
   // Private methods
