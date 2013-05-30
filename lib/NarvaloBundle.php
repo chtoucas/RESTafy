@@ -304,8 +304,8 @@ final class DynaLoader {
     FileExtension      = '.php';
 
   /// WARNING: Does not work with includes that return FALSE.
-  static function LoadFile($_path_) {
-    if (!self::TryLoadFile($_path_)) {
+  static function IncludeFile($_path_) {
+    if (!self::TryIncludeFile($_path_)) {
       throw new RuntimeException(\sprintf('Unable to load the file: "%s".', $_path_));
     }
   }
@@ -329,7 +329,7 @@ final class DynaLoader {
   }
 
   /// WARNING: Does not work with includes that return FALSE.
-  static function TryLoadFile($_path_) {
+  static function TryIncludeFile($_path_) {
     return self::_TryIncludeFile(self::_NormalizePath($_path_));
   }
 
