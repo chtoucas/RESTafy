@@ -133,9 +133,8 @@ class More extends Framework\TestModule {
   // Test library availability
   // -------------------------
 
-  /// WARNING: Does not work with includes that return FALSE.
   function canInclude($_library_, $_name_) {
-    $test = Narvalo\DynaLoader::TryLoadAndEvaluateFile($_library_);
+    $test = Narvalo\DynaLoader::TryLoadLibrary($_library_);
     return $this->ok($test, $_name_);
   }
 
@@ -144,8 +143,8 @@ class More extends Framework\TestModule {
 //    return $this->ok($test, $_name_);
 //  }
 
-  // Object testing.
-  // FIXME: Check that the class exists? __autoload?
+  // Object testing
+  // --------------
 
   function isa($_object_, $_class_, $_name_) {
     $test = $_object_ instanceof $_class_;

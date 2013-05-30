@@ -1131,7 +1131,6 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   //function running() {
-  //  // TODO: Check this.
   //  return self::Start !== $this->_state && self::End !== $this->_state;
   //}
 

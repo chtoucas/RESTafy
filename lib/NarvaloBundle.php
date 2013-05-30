@@ -303,13 +303,16 @@ final class DynaLoader {
     DirectorySeparator = '/',
     FileExtension      = '.php';
 
-  static function LoadAndEvaluateFile($_path_) {
-    eval('self::LoadFile($_path_);');
-  }
-
+  /// WARNING: Does not work with includes that return FALSE.
   static function LoadFile($_path_) {
     if (!self::TryLoadFile($_path_)) {
       throw new RuntimeException(\sprintf('Unable to load the file: "%s".', $_path_));
+    }
+  }
+
+  static function LoadLibrary($_path_) {
+    if (!self::TryLoadLibrary($_path_)) {
+      throw new RuntimeException(\sprintf('Unable to load the library: "%s".', $_path_));
     }
   }
 
@@ -325,8 +328,13 @@ final class DynaLoader {
     }
   }
 
+  /// WARNING: Does not work with includes that return FALSE.
   static function TryLoadFile($_path_) {
     return self::_TryIncludeFile(self::_NormalizePath($_path_));
+  }
+
+  static function TryLoadLibrary($_path_) {
+    return self::_TryIncludeLibrary(self::_NormalizePath($_path_));
   }
 
   static function TryLoadBundle($_namespace_) {
@@ -335,10 +343,6 @@ final class DynaLoader {
 
   static function TryLoadType(TypeName $_typeName_) {
     return self::_TryIncludeLibrary(self::_GetTypePath($_typeName_));
-  }
-
-  static function TryLoadAndEvaluateFile($_path_) {
-    return eval('return self::TryLoadFile($_path_);');
   }
 
   // Private methods
@@ -368,7 +372,8 @@ final class DynaLoader {
 
   private static function _TryIncludeLibrary($_path_) {
     if (\FALSE !== ($file = \stream_resolve_include_path($_path_))) {
-      return \FALSE !== (include_once $file);
+      include_once $file;
+      return \TRUE;
     } else {
       return \FALSE;
     }
@@ -439,8 +444,7 @@ final class LoggerLevel {
     case self::Warning:
       return 'Warning';
     default:
-      // FIXME: Is it wise to throw inside a logger?!
-      throw new ArgumentException('XXX');
+      return 'Unknown';
     }
   }
 }
@@ -525,7 +529,7 @@ final class Log {
 
   static function SetLogger(ILogger $_logger_) {
     if (\NULL !== self::$_Logger) {
-      throw new InvalidOperationException('XXX');
+      throw new InvalidOperationException('You can not set the logger twice.');
     }
     self::$_Logger = $_logger_;
   }
@@ -629,18 +633,6 @@ trait Singleton {
 // =================================================================================================
 
 // {{{ Borg
-
-//class Borg {
-//  protected $state_;
-//
-//  function __construct() {
-//    $this->state_ =& static::GetSharedState_();
-//  }
-//
-//  protected static function & GetSharedState_() {
-//    throw new NotImplementedException('XXX');
-//  }
-//}
 
 // TODO: Should extend \ArrayObject?
 class DictionaryBorg {

@@ -544,7 +544,7 @@ class ControllerException extends Exception { }
 //
 //// }}} ---------------------------------------------------------------------------------------------
 
-//
+
 //interface View {
 //  function render();
 //}
@@ -889,7 +889,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ RouteDirection
 //
 //final class RouteDirection {
@@ -899,7 +899,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ HttpMethodConstraint
 //
 ///// \brief  Vous permet de définir quels verbes HTTP sont autorisés lorsque le
@@ -990,7 +990,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ RouteBase
 //
 //abstract class RouteBase {
@@ -1076,7 +1076,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ RouteCollection
 //
 //class RouteCollection {
@@ -1331,9 +1331,9 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// MVC
-//
+
 //// {{{ MvcHandler
 //
 //class MvcHandler implements HttpHandler {
@@ -1413,7 +1413,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ ActionInvoker
 //
 //interface ActionInvoker {
@@ -1448,7 +1448,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ CodeManagerWrapper
 //
 //class CodeManagerWrapper implements CodeManager {
@@ -1485,7 +1485,6 @@ class ControllerException extends Exception { }
 //  }
 //
 //  function serializeTypes(array $_types_, \SplFileObject $_output_) {
-//    // FIXME
 //    foreach ($_types_ as $type) {
 //      $_output_->fwrite($type->fullName() . PHP_EOL);
 //    }
@@ -1579,7 +1578,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ ControllerTypeCache
 //
 //class ControllerTypeCache {
@@ -1943,7 +1942,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ MvcRouteTable
 //
 //class MvcRouteTable extends RouteTable {
@@ -1983,7 +1982,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ View
 //
 //interface View {
@@ -2004,7 +2003,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ ViewDataDictionary
 //
 //class ViewDataDictionary {
@@ -2027,7 +2026,7 @@ class ControllerException extends Exception { }
 //}
 //
 //// }}} ---------------------------------------------------------------------------------------------
-//
+
 //// {{{ Page
 //
 //class Page {
