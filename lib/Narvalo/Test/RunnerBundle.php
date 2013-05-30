@@ -151,9 +151,8 @@ final class RuntimeErrorCatcher extends Narvalo\StartStop_ {
   }
 
   function __destruct() {
-    $this->stopCore_();
-
     parent::__destruct();
+    $this->stop();
   }
 
   protected function startCore_() {

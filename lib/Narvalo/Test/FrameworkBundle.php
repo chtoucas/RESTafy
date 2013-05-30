@@ -792,6 +792,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterHeader() {
+    $this->throwIfStopped_();
+
     if (self::Start === $this->_state) {
       // Valid states.
 
@@ -806,6 +808,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterFooter() {
+    $this->throwIfStopped_();
+
     // Check workflow's state.
     switch ($this->_state) {
       // Valid states.
@@ -842,6 +846,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function startSubtest() {
+    $this->throwIfStopped_();
+
     switch ($this->_state) {
       // Valid states.
 
@@ -876,8 +882,9 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     $this->_subtestLevel++;
   }
 
-  /// \return void
   function endSubtest() {
+    $this->throwIfStopped_();
+
     // FIXME: Valid states.
     if (0 === $this->_subtestLevel) {
       throw new TestWorkflowException('You can not end a subtest if you did not start one before.');
@@ -887,6 +894,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function startTagging(Framework\TagTestDirective $_tagger_) {
+    $this->throwIfStopped_();
+
     switch ($this->_state) {
       // Valid states.
 
@@ -923,6 +932,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function endTagging(Framework\TagTestDirective $_tagger_) {
+    $this->throwIfStopped_();
+
     // FIXME: Valid states.
     if (\NULL === $this->_tagger) {
       throw new TestWorkflowException('You can not end a tag if you did not start one before.');
@@ -933,6 +944,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterPlan() {
+    $this->throwIfStopped_();
+
     switch ($this->_state) {
       // Valid states.
 
@@ -968,6 +981,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterSkipAll() {
+    $this->throwIfStopped_();
+
     switch ($this->_state) {
       // Valid states.
 
@@ -1001,6 +1016,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterTestCaseResult() {
+    $this->throwIfStopped_();
+
     switch ($this->_state) {
       // Valid states.
 
@@ -1039,6 +1056,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterBailOut() {
+    $this->throwIfStopped_();
+
     switch ($this->_state) {
       // Valid states.
 
@@ -1066,6 +1085,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterComment() {
+    $this->throwIfStopped_();
+
     // This method does not change the current state.
     switch ($this->_state) {
       // Invalid states.
@@ -1083,6 +1104,8 @@ final class TestWorkflow extends Narvalo\StartStop_ {
   }
 
   function enterError() {
+    $this->throwIfStopped_();
+
     // This method does not change the current state.
     switch ($this->_state) {
       // Invalid states.

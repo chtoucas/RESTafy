@@ -598,6 +598,19 @@ final class ConfigurationManager {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// Diagnostics
+// =================================================================================================
+
+// {{{ Logger
+
+final class Logger {
+  static function Log($_msg_) {
+    \error_log($_msg_);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // Miscs
 // =================================================================================================
 
@@ -612,7 +625,7 @@ abstract class StartStop_ {
 
   function __destruct() {
     if ($this->_running) {
-      \error_log(\sprintf(
+      Logger::Log(\sprintf(
         '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
         \get_class($this)));
     }
@@ -643,6 +656,13 @@ abstract class StartStop_ {
   abstract protected function startCore_();
 
   abstract protected function stopCore_();
+
+  protected function throwIfStopped_() {
+    if (!$this->_running) {
+      throw new InvalidOperationException(
+        \sprintf('%s stopped. You forget to call start()?', \get_class($this)));
+    }
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
