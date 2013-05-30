@@ -393,13 +393,10 @@ final class Guard {
 final class LoggerLevel {
   const
     None      = 0x00,
-    /// Immediat action required.
-    Alert     = 0x02,
-    /// Something wrong happened.
-    Error     = 0x04,
-    Warning   = 0x08,
-    Notice    = 0x16,
-    Debug     = 0x32;
+    Error     = 0x01,
+    Warning   = 0x02,
+    Notice    = 0x04,
+    Debug     = 0x08;
 
   private function __construct() {
     ;
@@ -409,8 +406,6 @@ final class LoggerLevel {
     switch ($_level_) {
     case self::None:
       return 'None';
-    case self::Alert:
-      return 'Alert';
     case self::Error:
       return 'Error';
     case self::Warning:
@@ -427,14 +422,10 @@ final class LoggerLevel {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ Logger
+// {{{ Log
 
-final class Logger {
+final class Log {
   //static $Level = LoggerLevel::Warning | LoggerLevel::Error | LoggerLevel::Alert;
-
-  static function Alert($_msg_) {
-    self::_Log(LoggerLevel::Alert, $_msg_);
-  }
 
   static function Error($_msg_) {
     self::_Log(LoggerLevel::Error, $_msg_);
@@ -690,7 +681,7 @@ abstract class StartStop_ {
 
   function __destruct() {
     if ($this->_running) {
-      Logger::Warning(\sprintf(
+      Log::Warning(\sprintf(
         '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
         Type::Of($this)));
     }
