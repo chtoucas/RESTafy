@@ -84,24 +84,26 @@ interface IDisposable {
 trait Disposable {
   private $_disposed = \FALSE;
 
+  /// WARNING: You MUST NOT override this method, even if PHP allows it.
   final function __destruct() {
     $this->_dispose(\FALSE /* disposing */);
   }
 
+  /// WARNING: You MUST NOT override this method, even if PHP allows it.
   final function dispose() {
     $this->_dispose(\TRUE /* disposing */);
   }
 
   /// Only happens when dispose() is called explicitly.
-  /// Dispose all disposable fields in the object, additionally nullify those that it created.
+  /// Dispose all disposable fields in the object.
   /// WARNING: This method should NEVER throw or catch an exception.
   protected function dispose_() {
     ;
   }
 
   /// This method always run when we call dispose() or when the runtime call the destructor.
-  /// - release all external resources hold by the object
-  /// - nullify large fields
+  /// - release all external resources hold by the object and nullify them
+  /// - nullify large value fields
   /// - reset the state of the object
   /// WARNING: This method should NEVER throw or catch an exception.
   protected function free_() {
@@ -114,6 +116,7 @@ trait Disposable {
     }
   }
 
+  /// WARNING: You MUST NOT override this method, even if PHP allows it.
   final private function _dispose($_disposing_) {
     if ($this->_disposed) {
       return;
@@ -130,6 +133,13 @@ trait Disposable {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
+// {{{ DisposableObject
+
+class DisposableObject implements IDisposable {
+  use Disposable;
+}
+
+// }}}
 
 // {{{ ObjectType
 
