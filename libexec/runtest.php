@@ -14,7 +14,11 @@ use \Narvalo\Test\Framework;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-RunTestApp::Main($argv);
+try {
+  RunTestApp::Main($argv);
+} catch (\Exception $e) {
+  RunTestApp::OnUnhandledException($e);
+}
 
 // ------------------------------------------------------------------------------------------------
 
@@ -26,17 +30,18 @@ class RunTestApp {
   }
 
   static function Main(array $_argv_) {
-    try {
-      $options  = RunTestOptions::Parse($_argv_);
-    } catch (Narvalo\ApplicationException $e) {
-      echo $e->getMessage(), \PHP_EOL;
-      exit(1);
-    }
+    $options  = RunTestOptions::Parse($_argv_);
 
     $producer = Tap\TapProducer::GetDefault();
     $producer->register();
 
     (new self($producer))->run($options);
+  }
+
+  static function OnUnhandledException(\Exception $_e_) {
+    Narvalo\Log::Fatal($_e_);
+    echo $_e_->getMessage(), \PHP_EOL;
+    exit(1);
   }
 
   function run(RunTestOptions $_options_) {

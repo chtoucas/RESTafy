@@ -3,12 +3,18 @@
 
 namespace Narvalo\Test\Runner;
 
+require_once 'NarvaloBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
+use \Narvalo;
 use \Narvalo\Test\Tap;
 
-ProveApp::Main($argv);
+try {
+  ProveApp::Main($argv);
+} catch (\Exception $e) {
+  ProveApp::OnUnhandledException($e);
+}
 
 // ------------------------------------------------------------------------------------------------
 
@@ -24,6 +30,12 @@ class ProveApp {
     $stream  = Tap\TapHarnessStream::GetDefault();
 
     (new self($stream))->run($options);
+  }
+
+  static function OnUnhandledException(\Exception $_e_) {
+    Narvalo\Log::Fatal($_e_);
+    echo $_e_->getMessage(), \PHP_EOL;
+    exit(1);
   }
 
   function run(ProveOptions $_options_) {

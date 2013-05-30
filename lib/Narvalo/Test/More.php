@@ -13,6 +13,7 @@ class More extends Framework\TestModule {
   // TODO: Test exceptions thrown.
   // TODO: Test dynamicly loaded extensions.
   // TODO: Add more diagnostics.
+  // TODO: Cf. Test::Differences, Test::Deeper, Test::Class, Test::Most
 
   function __construct($_how_many_ = \NULL) {
     parent::__construct();
@@ -126,7 +127,7 @@ class More extends Framework\TestModule {
   }
 
   function subtest($_name_, \Closure $_fun_) {
-    return $this->getProducer()->subTest($_fun_, $_name_);
+    return $this->getProducer()->subtest($_fun_, $_name_);
   }
 
   // Test library availability
