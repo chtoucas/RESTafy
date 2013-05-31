@@ -17,7 +17,14 @@ use \Narvalo;
 use \Narvalo\IO;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
-use \Narvalo\Test\Tap as _;
+
+define('_CRLF_REGEX_PART',       '(?:\r|\n)+');
+// RegEx to find any combination of \r and \n in a string.
+define('_CRLF_REGEX',            '{' . _CRLF_REGEX_PART . '}');
+// RegEx to find any combination of \r and \n at the end of a string.
+define('_TRAILING_CRLF_REGEX',   '{' . _CRLF_REGEX_PART . '\z}s');
+// RegEx to find any combination of \r and \n inside a normalized string.
+define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 
 // TAP streams
 // =================================================================================================
@@ -63,9 +70,9 @@ class TapStream extends Narvalo\DisposableObject {
 
   protected function formatMultiLine_($_prefix_, $_value_) {
     $prefix = $this->_writer->getEndOfLine() . $this->_indent . $_prefix_;
-    $value = \preg_replace(_\TRAILING_CRLF_REGEX, '', $_value_);
+    $value = \preg_replace(_TRAILING_CRLF_REGEX, '', $_value_);
 
-    return $_prefix_ . \preg_replace(_\MULTILINE_CRLF_REGEX, $prefix, $_value_);
+    return $_prefix_ . \preg_replace(_MULTILINE_CRLF_REGEX, $prefix, $_value_);
   }
 
   protected function _indent() {
@@ -148,7 +155,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
 
   private static function _FormatDescription($_desc_) {
     // Escape EOL.
-    $desc = \preg_replace(_\CRLF_REGEX, '¤', $_desc_);
+    $desc = \preg_replace(_CRLF_REGEX, '¤', $_desc_);
     // Escape leading unsafe chars.
     $desc = \preg_replace('{^\s+}', '¤', $desc);
     // Escape #.
@@ -160,7 +167,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
   }
 
   private static function _FormatReason($_reason_) {
-    $reason = \preg_replace(_\CRLF_REGEX, '¤', $_reason_);
+    $reason = \preg_replace(_CRLF_REGEX, '¤', $_reason_);
     if ($reason != $_reason_) {
       Narvalo\Log::Notice(\sprintf('The reason "%s" contains invalid chars.', $_reason_));
     }
@@ -272,7 +279,7 @@ final class TapHarnessStream extends Narvalo\DisposableObject implements Runner\
 class TapProducer extends Framework\TestProducer {
   const
     SuccessCode = 0,
-    // NB: TAP uses 255 but this is a reserved code for PHP.
+    // NB: TAP uses 255 but in PHP this is a reserved code.
     FailureCode = 254;
 
   function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
@@ -306,17 +313,5 @@ class TapProducer extends Framework\TestProducer {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-
-// #################################################################################################
-
-namespace Narvalo\Test\Tap\Internal;
-
-define('CRLF_REGEX_PART',       '(?:\r|\n)+');
-// RegEx to find any combination of \r and \n in a string.
-define('CRLF_REGEX',            '{' . CRLF_REGEX_PART . '}');
-// RegEx to find any combination of \r and \n at the end of a string.
-define('TRAILING_CRLF_REGEX',   '{' . CRLF_REGEX_PART . '\z}s');
-// RegEx to find any combination of \r and \n inside a normalized string.
-define('MULTILINE_CRLF_REGEX',  '{' . CRLF_REGEX_PART . '(?!\z)}');
 
 // EOF

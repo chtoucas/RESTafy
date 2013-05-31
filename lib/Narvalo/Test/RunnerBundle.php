@@ -185,6 +185,10 @@ final class RuntimeErrorCatcher extends Narvalo\StartStop_ {
 // {{{ NoopTestOutStream
 
 final class NoopTestOutStream implements Framework\ITestOutStream {
+  function dispose() {
+    ;
+  }
+
   function reset() {
     ;
   }
@@ -234,6 +238,10 @@ final class NoopTestOutStream implements Framework\ITestOutStream {
 // {{{ NoopTestErrStream
 
 final class NoopTestErrStream implements Framework\ITestErrStream {
+  function dispose() {
+    ;
+  }
+
   function reset() {
     ;
   }

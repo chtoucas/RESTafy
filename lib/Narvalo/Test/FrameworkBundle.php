@@ -141,7 +141,7 @@ final class TestSetResult {
 
 // {{{ ITestOutStream
 
-interface ITestOutStream {
+interface ITestOutStream extends Narvalo\IDisposable {
   function reset();
 
   function startSubtest();
@@ -160,7 +160,7 @@ interface ITestOutStream {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ ITestErrStream
 
-interface ITestErrStream {
+interface ITestErrStream extends Narvalo\IDisposable {
   function reset();
 
   function startSubtest();
@@ -192,7 +192,7 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 // {{{ TestProducer
 
-class TestProducer {
+class TestProducer extends Narvalo\DisposableObject {
   private
     /// Error stream.
     $_errStream,
@@ -387,6 +387,17 @@ class TestProducer {
 
   function warn($_errmsg_) {
     $this->_addError($_errmsg_);
+  }
+
+  protected function dispose_() {
+    if (\NULL !== $this->_errStream) {
+      $this->_errStream->dispose();
+    }
+    if (\NULL !== $this->_outStream) {
+      $this->_outStream->dispose();
+    }
+
+    // FIXME: reset()
   }
 
   protected function shutdownCore_() {

@@ -83,7 +83,7 @@ final class DataType {
     String     = 4,
     // Complex types.
     RealArray  = 5,
-    Dictionary = 6,
+    Hash       = 6,
     Object     = 7,
     Resource   = 8;
 
@@ -108,7 +108,7 @@ final class DataType {
       $i = 0;
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {
-          return DataType::Dictionary;
+          return DataType::Hash;
         }
         $i++;
       }
