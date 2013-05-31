@@ -396,8 +396,10 @@ class TestProducer extends Narvalo\DisposableObject {
     if (\NULL !== $this->_outStream) {
       $this->_outStream->dispose();
     }
+  }
 
-    // FIXME: reset()
+  protected function free_() {
+    $this->_reset();
   }
 
   protected function shutdownCore_() {
@@ -450,7 +452,7 @@ class TestProducer extends Narvalo\DisposableObject {
     $this->_interrupted        = \FALSE;
     $this->_errStream->reset();
     $this->_outStream->reset();
-    //$this->_workflow->reset();
+    // XXX $this->_workflow->reset();
   }
 
   // Producer interrupts
