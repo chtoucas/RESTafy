@@ -25,7 +25,7 @@ use \Narvalo\Test\Tap as _;
 // {{{ TapStream
 
 class TapStream extends Narvalo\DisposableObject {
-  // FIXME: TapStream should be internal.
+  // FIXME: TapStream ought to be internal.
 
   private
     $_writer,
@@ -154,8 +154,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
     // Escape #.
     $desc = \str_replace('#', '\\#', $desc);
     if ($desc != $_desc_) {
-      Narvalo\Log::Notice(
-        \sprintf('The description "%s" contains invalid chars.', $_desc_), \E_USER_NOTICE);
+      Narvalo\Log::Notice(\sprintf('The description "%s" contains invalid chars.', $_desc_));
     }
     return $desc;
   }
@@ -163,8 +162,7 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
   private static function _FormatReason($_reason_) {
     $reason = \preg_replace(_\CRLF_REGEX, '¤', $_reason_);
     if ($reason != $_reason_) {
-      Narvalo\Log::Notice(
-        \sprintf('The reason "%s" contains invalid chars.', $_reason_), \E_USER_NOTICE);
+      Narvalo\Log::Notice(\sprintf('The reason "%s" contains invalid chars.', $_reason_));
     }
     return $reason;
   }
@@ -274,7 +272,7 @@ final class TapHarnessStream extends Narvalo\DisposableObject implements Runner\
 class TapProducer extends Framework\TestProducer {
   const
     SuccessCode = 0,
-    // NB: TAP expects 255 but this is a reserved code for PHP.
+    // NB: TAP uses 255 but this is a reserved code for PHP.
     FailureCode = 254;
 
   function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {

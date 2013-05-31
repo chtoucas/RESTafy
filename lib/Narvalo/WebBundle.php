@@ -35,6 +35,8 @@ final class HttpVerb {
     Put    = 'PUT',
     Delete = 'DELETE',
     Head   = 'HEAD';
+
+    private function __construct() { }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -306,8 +308,8 @@ final class Url {
 
 // {{{ Curl
 
-class Curl {
-  protected $ch;
+class Curl extends Narvalo\DisposableObject {
+  private $_ch;
 
   function __construct() {
     $ch = \curl_init();
@@ -322,19 +324,23 @@ class Curl {
     // Return result upon execution.
     \curl_setopt($ch, \CURLOPT_RETURNTRANSFER, \TRUE);
     // Response headers processing callback.
-    \curl_setopt($ch, \CURLOPT_HEADERFUNCTION, 'Internal\curl_scan_header');
+    \curl_setopt($ch, \CURLOPT_HEADERFUNCTION, 'Internal\scan_header');
 
-    $this->ch = $ch;
+    $this->_ch = $ch;
   }
 
-  function __destruct() {
-    if (\NULL !== $this->ch) {
-      \curl_close($this->ch);
+  protected function free_() {
+    if (\NULL !== $this->_ch) {
+      \curl_close($this->_ch);
+
+      $this->_ch = \NULL;
     }
   }
 
   function setOpt($_name_, $_value_) {
-    if (\FALSE === \curl_setopt($this->ch, $_name_, $_value_)) {
+    $this->throwIfDisposed_();
+
+    if (\FALSE === \curl_setopt($this->_ch, $_name_, $_value_)) {
       throw new HttpException("Unable to set option $_name_.");
     }
   }
@@ -369,6 +375,8 @@ class Curl {
   }
 
   function execute(HttpRequest $_req_) {
+    $this->throwIfDisposed_();
+
     // Set method specific opts.
     switch ($_req_->getMethod()) {
     case 'GET':
@@ -415,12 +423,12 @@ class Curl {
     $curl = new _\CurlHelper();
     $curl->reset();
 
-    $body  = \curl_exec($this->ch);
-    $errno = \curl_errno($this->ch);
+    $body  = \curl_exec($this->_ch);
+    $errno = \curl_errno($this->_ch);
 
     if (\FALSE === $body || $errno) {
       // Client request error
-      $msg = 'Code: ' . $errno . ' ' . \curl_error($this->ch);
+      $msg = 'Code: ' . $errno . ' ' . \curl_error($this->_ch);
       throw new HttpException($msg);
     } else {
       // We've got an answer from the server beware it does not mean a successful one...
@@ -509,10 +517,10 @@ class CurlHelper {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ curl_scan_header()
+// {{{ scan_header()
 
 /// Parser for the HTTP response preamble.
-function curl_scan_header($_ch_, $_line_) {
+function scan_header($_ch_, $_line_) {
   // NB: Each preamble line ends with a CRLF, the first empty line (after removing the CRLF)
   // marks the preamble's end.
   if ($line = \substr($_line_, 0, -2)) {

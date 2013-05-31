@@ -7,6 +7,59 @@ require_once 'Narvalo/Test/FrameworkBundle.php';
 
 use \Narvalo;
 use \Narvalo\Test\Framework;
+use \Narvalo\Test\Internal as _;
+
+// {{{ plan()
+
+function plan($_max_) {
+  _\mk_test()->plan($_max_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ ok()
+
+function ok($_test_, $_name_) {
+  return _\mk_test()->ok($_test_, $_name_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ is()
+
+function is($_got_, $_expected_, $_name_) {
+  return _\mk_test()->is($_got_, $_expected_, $_name_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ isnt()
+
+function isnt($_got_, $_expected_, $_name_) {
+  return _\mk_test()->isnt($_got_, $_expected_, $_name_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ pass()
+
+function pass($_name_) {
+  return _\mk_test()->pass($_got_, $_expected_, $_name_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ fail()
+
+function fail($_name_) {
+  return _\mk_test()->fail($_got_, $_expected_, $_name_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ BAIL_OUT()
+
+function BAIL_OUT($_reason_) {
+  return _\mk_test()->bailOut($_reason_);
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ More
 
 class More extends Framework\TestModule {
   // TODO: Test deep object graph.
@@ -241,5 +294,27 @@ EOL;
     $this->getProducer()->diagnose($diag);
   }
 }
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// #################################################################################################
+
+namespace Narvalo\Test\Internal;
+
+use \Narvalo\Test;
+
+// {{{ mk_test()
+
+function mk_test() {
+  static $_Test;
+
+  if (\NULL === $_Test) {
+    $_Test = new Test\More();
+  }
+
+  return $_Test;
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

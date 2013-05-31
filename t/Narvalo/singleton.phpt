@@ -1,7 +1,7 @@
 <?php
 
 require_once 'NarvaloBundle.php';
-require_once 'Narvalo/TestBundle.php';
+require_once 'Narvalo/Test/More.php';
 
 use \Narvalo;
 use \Narvalo\Test as t;
