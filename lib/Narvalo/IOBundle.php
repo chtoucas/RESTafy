@@ -111,9 +111,7 @@ final class File {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ FileHandle
 
-class FileHandle implements Narvalo\IDisposable {
-  use Narvalo\Disposable;
-
+class FileHandle extends Narvalo\DisposableObject {
   private
     $_fh,
     $_canRead  = \FALSE,
@@ -240,9 +238,7 @@ class FileHandle implements Narvalo\IDisposable {
 
 // {{{ TextWriter
 
-class TextWriter implements Narvalo\IDisposable {
-  use Narvalo\Disposable;
-
+class TextWriter extends Narvalo\DisposableObject {
   private
     $_handle,
     $_endOfLine = \PHP_EOL;

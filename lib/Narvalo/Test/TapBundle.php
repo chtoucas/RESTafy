@@ -31,9 +31,8 @@ define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 
 // {{{ TapStream
 
-class TapStream implements Narvalo\IDisposable {
+class TapStream extends Narvalo\DisposableObject {
   // FIXME: TapStream should be internal.
-  use Narvalo\Disposable;
 
   private
     $_writer,

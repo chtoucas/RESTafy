@@ -79,17 +79,15 @@ interface IDisposable {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ Disposable
+// {{{ DisposableObject
 
-trait Disposable {
+class DisposableObject {
   private $_disposed = \FALSE;
 
-  /// WARNING: You MUST NOT override this method, even if PHP allows it.
   final function __destruct() {
     $this->_dispose(\FALSE /* disposing */);
   }
 
-  /// WARNING: You MUST NOT override this method, even if PHP allows it.
   final function dispose() {
     $this->_dispose(\TRUE /* disposing */);
   }
@@ -116,7 +114,6 @@ trait Disposable {
     }
   }
 
-  /// WARNING: You MUST NOT override this method, even if PHP allows it.
   final private function _dispose($_disposing_) {
     if ($this->_disposed) {
       return;
@@ -133,13 +130,6 @@ trait Disposable {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ DisposableObject
-
-class DisposableObject implements IDisposable {
-  use Disposable;
-}
-
-// }}}
 
 // {{{ ObjectType
 
@@ -306,7 +296,7 @@ final class DynaLoader {
   /// WARNING: Does not work with includes that return FALSE.
   static function IncludeFile($_path_) {
     if (!self::TryIncludeFile($_path_)) {
-      throw new RuntimeException(\sprintf('Unable to load the file: "%s".', $_path_));
+      throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
     }
   }
 
