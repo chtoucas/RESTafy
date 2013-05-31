@@ -15,11 +15,11 @@ function bootstrap() {
   $producer = Tap\TapProducer::GetDefault();
   $producer->register();
 
-  $producer->startup();
+  $producer->start();
 
   \register_shutdown_function(function() use ($producer) {
     if (\NULL !== $producer) {
-      $producer->shutdown();
+      $producer->stop();
     }
   });
 }

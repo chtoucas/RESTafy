@@ -194,14 +194,14 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 class TestProducer extends Narvalo\DisposableObject {
   private
-    /// Error stream.
-    $_errStream,
     /// Out stream.
     $_outStream,
-    /// Test set.
-    $_set,
+    /// Error stream.
+    $_errStream,
     /// Test workflow.
     $_workflow,
+    /// Test set.
+    $_set,
     /// Was the producer interrupted?
     $_interrupted        = \FALSE,
     $_bailedOut          = \FALSE,
@@ -210,9 +210,9 @@ class TestProducer extends Narvalo\DisposableObject {
   function __construct(ITestOutStream $_outStream_, ITestErrStream $_errStream_) {
     $this->_outStream = $_outStream_;
     $this->_errStream = $_errStream_;
+    $this->_workflow  = new _\TestWorkflow();
     // NB: Until we have a plan, we use a dynamic test set.
     $this->_set       = new _\DynamicTestResultSet($_errStream_);
-    $this->_workflow  = new _\TestWorkflow();
   }
 
   // Properties
@@ -238,7 +238,7 @@ class TestProducer extends Narvalo\DisposableObject {
     return $this->_runtimeErrorsCount;
   }
 
-  function busy() {
+  function running() {
     return $this->_workflow->running();
   }
 
@@ -252,19 +252,19 @@ class TestProducer extends Narvalo\DisposableObject {
     (new TestModule())->initialize($this);
   }
 
-  final function startup() {
+  final function start() {
     $this->_start();
 
-    $this->startupCore_();
+    $this->startCore_();
   }
 
-  final function shutdown() {
+  final function stop() {
     if (!$this->_interrupted) {
       $this->_endTestResultSet();
       $this->_stop();
     }
 
-    $this->shutdownCore_();
+    $this->stopCore_();
 
     $result = $this->_createResult();
 
@@ -389,6 +389,9 @@ class TestProducer extends Narvalo\DisposableObject {
     $this->_addError($_errmsg_);
   }
 
+  // Lifecycle management
+  // --------------------
+
   protected function dispose_() {
     if (\NULL !== $this->_errStream) {
       $this->_errStream->dispose();
@@ -402,11 +405,24 @@ class TestProducer extends Narvalo\DisposableObject {
     $this->_reset();
   }
 
-  protected function shutdownCore_() {
+  private function _reset() {
+    $this->_set                = new _\DynamicTestResultSet($this->_errStream);
+    $this->_bailedOut          = \FALSE;
+    $this->_runtimeErrorsCount = 0;
+    $this->_interrupted        = \FALSE;
+    $this->_errStream->reset();
+    $this->_outStream->reset();
+    $this->_workflow->stop();
+  }
+
+  // Extension methods
+  // -----------------
+
+  protected function stopCore_() {
     ;
   }
 
-  protected function startupCore_() {
+  protected function startCore_() {
     ;
   }
 
@@ -428,15 +444,6 @@ class TestProducer extends Narvalo\DisposableObject {
     return $result;
   }
 
-  private function _postPlan() {
-    if ($this->_set instanceof _\DynamicTestResultSet
-      && ($tests_count = $this->_set->getTestsCount()) > 0
-    ) {
-      // We actually run tests.
-      $this->_addPlan($tests_count);
-    }
-  }
-
   private function _endTestResultSet() {
     // Print helpful messages if something went wrong.
     // NB: This must stay above _postPlan().
@@ -445,14 +452,13 @@ class TestProducer extends Narvalo\DisposableObject {
     $this->_postPlan();
   }
 
-  private function _reset() {
-    $this->_set                = new _\DynamicTestResultSet($this->_errStream);
-    $this->_bailedOut          = \FALSE;
-    $this->_runtimeErrorsCount = 0;
-    $this->_interrupted        = \FALSE;
-    $this->_errStream->reset();
-    $this->_outStream->reset();
-    // XXX $this->_workflow->reset();
+  private function _postPlan() {
+    if ($this->_set instanceof _\DynamicTestResultSet
+      && ($tests_count = $this->_set->getTestsCount()) > 0
+    ) {
+      // We actually run tests.
+      $this->_addPlan($tests_count);
+    }
   }
 
   // Producer interrupts
@@ -507,14 +513,10 @@ class TestProducer extends Narvalo\DisposableObject {
 
   private function _startTagging(TagTestDirective $_tagger_) {
     $this->_workflow->startTagging($_tagger_);
-    //$this->_outStream->startTagging();
-    //$this->_errStream->startTagging();
   }
 
   private function _endTagging($_tagger_) {
     $this->_workflow->endTagging($_tagger_);
-    //$this->_outStream->endTagging();
-    //$this->_errStream->endTagging();
   }
 
   private function _addPlan($_num_of_tests_) {
@@ -587,7 +589,7 @@ class TestModule {
   }
 
   function canInitialize() {
-    return \NULL === $this->_producer || !$this->_producer->busy();
+    return \NULL === $this->_producer || !$this->_producer->running();
   }
 }
 

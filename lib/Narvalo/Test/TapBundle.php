@@ -290,7 +290,7 @@ class TapProducer extends Framework\TestProducer {
     return new self(TapOutStream::GetDefault(), TapErrStream::GetDefault());
   }
 
-  protected function shutdownCore_() {
+  protected function stopCore_() {
     $exit_code = $this->getExitCode_();
 
     exit($exit_code);
