@@ -138,11 +138,6 @@ class More extends Framework\TestModule {
     return $this->ok($test, $_name_);
   }
 
-//  function canRequire($_library_, $_name_) {
-//    $test = eval('return (\FALSE !== (require_once $_library_))');
-//    return $this->ok($test, $_name_);
-//  }
-
   // Object testing
   // --------------
 

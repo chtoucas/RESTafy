@@ -72,6 +72,244 @@ class KeyNotFoundException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ DataType
+
+final class DataType {
+  const
+    // Simple types.
+    Boolean    = 1,
+    Integer    = 2,
+    Float      = 3,
+    String     = 4,
+    // Complex types.
+    RealArray  = 5,
+    Dictionary = 6,
+    Object     = 7,
+    Resource   = 8;
+
+  /// Why create our own function? There is already gettype you say!
+  /// According to the documentation, we should never rely on it...
+  /// A difference with it is that we return a different type
+  /// for dictionaries (associative arrays) and real arrays.
+  static function Of($_value_) {
+    Guard::NotNull($_value_);
+
+    if (\is_string($_value_)) {
+      return DataType::String;
+    } elseif (\is_int($_value_)) {
+      return DataType::Integer;
+    } elseif (\is_bool($_value_)) {
+      return DataType::Boolean;
+    } elseif (\is_float($_value_)) {
+      return DataType::Float;
+    } elseif (\is_array($_value_)) {
+      // Faster alternative to the usual snippet:
+      // empty($_value_) || \array_keys($_value_) === \range(0, \count($_value_) - 1)
+      $i = 0;
+      while (list($k, ) = each($_value_)) {
+        if ($k !== $i) {
+          return DataType::Dictionary;
+        }
+        $i++;
+      }
+      return DataType::RealArray;
+    } elseif (\is_object($_value_)) {
+      return DataType::Object;
+    } elseif (\is_resource($_value_)) {
+      return DataType::Resource;
+    } else {
+      throw new RuntimeException(\sprintf('Unknown data type: "%s".', $_value_));
+    }
+  }
+
+  static function IsPrimitive($_value_) {
+    switch ($type = self::Of($_value_)) {
+    case DataType::Boolean:
+    case DataType::Integer:
+    case DataType::Float:
+    case DataType::String:
+      return \TRUE;
+    default:
+      return \FALSE;
+    }
+  }
+
+  private function __construct() { }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ Type
+
+final class Type {
+  const
+    NamespaceDelimiter = '\\',
+    GlobalNamespace    = '\\';
+
+  private static
+    // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
+    $_NameRegex = "{^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$}",
+    // TODO: Check the namespace regex.
+    $_NamespaceNameRegex = "{^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$}";
+
+  private
+    $_name,
+    $_namespace;
+
+  function __construct($_name_, $_namespace_ = self::GlobalNamespace) {
+    $this->_name      = $_name_;
+    $this->_namespace = $_namespace_;
+  }
+
+  static function Of($_obj_) {
+    $class = \get_class($_obj_);
+    if (\FALSE === $class) {
+      throw new ArgumentException('obj', 'XXX');
+    } else {
+      return $class;
+    }
+  }
+
+  static function FromFullyQualifiedName($_name_) {
+    throw new NotImplementedException();
+  }
+
+  static function IsWellformed($_name_) {
+    return 1 === \preg_match(self::$_NameRegex, $_name_);
+  }
+
+  static function IsWellformedNamespace($_name_) {
+    return 1 === \preg_match(self::$_NamespaceNameRegex,  $_name_);
+  }
+
+  function getFullyQualifiedName() {
+    return self::GlobalNamespace . $this->getQualifiedName();
+  }
+
+  function getName() {
+    return $this->_name;
+  }
+
+  function getNamespace() {
+    return $this->_namespace;
+  }
+
+  function getQualifiedName() {
+    return $this->_namespace . self::NamespaceDelimiter . $this->_name;
+  }
+
+  function __toString() {
+    return $this->getFullyQualifiedName();
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ DynaLoader
+
+/// WARNING: Only works if the target files do not return FALSE.
+final class DynaLoader {
+  const
+    DirectorySeparator = '/',
+    FileExtension      = '.php';
+
+  /// WARNING: Does not work with includes that return FALSE.
+  static function IncludeFile($_path_) {
+    if (!self::TryIncludeFile($_path_)) {
+      throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
+    }
+  }
+
+  static function LoadLibrary($_path_) {
+    if (!self::TryLoadLibrary($_path_)) {
+      throw new RuntimeException(\sprintf('Unable to load the library: "%s".', $_path_));
+    }
+  }
+
+  static function LoadBundle($_namespace_) {
+    if (!self::TryLoadBundle($_namespace_)) {
+      throw new RuntimeException(\sprintf('Unable to load the bundle: "%s".', $_namespace_));
+    }
+  }
+
+  static function LoadType(Type $_type_) {
+    if (!self::TryLoadType($_type_)) {
+      throw new RuntimeException(\sprintf('Unable to load the type: "%s".', $_type_));
+    }
+  }
+
+  /// WARNING: Does not work with includes that return FALSE.
+  static function TryIncludeFile($_path_) {
+    return self::_TryIncludeFile(self::_NormalizePath($_path_));
+  }
+
+  static function TryLoadLibrary($_path_) {
+    return self::_TryIncludeLibrary(self::_NormalizePath($_path_));
+  }
+
+  static function TryLoadBundle($_namespace_) {
+    return self::_TryIncludeLibrary(self::_GetBundlePath($_namespace_));
+  }
+
+  static function TryLoadType(Type $_type_) {
+    return self::_TryIncludeLibrary(self::_GetTypePath($_type_));
+  }
+
+  // Private methods
+  // ---------------
+
+  private static function _NameToPath($_name_) {
+    return \str_replace(Type::NamespaceDelimiter, \DIRECTORY_SEPARATOR, $_name_)
+      . self::FileExtension;
+  }
+
+  private static function _NormalizePath($_path_) {
+    return \DIRECTORY_SEPARATOR !== self::DirectorySeparator
+      ? \str_replace(self::DirectorySeparator, \DIRECTORY_SEPARATOR, $_path_)
+      : $_path_;
+  }
+
+  private static function _GetBundlePath($_namespace_) {
+    return self::_NameToPath($_namespace_ . 'Bundle');
+  }
+
+  private static function _GetTypePath(Type $_type_) {
+    return self::_NameToPath($_type_->getQualifiedName());
+  }
+
+  private static function _TryIncludeFile($_path_) {
+    return \FALSE !== (include $_path_);
+  }
+
+  private static function _TryIncludeLibrary($_path_) {
+    if (\FALSE !== ($file = \stream_resolve_include_path($_path_))) {
+      include_once $file;
+      return \TRUE;
+    } else {
+      return \FALSE;
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ Guard
+
+final class Guard {
+  static function NotEmpty($_value_, $_paramName_) {
+    if (empty($_value_)) {
+      throw new ArgumentException($_paramName_, 'Value can not be empty.');
+    }
+  }
+
+  static function NotNull($_value_, $_paramName_) {
+    if (\NULL === $_value_) {
+      throw new ArgumentNullException($_paramName_, 'Value can not be null.');
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // {{{ IDisposable
 
 interface IDisposable {
@@ -126,265 +364,6 @@ class DisposableObject {
     $this->free_();
 
     $this->_disposed = \TRUE;
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ ObjectType
-
-final class ObjectType {
-  const
-    Unknown    = 0,
-    // Simple types.
-    Null       = 1,
-    Boolean    = 2,
-    Integer    = 3,
-    Float      = 4,
-    String     = 5,
-    // Complex types.
-    TrueArray  = 10,
-    Dictionary = 11,
-    Object     = 12,
-    Resource   = 13;
-
-  private function __construct() { }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TypeName
-
-class TypeName {
-  const
-    Delimiter       = '\\',
-    GlobalNamespace = '\\';
-
-  private static
-    // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
-    $_TypeNameRegex = "/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/",
-    // TODO: Check the namespace regex.
-    $_NamespaceNameRegex = "/^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$/";
-
-  private
-    $_name,
-    $_namespace;
-
-  function __construct($_name_, $_namespace_ = self::GlobalNamespace) {
-    $this->_name      = $_name_;
-    $this->_namespace = $_namespace_;
-  }
-
-  static function FromFullyQualifiedName($_name_) {
-    throw new NotImplementedException();
-  }
-
-  static function IsWellformed($_name_) {
-    return 1 === \preg_match(self::$_TypeNameRegex, $_name_);
-  }
-
-  static function IsWellformedNamespace($_name_) {
-    return 1 === \preg_match(self::$_NamespaceNameRegex,  $_name_);
-  }
-
-  function getFullyQualifiedName() {
-    return self::GlobalNamespace . $this->getQualifiedName();
-  }
-
-  function getName() {
-    return $this->_name;
-  }
-
-  function getNamespace() {
-    return $this->_namespace;
-  }
-
-  function getQualifiedName() {
-    return $this->_namespace . self::Delimiter . $this->_name;
-  }
-
-  function __toString() {
-    return $this->getFullyQualifiedName();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Type
-
-final class Type {
-  static function Of($_obj_) {
-    return \get_class($_obj_);
-  }
-
-  /// Return the datatype of $_value_
-  ///
-  /// Why create our own function? There is already gettype!
-  /// According to the documentation, we should never rely on gettype...
-  /// Another difference with gettype is that we return a different type
-  /// for hashes (associative arrays) and real arrays.
-  ///
-  /// $_value_ (mixed) Any PHP structure
-  /// Return a string representing a somehow extended PHP type:
-  ///   - null
-  ///   - boolean
-  ///   - integer
-  ///   - float
-  ///   - string
-  ///   - array
-  ///   - hash
-  ///   - object
-  ///   - resource
-  /// Return NULL if none of above.
-  static function GetType($_value_) {
-    if (\NULL === $_value_) {
-      // Keep this on top.
-      return ObjectType::Null;
-    } elseif (\is_string($_value_)) {
-      return ObjectType::String;
-    } elseif (\is_int($_value_)) {
-      return ObjectType::Integer;
-    } elseif (\is_float($_value_)) {
-      return ObjectType::Float;
-    } elseif (\is_bool($_value_)) {
-      return ObjectType::Boolean;
-    } elseif (\is_array($_value_)) {
-      // Faster alternative to the usual snippet:
-      // empty($_value_) || \array_keys($_value_) === \range(0, \count($_value_) - 1)
-      $i = 0;
-      while (list($k, ) = each($_value_)) {
-        if ($k !== $i) {
-          return ObjectType::Dictionary;
-        }
-        $i++;
-      }
-      return ObjectType::TrueArray;
-    } elseif (\is_object($_value_)) {
-      return ObjectType::Object;
-    } elseif (\is_resource($_value_)) {
-      return ObjectType::Resource;
-    } else {
-      return ObjectType::Unknown;
-    }
-  }
-
-  static function IsComplex($_value_) {
-    return !self::IsSimple($_value_);
-  }
-
-  static function IsSimple($_value_) {
-    switch ($type = self::GetType($_value_)) {
-    case ObjectType::Boolean:
-    case ObjectType::Integer:
-    case ObjectType::Float:
-    case ObjectType::String:
-      return \TRUE;
-    default:
-      return \FALSE;
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ DynaLoader
-
-/// WARNING: Only works if the target files do not return FALSE.
-final class DynaLoader {
-  const
-    DirectorySeparator = '/',
-    FileExtension      = '.php';
-
-  /// WARNING: Does not work with includes that return FALSE.
-  static function IncludeFile($_path_) {
-    if (!self::TryIncludeFile($_path_)) {
-      throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
-    }
-  }
-
-  static function LoadLibrary($_path_) {
-    if (!self::TryLoadLibrary($_path_)) {
-      throw new RuntimeException(\sprintf('Unable to load the library: "%s".', $_path_));
-    }
-  }
-
-  static function LoadBundle($_namespace_) {
-    if (!self::TryLoadBundle($_typeName_)) {
-      throw new RuntimeException(\sprintf('Unable to load the bundle: "%s".', $_namespace_));
-    }
-  }
-
-  static function LoadType(TypeName $_typeName_) {
-    if (!self::TryLoadType($_typeName_)) {
-      throw new RuntimeException(\sprintf('Unable to load the type: "%s".', $_typeName_));
-    }
-  }
-
-  /// WARNING: Does not work with includes that return FALSE.
-  static function TryIncludeFile($_path_) {
-    return self::_TryIncludeFile(self::_NormalizePath($_path_));
-  }
-
-  static function TryLoadLibrary($_path_) {
-    return self::_TryIncludeLibrary(self::_NormalizePath($_path_));
-  }
-
-  static function TryLoadBundle($_namespace_) {
-    return self::_TryIncludeLibrary(self::_GetBundlePath($_namespace_));
-  }
-
-  static function TryLoadType(TypeName $_typeName_) {
-    return self::_TryIncludeLibrary(self::_GetTypePath($_typeName_));
-  }
-
-  // Private methods
-  // ---------------
-
-  private static function _NameToPath($_name_) {
-    return \str_replace(TypeName::Delimiter, \DIRECTORY_SEPARATOR, $_name_) . self::FileExtension;
-  }
-
-  private static function _NormalizePath($_path_) {
-    return \DIRECTORY_SEPARATOR !== self::DirectorySeparator
-      ? \str_replace(self::DirectorySeparator, \DIRECTORY_SEPARATOR, $_path_)
-      : $_path_;
-  }
-
-  private static function _GetBundlePath($_namespace_) {
-    return self::_NameToPath($_namespace_ . 'Bundle');
-  }
-
-  private static function _GetTypePath(TypeName $_typeName_) {
-    return self::_NameToPath($_typeName_->getQualifiedName());
-  }
-
-  private static function _TryIncludeFile($_path_) {
-    return \FALSE !== (include $_path_);
-  }
-
-  private static function _TryIncludeLibrary($_path_) {
-    if (\FALSE !== ($file = \stream_resolve_include_path($_path_))) {
-      include_once $file;
-      return \TRUE;
-    } else {
-      return \FALSE;
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ Guard
-
-final class Guard {
-  static function NotEmpty($_value_, $_paramName_) {
-    if (empty($_value_)) {
-      throw new ArgumentException($_paramName_, 'Value can not be empty.');
-    }
-  }
-
-  static function NotNull($_value_, $_paramName_) {
-    if (\NULL === $_value_) {
-      throw new ArgumentNullException($_paramName_, 'Value can not be null.');
-    }
   }
 }
 
@@ -891,15 +870,15 @@ interface ICache {
 // Persistence
 // =================================================================================================
 
-// {{{ DBIException
+// {{{ DbiException
 
-class DBIException extends Exception { }
+class DbiException extends Exception { }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ IDBI
+// {{{ IDbi
 
-interface IDBI {
+interface IDbi extends IDisposable {
   function open();
   function close();
   //function open($_opts_);
