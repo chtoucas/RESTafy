@@ -7,8 +7,6 @@ For instance, a call to mkdir under Cygwin might fail.
 Narvalo\Test
 ============
 
-* TestProducer must implement IDisposable.
-* Should FileTestSet use LoadLibrary()?
 * Parse and output debug_backtrace();
 * YAML diagnostics.
 * Interlinked directives and interlaced tags.

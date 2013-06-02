@@ -23,15 +23,15 @@ try {
 class ProveApp {
   private $_harness;
 
-  function __construct(ITestHarnessStream $_stream_) {
-    $this->_harness = new TestHarness($_stream_);
+  function __construct(ITestHarnessWriter $_writer_) {
+    $this->_harness = new TestHarness($_writer_);
   }
 
   static function Main(array $_argv_) {
     $options = ProveOptions::Parse($_argv_);
-    $stream  = Tap\TapHarnessStream::GetDefault();
+    $writer  = Tap\TapHarnessWriter::CreateDefault();
 
-    (new self($stream))->run($options);
+    (new self($writer))->run($options);
   }
 
   function run(ProveOptions $_options_) {

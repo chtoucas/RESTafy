@@ -12,7 +12,7 @@ bootstrap();
 // ------------------------------------------------------------------------------------------------
 
 function bootstrap() {
-  $producer = Tap\TapProducer::GetDefault();
+  $producer = Tap\TapProducer::CreateDefault();
   $producer->register();
 
   $producer->start();

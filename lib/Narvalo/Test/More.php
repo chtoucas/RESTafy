@@ -136,7 +136,7 @@ class More extends Framework\TestModule {
     case '>=':  $test = $_got_ >=  $_expected_; break;
     default:
       $this->fail($_name_);
-      $this->getProducer()->diagnose(\sprintf('Unrecognized comparison operator: "%s".', $_type_));
+      $this->getProducer()->warn(\sprintf('Unrecognized comparison operator: "%s".', $_type_));
       return;
     }
 
@@ -253,7 +253,7 @@ class More extends Framework\TestModule {
          got: $got
     expected: $expect
 EOL;
-    $this->getProducer()->diagnose($diag);
+    $this->note($diag);
   }
 
   private function _diagnoseFailedInequality($_got_) {
@@ -263,7 +263,7 @@ EOL;
          got: $got
     expected: anything else
 EOL;
-    $this->getProducer()->diagnose($diag);
+    $this->note($diag);
   }
 
   private function _diagnoseFailedCompare($_got_, $_type_, $_expected_) {
@@ -275,7 +275,7 @@ EOL;
         $_type_
     $expect
 EOL;
-    $this->getProducer()->diagnose($diag);
+    $this->note($diag);
   }
 
   private function _diagnoseFailedMatch($_subject_, $_pattern_) {
@@ -283,7 +283,7 @@ EOL;
               got: $_subject_
     doesn't match: $_pattern_
 EOL;
-    $this->getProducer()->diagnose($diag);
+    $this->note($diag);
   }
 
   private function _diagnoseFailedUnmatch($_subject_, $_pattern_) {
@@ -291,7 +291,7 @@ EOL;
       got: $_subject_
     match: $_pattern_
 EOL;
-    $this->getProducer()->diagnose($diag);
+    $this->note($diag);
   }
 }
 

@@ -33,7 +33,7 @@ class RunTestApp {
 
   static function Main(array $_argv_) {
     $options  = RunTestOptions::Parse($_argv_);
-    $producer = Tap\TapProducer::GetDefault();
+    $producer = Tap\TapProducer::CreateDefault();
     $producer->register();
 
     (new self($producer))->run($options);

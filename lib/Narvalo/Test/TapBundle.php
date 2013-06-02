@@ -29,17 +29,15 @@ define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 // TAP streams
 // =================================================================================================
 
-// {{{ TapStream
+// {{{ TapWriter
 
-class TapStream extends Narvalo\DisposableObject {
-  // FIXME: TapStream ought to be internal.
-
+class TapWriter extends Narvalo\DisposableObject {
   private
-    $_writer,
+    $_stream,
     $_indent = '';
 
-  function __construct(IO\TextWriter $_writer_) {
-    $this->_writer = $_writer_;
+  function __construct(IO\FileStream $_stream_) {
+    $this->_stream = $_stream_;
   }
 
   function close() {
@@ -58,18 +56,18 @@ class TapStream extends Narvalo\DisposableObject {
     $this->_unindent();
   }
 
-  protected function dispose_() {
-    if (\NULL !== $this->_writer) {
-      $this->_writer->close();
+  protected function close_() {
+    if (\NULL !== $this->_stream) {
+      $this->_stream->close();
     }
   }
 
   protected function writeTapLine_($_value_) {
-    $this->_writer->writeLine($this->_indent . $_value_);
+    $this->_stream->writeLine($this->_indent . $_value_);
   }
 
   protected function formatMultiLine_($_prefix_, $_value_) {
-    $prefix = $this->_writer->getEndOfLine() . $this->_indent . $_prefix_;
+    $prefix = $this->_stream->getEndOfLine() . $this->_indent . $_prefix_;
     $value = \preg_replace(_TRAILING_CRLF_REGEX, '', $_value_);
 
     return $_prefix_ . \preg_replace(_MULTILINE_CRLF_REGEX, $prefix, $_value_);
@@ -86,21 +84,21 @@ class TapStream extends Narvalo\DisposableObject {
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TapOutStream
+// {{{ TapOutWriter
 
-final class TapOutStream extends TapStream implements Framework\ITestOutStream {
+final class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
   const Version = 12;
 
   private $_verbose;
 
-  function __construct(IO\TextWriter $_writer_, $_verbose_) {
-    parent::__construct($_writer_);
+  function __construct(IO\FileStream $_stream_, $_verbose_) {
+    parent::__construct($_stream_);
 
     $this->_verbose = $_verbose_;
   }
 
-  static function GetDefault() {
-    return new self(IO\TextWriter::GetStandardOutput(), \TRUE);
+  static function CreateDefault() {
+    return new self(IO\File::GetStandardOutput(), \TRUE);
   }
 
   function writeHeader() {
@@ -176,44 +174,33 @@ final class TapOutStream extends TapStream implements Framework\ITestOutStream {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ TapErrStream
+// {{{ TapErrWriter
 
-final class TapErrStream extends TapStream implements Framework\ITestErrStream {
-  protected $_disposed = \FALSE;
-
-  static function GetDefault() {
-    return new self(IO\TextWriter::GetStandardOutput());
+final class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
+  static function CreateDefault() {
+    return new self(IO\File::GetStandardOutput());
   }
 
   function write($_value_) {
-    if ($this->_disposed) {
-      // We want to make sure we do not lose any error message.
-      Narvalo\Log::Error($_value_);
-    } else {
-      $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
-    }
-  }
-
-  protected function free_() {
-    $this->_disposed = \TRUE;
+    $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
 
-// {{{ TapHarnessStream
+// {{{ TapHarnessWriter
 
-final class TapHarnessStream extends Narvalo\DisposableObject implements Runner\ITestHarnessStream {
+final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestHarnessWriter {
   private
-    $_writer,
+    $_stream,
     $_indent = '';
 
-  function __construct(IO\TextWriter $_writer_) {
-    $this->_writer = $_writer_;
+  function __construct(IO\FileStream $_stream_) {
+    $this->_stream = $_stream_;
   }
 
-  static function GetDefault() {
-    return new self(IO\TextWriter::GetStandardOutput());
+  static function CreateDefault() {
+    return new self(IO\File::GetStandardOutput());
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
@@ -237,34 +224,34 @@ final class TapHarnessStream extends Narvalo\DisposableObject implements Runner\
       $statusLine = $_name_ . '... '. $status;
     }
 
-    $this->_writer->writeLine($statusLine);
+    $this->_stream->writeLine($statusLine);
 
     if (!$_result_->passed) {
-      $this->_writer->writeLine(
+      $this->_stream->writeLine(
         \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
     }
   }
 
   function writeSummary(Runner\TestHarnessSummary $_summary_) {
     if ($_summary_->passed) {
-      $this->_writer->writeLine('All tests successful.');
+      $this->_stream->writeLine('All tests successful.');
     }
-    $this->_writer->writeLine(
+    $this->_stream->writeLine(
       \sprintf(
         'Sets=%s, Failures=%s',
         $_summary_->setsCount,
         $_summary_->failedSetsCount));
-    $this->_writer->writeLine(
+    $this->_stream->writeLine(
       \sprintf(
         'Tests=%s, Failures=%s',
         $_summary_->testsCount,
         $_summary_->failedTestsCount));
-    $this->_writer->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
+    $this->_stream->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
   }
 
-  protected function dispose_() {
-    if (\NULL !== $this->_writer) {
-      $this->_writer->close();
+  protected function close_() {
+    if (\NULL !== $this->_stream) {
+      $this->_stream->close();
     }
   }
 }
@@ -282,12 +269,12 @@ class TapProducer extends Framework\TestProducer {
     // NB: TAP uses 255 but in PHP this is a reserved code.
     FailureCode = 254;
 
-  function __construct(TapOutStream $_outStream_, TapErrStream $_errStream_) {
-    parent::__construct($_outStream_, $_errStream_);
+  function __construct(TapOutWriter $_outWriter_, TapErrWriter $_errWriter_) {
+    parent::__construct($_outWriter_, $_errWriter_);
   }
 
-  static function GetDefault() {
-    return new self(TapOutStream::GetDefault(), TapErrStream::GetDefault());
+  static function CreateDefault() {
+    return new self(TapOutWriter::CreateDefault(), TapErrWriter::CreateDefault());
   }
 
   protected function stopCore_() {

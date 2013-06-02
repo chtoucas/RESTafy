@@ -322,25 +322,21 @@ interface IDisposable {
 class DisposableObject {
   private $_disposed = \FALSE;
 
-  final function __destruct() {
-    $this->_dispose(\FALSE /* disposing */);
-  }
-
   final function dispose() {
-    $this->_dispose(\TRUE /* disposing */);
+    $this->dispose_(\TRUE /* disposing */);
   }
 
   /// Only happens when dispose() is called explicitly.
-  /// Dispose all disposable fields in the object.
+  /// - dispose all disposable fields that the object owns.
+  /// - optionally reset the state of the object
   /// WARNING: This method should NEVER throw or catch an exception.
-  protected function dispose_() {
+  protected function close_() {
     ;
   }
 
-  /// This method always run when we call dispose() or when the runtime call the destructor.
-  /// - release all external resources hold by the object and nullify them
-  /// - nullify large value fields
-  /// - reset the state of the object
+  /// This method run when the object is either disposed or finalized:
+  /// - free all external resources hold by the object and nullify them
+  /// - optionally nullify large value fields
   /// WARNING: This method should NEVER throw or catch an exception.
   protected function free_() {
     ;
@@ -352,18 +348,170 @@ class DisposableObject {
     }
   }
 
-  final private function _dispose($_disposing_) {
+  final protected function dispose_($_disposing_) {
     if ($this->_disposed) {
       return;
     }
 
     if ($_disposing_) {
-      $this->dispose_();
+      $this->close_();
     }
 
     $this->free_();
 
     $this->_disposed = \TRUE;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ SafeHandle_
+
+abstract class SafeHandle_ implements IDisposable {
+  const InvalidHandleValue = -1;
+
+  protected $handle_;
+  private
+    $_refCount   = 0,
+    $_ownsHandle = \FALSE;
+
+  protected function __construct($_ownsHandle_) {
+    $this->_ownsHandle = $_ownsHandle_;
+    $this->_refCount   = 1;
+  }
+
+  final function __destruct() {
+    $this->dispose_(\FALSE /* disposing */);
+  }
+
+  final function & getHandle() {
+    if (0 === $this->_refCount) {
+      throw new ObjectDisposedException(Type::Of($this));
+    }
+    return $this->handle_;
+  }
+
+  final function invalid() {
+    return self::InvalidHandleValue === $this->handle_;
+  }
+
+  final function closed() {
+    return 0 === $this->_refCount;
+  }
+
+  final function close() {
+    $this->dispose_(\TRUE /* disposing */);
+  }
+
+  final function dispose() {
+    $this->dispose_(\TRUE /* disposing */);
+  }
+
+  final function addRef() {
+    if (0 === $this->_refCount) {
+      throw new ObjectDisposedException(Type::Of($this));
+    }
+
+    $this->_refCount++;
+  }
+
+  final function release() {
+    if (0 === $this->_refCount) {
+      throw new ObjectDisposedException(Type::Of($this));
+    }
+
+    if (0 === --$this->_refCount) {
+      $this->_release();
+    }
+  }
+
+  abstract protected function releaseHandle_();
+
+  final protected function setHandle_($_handle_) {
+    $this->handle_ = $_handle_;
+  }
+
+  final protected function dispose_($_disposing_) {
+    // If the resource has already been released.
+    if (0 === $this->_refCount) {
+      return;
+    }
+
+    if ($_disposing_) {
+      if (0 === --$this->_refCount) {
+        $this->_release();
+      }
+    } else {
+      $this->_release();
+    }
+  }
+
+  private function _release() {
+    if (
+      // If we don't own the handle.
+      !$this->_ownsHandle
+      // If the handle is invalid.
+      || self::InvalidHandleValue === $this->handle_
+    ) {
+      return;
+    }
+
+    if (!$this->releaseHandle_()) {
+      Log::Warning('Unable to release the handle.');
+    }
+
+    $this->handle_ = self::InvalidHandleValue;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ StartStop_
+
+abstract class StartStop_ {
+  private $_running = \FALSE;
+
+  protected function __construct() {
+    ;
+  }
+
+  function __destruct() {
+    if ($this->_running) {
+      Log::Warning(\sprintf(
+        '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
+        Type::Of($this)));
+    }
+  }
+
+  function running() {
+    return $this->_running;
+  }
+
+  final function start() {
+    if ($this->_running) {
+      throw new InvalidOperationException(
+        \sprintf('You can not start an already running %s.', Type::Of($this)));
+    }
+
+    $this->startCore_();
+
+    $this->_running = \TRUE;
+  }
+
+  final function stop() {
+    if ($this->_running) {
+      $this->stopCore_();
+      $this->_running = \FALSE;
+    }
+  }
+
+  abstract protected function startCore_();
+
+  abstract protected function stopCore_();
+
+  protected function throwIfStopped_() {
+    if (!$this->_running) {
+      throw new InvalidOperationException(
+        \sprintf('%s stopped. You forget to call start()?', Type::Of($this)));
+    }
   }
 }
 
@@ -734,62 +882,6 @@ final class ConfigurationManager {
     }
     self::$_Current = $_config_;
     self::$_Initialized = \TRUE;
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// Miscs
-// =================================================================================================
-
-// {{{ StartStop_
-
-abstract class StartStop_ {
-  private $_running = \FALSE;
-
-  protected function __construct() {
-    ;
-  }
-
-  function __destruct() {
-    if ($this->_running) {
-      Log::Warning(\sprintf(
-        '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
-        Type::Of($this)));
-    }
-  }
-
-  function running() {
-    return $this->_running;
-  }
-
-  final function start() {
-    if ($this->_running) {
-      throw new InvalidOperationException(
-        \sprintf('You can not start an already running %s.', Type::Of($this)));
-    }
-
-    $this->startCore_();
-
-    $this->_running = \TRUE;
-  }
-
-  final function stop() {
-    if ($this->_running) {
-      $this->stopCore_();
-      $this->_running = \FALSE;
-    }
-  }
-
-  abstract protected function startCore_();
-
-  abstract protected function stopCore_();
-
-  protected function throwIfStopped_() {
-    if (!$this->_running) {
-      throw new InvalidOperationException(
-        \sprintf('%s stopped. You forget to call start()?', Type::Of($this)));
-    }
   }
 }
 

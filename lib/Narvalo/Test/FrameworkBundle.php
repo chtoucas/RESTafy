@@ -139,9 +139,9 @@ final class TestSetResult {
 // Test streams
 // =================================================================================================
 
-// {{{ ITestOutStream
+// {{{ ITestOutWriter
 
-interface ITestOutStream extends Narvalo\IDisposable {
+interface ITestOutWriter {
   function reset();
 
   function startSubtest();
@@ -158,9 +158,9 @@ interface ITestOutStream extends Narvalo\IDisposable {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ ITestErrStream
+// {{{ ITestErrWriter
 
-interface ITestErrStream extends Narvalo\IDisposable {
+interface ITestErrWriter {
   function reset();
 
   function startSubtest();
@@ -192,12 +192,12 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 // {{{ TestProducer
 
-class TestProducer extends Narvalo\DisposableObject {
+class TestProducer {
   private
     /// Out stream.
-    $_outStream,
+    $_outWriter,
     /// Error stream.
-    $_errStream,
+    $_errWriter,
     /// Test workflow.
     $_workflow,
     /// Test set.
@@ -207,12 +207,12 @@ class TestProducer extends Narvalo\DisposableObject {
     $_bailedOut          = \FALSE,
     $_runtimeErrorsCount = 0;
 
-  function __construct(ITestOutStream $_outStream_, ITestErrStream $_errStream_) {
-    $this->_outStream = $_outStream_;
-    $this->_errStream = $_errStream_;
+  function __construct(ITestOutWriter $_outWriter_, ITestErrWriter $_errWriter_) {
+    $this->_outWriter = $_outWriter_;
+    $this->_errWriter = $_errWriter_;
     $this->_workflow  = new _\TestWorkflow();
     // NB: Until we have a plan, we use a dynamic test set.
-    $this->_set       = new _\DynamicTestResultSet($_errStream_);
+    $this->_set       = new _\DynamicTestResultSet();
   }
 
   // Properties
@@ -309,7 +309,7 @@ class TestProducer extends Narvalo\DisposableObject {
         \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
         $_how_many_));
     }
-    $this->_set = new _\FixedSizeTestResultSet($this->_errStream, $_how_many_);
+    $this->_set = new _\FixedSizeTestResultSet($_how_many_);
     $this->_addPlan($_how_many_);
   }
 
@@ -355,7 +355,7 @@ class TestProducer extends Narvalo\DisposableObject {
     // FIXME: If the subtest exit, it will stop the whole test.
     // Switch to a new TestResultSet.
     $set = $this->_set;
-    $this->_set = new _\DynamicTestResultSet($this->_errStream);
+    $this->_set = new _\DynamicTestResultSet();
     // Notify outputs.
     $this->_startSubtest();
     // Execute the subtests.
@@ -372,15 +372,6 @@ class TestProducer extends Narvalo\DisposableObject {
     $this->assert($passed, $_description_);
   }
 
-  function diagnose($_diag_) {
-    // XXX: Why check the tagger?
-    if (\NULL !== $this->getTagger_()) {
-      $this->_addComment($_diag_);
-    } else {
-      $this->_addError($_diag_);
-    }
-  }
-
   function note($_note_) {
     $this->_addComment($_note_);
   }
@@ -392,31 +383,15 @@ class TestProducer extends Narvalo\DisposableObject {
   // Lifecycle management
   // --------------------
 
-  protected function dispose_() {
-    if (\NULL !== $this->_errStream) {
-      $this->_errStream->dispose();
-    }
-    if (\NULL !== $this->_outStream) {
-      $this->_outStream->dispose();
-    }
-  }
-
-  protected function free_() {
-    $this->_reset();
-  }
-
   private function _reset() {
-    $this->_set                = new _\DynamicTestResultSet($this->_errStream);
+    $this->_set                = new _\DynamicTestResultSet();
     $this->_bailedOut          = \FALSE;
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
-    $this->_errStream->reset();
-    $this->_outStream->reset();
+    $this->_errWriter->reset();
+    $this->_outWriter->reset();
     $this->_workflow->stop();
   }
-
-  // Extension methods
-  // -----------------
 
   protected function stopCore_() {
     ;
@@ -447,7 +422,7 @@ class TestProducer extends Narvalo\DisposableObject {
   private function _endTestResultSet() {
     // Print helpful messages if something went wrong.
     // NB: This must stay above _postPlan().
-    $this->_set->close();
+    $this->_set->close($this->_errWriter);
 
     $this->_postPlan();
   }
@@ -490,25 +465,25 @@ class TestProducer extends Narvalo\DisposableObject {
   private function _start() {
     $this->_workflow->start();
     $this->_workflow->enterHeader();
-    $this->_outStream->writeHeader();
+    $this->_outWriter->writeHeader();
   }
 
   private function _stop() {
     $this->_workflow->enterFooter();
     $this->_workflow->stop();
-    $this->_outStream->writeFooter();
+    $this->_outWriter->writeFooter();
   }
 
   private function _startSubtest() {
     $this->_workflow->startSubtest();
-    $this->_outStream->startSubtest();
-    $this->_errStream->startSubtest();
+    $this->_outWriter->startSubtest();
+    $this->_errWriter->startSubtest();
   }
 
   private function _endSubtest() {
     $this->_workflow->endSubtest();
-    $this->_outStream->endSubtest();
-    $this->_errStream->endSubtest();
+    $this->_outWriter->endSubtest();
+    $this->_errWriter->endSubtest();
   }
 
   private function _startTagging(TagTestDirective $_tagger_) {
@@ -521,37 +496,37 @@ class TestProducer extends Narvalo\DisposableObject {
 
   private function _addPlan($_num_of_tests_) {
     $this->_workflow->enterPlan();
-    $this->_outStream->writePlan($_num_of_tests_);
+    $this->_outWriter->writePlan($_num_of_tests_);
   }
 
   private function _addSkipAll($_reason_) {
     $this->_workflow->enterSkipAll();
-    $this->_outStream->writeSkipAll($_reason_);
+    $this->_outWriter->writeSkipAll($_reason_);
   }
 
   private function _addTestCaseResult(TestCaseResult $_test_, $_number_) {
     $this->_workflow->enterTestCaseResult();
-    $this->_outStream->writeTestCaseResult($_test_, $_number_);
+    $this->_outWriter->writeTestCaseResult($_test_, $_number_);
   }
 
   private function _addAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
     $this->_workflow->enterTestCaseResult();
-    $this->_outStream->writeAlteredTestCaseResult($_test_, $_number_);
+    $this->_outWriter->writeAlteredTestCaseResult($_test_, $_number_);
   }
 
   private function _addBailOut($_reason_) {
     $this->_workflow->enterBailOut();
-    $this->_outStream->writeBailOut($_reason_);
+    $this->_outWriter->writeBailOut($_reason_);
   }
 
   private function _addComment($_comment_) {
     $this->_workflow->enterComment();
-    $this->_outStream->writeComment($_comment_);
+    $this->_outWriter->writeComment($_comment_);
   }
 
   private function _addError($_errmsg_) {
     $this->_workflow->enterError();
-    $this->_errStream->write($_errmsg_);
+    $this->_errWriter->write($_errmsg_);
   }
 }
 
@@ -609,14 +584,13 @@ use \Narvalo\Test\Framework;
 
 abstract class TestResultSet_ {
   private
-    $_errStream,
     /// Number of failed tests.
     $_failuresCount = 0,
     /// List of tests.
     $_tests = array();
 
-  protected function __construct(Framework\ITestErrStream $_errStream_) {
-    $this->_errStream = $_errStream_;
+  protected function __construct() {
+    ;
   }
 
   function getTestsCount() {
@@ -628,10 +602,10 @@ abstract class TestResultSet_ {
   }
 
   protected function getErrStream_() {
-    return $this->_errStream;
+    return $this->_errWriter;
   }
 
-  abstract function close();
+  abstract function close(Framework\ITestErrWriter $_errWriter_);
 
   abstract function passed();
 
@@ -666,7 +640,7 @@ final class EmptyTestResultSet extends TestResultSet_ {
     return \TRUE;
   }
 
-  function close() {
+  function close(Framework\ITestErrWriter $_errWriter_) {
     ;
   }
 
@@ -683,25 +657,24 @@ final class EmptyTestResultSet extends TestResultSet_ {
 // {{{ DynamicTestResultSet
 
 final class DynamicTestResultSet extends TestResultSet_ {
-  function __construct(Framework\ITestErrStream $_errStream_) {
-    parent::__construct($_errStream_);
+  function __construct() {
+    ;
   }
 
-  function close() {
-    $errStream = $this->getErrStream_();
+  function close(Framework\ITestErrWriter $_errWriter_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
-        $errStream->write(
+        $_errWriter_->write(
           \sprintf('Looks like you failed %s test%s of %s run.',
           $failures_count, $s, $tests_count));
       }
-      $errStream->write('No plan!');
+      $_errWriter_->write('No plan!');
     } else {
       // No tests run.
-      $errStream->write('No plan. No tests run!');
+      $_errWriter_->write('No plan. No tests run!');
     }
   }
 
@@ -718,8 +691,7 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
   /// Number of expected tests.
   private $_length;
 
-  function __construct(Framework\ITestErrStream $_errStream_, $_length_) {
-    parent::__construct($_errStream_);
+  function __construct($_length_) {
     $this->_length = $_length_;
   }
 
@@ -738,15 +710,14 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
       && 0 === $this->getExtrasCount();
   }
 
-  function close() {
-    $errStream = $this->getErrStream_();
+  function close(Framework\ITestErrWriter $_errWriter_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
       if ($extras_count != 0) {
         // Count missmatch.
         $s = $this->_length > 1 ? 's' : '';
-        $errStream->write(
+        $_errWriter_->write(
           \sprintf('Looks like you planned %s test%s but ran %s.',
           $this->_length, $s, $tests_count));
       }
@@ -754,13 +725,13 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
         $qualifier = 0 == $extras_count ? '' : ' run';
-        $errStream->write(
+        $_errWriter_->write(
           \sprintf('Looks like you failed %s test%s of %s%s.',
           $failures_count, $s, $tests_count, $qualifier));
       }
     } else {
       // No tests run.
-      $errStream->write('No tests run!');
+      $_errWriter_->write('No tests run!');
     }
   }
 }
@@ -1144,10 +1115,6 @@ final class TestWorkflow extends Narvalo\StartStop_ {
     $this->_tagger       = \NULL;
     $this->_taggerStack  = array();
   }
-
-  //function running() {
-  //  return self::Start !== $this->_state && self::End !== $this->_state;
-  //}
 
   protected function stopCore_() {
     // Check workflow's state.

@@ -11,7 +11,7 @@ $t->pass('First test');
 TODO: {
   $todo = $t->startTodo('Sample todo tests');
   $t->pass('Second passing todo test');
-  $t->fail('Third failing todo test');
+  $t->is(1, 2, 'Third failing todo test');
   $t->endTodo($todo);
 }
 

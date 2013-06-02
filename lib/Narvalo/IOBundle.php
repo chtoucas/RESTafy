@@ -39,32 +39,44 @@ final class File {
 
   /// Create the file with write-only access.
   static function Create($_path_) {
-    return new FileHandle($_path_, FileMode::CreateNew);
+    return new FileStream($_path_, FileMode::CreateNew);
   }
 
   /// Open the file with read-only access
   /// and position the stream at the beginning of the file.
   static function OpenRead($_path_) {
-    return new FileHandle($_path_, FileMode::Open);
+    return new FileStream($_path_, FileMode::Open);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   static function OpenWrite($_path_) {
-    return new FileHandle($_path_, FileMode::OpenOrCreate);
+    return new FileStream($_path_, FileMode::OpenOrCreate);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the end of the file.
   static function OpenAppend($_path_) {
-    return new FileHandle($_path_, FileMode::Append);
+    return new FileStream($_path_, FileMode::Append);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   /// WARNING: This method is destructive, the file gets truncated.
   static function OpenTruncate($_path_) {
-    return new FileHandle($_path_, FileMode::Truncate);
+    return new FileStream($_path_, FileMode::Truncate);
+  }
+
+  static function CreateWriter($_path_, $_append_) {
+    return $_append_ ? self::OpenAppend($_path_) : self::OpenTruncate($_path_);
+  }
+
+  static function GetStandardError() {
+    return self::OpenTruncate('php://stderr');
+  }
+
+  static function GetStandardOutput() {
+    return self::OpenTruncate('php://stdout');
   }
 
   // Common file operations
@@ -111,20 +123,56 @@ final class File {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ FileHandle
 
-class FileHandle extends Narvalo\DisposableObject {
+class FileHandle extends Narvalo\SafeHandle_ {
+  function __construct($_handle_, $_ownsHandle_) {
+    parent::__construct($_ownsHandle_);
+    $this->setHandle_($_handle_);
+  }
+
+  static function FromPath($_path_, $_mode_) {
+    $handle = \fopen($_path_, $_mode_);
+    if (\FALSE === $handle) {
+      return new self(Narvalo\SafeHandle_::InvalidHandleValue, \TRUE /* ownsHandle */);
+    } else {
+      return new self($handle, \TRUE /* ownsHandle */);
+    }
+  }
+
+  protected function releaseHandle_() {
+    if (Narvalo\SafeHandle_::InvalidHandleValue !== $this->handle_) {
+      return \FALSE !== \fclose($this->handle_);
+    } else {
+      return \FALSE;
+    }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ FileStream
+
+class FileStream extends Narvalo\DisposableObject {
   private
     $_fh,
-    $_canRead  = \FALSE,
-    $_canWrite = \FALSE;
+    $_handle,
+    $_canRead   = \FALSE,
+    $_canWrite  = \FALSE,
+    $_endOfLine = \PHP_EOL;
 
   function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
     // FIXME: Binary mode?
-    $fh = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));
-    if (\FALSE === $fh) {
+    $fh = FileHandle::FromPath($_path_, self::_FileModeToString($_mode_, $_extended_));
+    if ($fh->invalid()) {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
     $this->_fh = $fh;
+    // NB: It is important to use a reference, otherwise the field will not be updated by PHP
+    // during finalization.
+    $this->_handle =& $fh->getHandle();
     $this->_setFileAccess($_mode_, $_extended_);
+  }
+
+  function __destruct() {
+    $this->dispose_(\FALSE);
   }
 
   function canRead() {
@@ -135,23 +183,32 @@ class FileHandle extends Narvalo\DisposableObject {
     return $this->_canWrite;
   }
 
+  function getEndOfLine() {
+    return $this->_endOfLine;
+  }
+
+  function setEndOfLine($_value_) {
+    $this->_endOfLine = $_value_;
+  }
+
   function close() {
     $this->dispose();
   }
 
   function endOfFile() {
     $this->throwIfDisposed_();
-    return \feof($this->_fh);
+
+    return \feof($this->_handle);
   }
 
   function read($_length_) {
     $this->throwIfDisposed_();
 
-    if (!$this->canRead()) {
+    if (!$this->_canRead) {
       throw new Narvalo\NotSupportedException('Can not read a file opened in write-only mode.');
     }
 
-    if (FALSE !== ($result = \fread($this->_fh, $_length_))) {
+    if (FALSE !== ($result = \fread($this->_handle, $_length_))) {
       return $result;
     } else {
       throw new IOException(\sprintf('Unable to read "%s" bytes from the file.', $_length_));
@@ -161,26 +218,27 @@ class FileHandle extends Narvalo\DisposableObject {
   function write($_value_) {
     $this->throwIfDisposed_();
 
-    if (!$this->canWrite()) {
+    if (!$this->_canWrite) {
       throw new Narvalo\NotSupportedException('Can not read a file opened in read-only mode.');
     }
 
-    if (FALSE !== ($length = \fwrite($this->_fh, $_value_))) {
+    if (FALSE !== ($length = \fwrite($this->_handle, $_value_))) {
       return $length;
     } else {
       throw new IOException('Unable to write to the file.');
     }
   }
 
-  protected function free_() {
-    if (\NULL !== $this->_fh) {
-      if (\FALSE === \fclose($this->_fh)) {
-        Narvalo\Log::Warning('Unable to close the file handle.');
-      }
+  function writeLine($_value_) {
+    return $this->write($_value_ . $this->_endOfLine);
+  }
 
-      $this->_fh = \NULL;
+  protected function close_() {
+    if (\NULL !== $this->_fh) {
+      $this->_fh->close();
     }
 
+    // Reset the state of the object.
     $this->_canRead  = \FALSE;
     $this->_canWrite = \FALSE;
   }
@@ -230,60 +288,6 @@ class FileHandle extends Narvalo\DisposableObject {
       case FileMode::Open:
         $this->_canRead  = \TRUE; break;
       }
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TextWriter
-
-class TextWriter extends Narvalo\DisposableObject {
-  private
-    $_handle,
-    $_endOfLine = \PHP_EOL;
-
-  function __construct(FileHandle $_handle_) {
-    $this->_handle = $_handle_;
-  }
-
-  static function FromPath($_path_, $_append_) {
-    return $_append_
-      ? new self(File::OpenAppend($_path_))
-      : new self(File::OpenTruncate($_path_));
-  }
-
-  static function GetStandardError() {
-    return new self(File::OpenTruncate('php://stderr'));
-  }
-
-  static function GetStandardOutput() {
-    return new self(File::OpenTruncate('php://stdout'));
-  }
-
-  function getEndOfLine() {
-    return $this->_endOfLine;
-  }
-
-  function setEndOfLine($_value_) {
-    $this->_endOfLine = $_value_;
-  }
-
-  function close() {
-    $this->dispose();
-  }
-
-  function write($_value_) {
-    return $this->_handle->write($_value_);
-  }
-
-  function writeLine($_value_) {
-    return $this->_handle->write($_value_ . $this->_endOfLine);
-  }
-
-  protected function dispose_() {
-    if (\NULL !== $this->_handle) {
-      $this->_handle->close();
     }
   }
 }

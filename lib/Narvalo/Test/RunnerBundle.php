@@ -50,9 +50,9 @@ class TestRunner {
 // Test harness
 // =================================================================================================
 
-// {{{ ITestHarnessStream
+// {{{ ITestHarnessWriter
 
-interface ITestHarnessStream {
+interface ITestHarnessWriter {
   function writeResult($_name_, Framework\TestSetResult $_result_);
   function writeSummary(TestHarnessSummary $_summary_);
 }
@@ -74,19 +74,19 @@ class TestHarnessSummary {
 
 class TestHarness {
   private
-    $_stream,
+    $_writer,
     $_runner;
 
   function __construct(
-    ITestHarnessStream       $_stream_,
-    Framework\ITestOutStream $_outStream_ = \NULL,
-    Framework\ITestErrStream $_errStream_ = \NULL
+    ITestHarnessWriter       $_writer_,
+    Framework\ITestOutWriter $_outWriter_ = \NULL,
+    Framework\ITestOutWriter $_errWriter_ = \NULL
   ) {
-    $this->_stream = $_stream_;
+    $this->_writer = $_writer_;
 
     $producer = new Framework\TestProducer(
-      $_outStream_ ?: new _\NoopTestOutStream(),
-      $_errStream_ ?: new _\NoopTestErrStream()
+      $_outWriter_ ?: new _\NoopTestOutWriter(),
+      $_errWriter_ ?: new _\NoopTestErrWriter()
     );
     $producer->register();
 
@@ -112,7 +112,7 @@ class TestHarness {
     foreach ($_it_ as $set) {
       $result = $this->_runner->run($set);
 
-      $this->_stream->writeResult($set->getName(), $result);
+      $this->_writer->writeResult($set->getName(), $result);
 
       if ($summary->passed && !$result->passed) {
         $summary->passed = \FALSE;
@@ -124,7 +124,7 @@ class TestHarness {
       $summary->failedTestsCount += $result->failuresCount;
     }
 
-    $this->_stream->writeSummary($summary);
+    $this->_writer->writeSummary($summary);
     return $summary;
   }
 }
@@ -182,13 +182,9 @@ final class RuntimeErrorCatcher extends Narvalo\StartStop_ {
 // Noop streams
 // =================================================================================================
 
-// {{{ NoopTestOutStream
+// {{{ NoopTestOutWriter
 
-final class NoopTestOutStream implements Framework\ITestOutStream {
-  function dispose() {
-    ;
-  }
-
+final class NoopTestOutWriter implements Framework\ITestOutWriter {
   function reset() {
     ;
   }
@@ -235,13 +231,9 @@ final class NoopTestOutStream implements Framework\ITestOutStream {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ NoopTestErrStream
+// {{{ NoopTestErrWriter
 
-final class NoopTestErrStream implements Framework\ITestErrStream {
-  function dispose() {
-    ;
-  }
-
+final class NoopTestErrWriter implements Framework\ITestErrWriter {
   function reset() {
     ;
   }
