@@ -171,6 +171,110 @@ interface ITestErrWriter {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// Test engine
+// =================================================================================================
+
+// {{{ TestEngine
+
+class TestEngine {
+  private
+    /// Out stream.
+    $_outWriter,
+    /// Error stream.
+    $_errWriter,
+    /// Test workflow.
+    $_workflow;
+
+  function __construct(ITestOutWriter $_outWriter_, ITestErrWriter $_errWriter_) {
+    $this->_outWriter = $_outWriter_;
+    $this->_errWriter = $_errWriter_;
+    $this->_workflow  = new _\TestWorkflow();
+  }
+
+  function running() {
+    return $this->_workflow->running();
+  }
+
+  function getTagger() {
+    return $this->_workflow->getTagger();
+  }
+
+  function reset() {
+    $this->_errWriter->reset();
+    $this->_outWriter->reset();
+    $this->_workflow->stop();
+  }
+
+  function start() {
+    $this->_workflow->start();
+    $this->_workflow->enterHeader();
+    $this->_outWriter->writeHeader();
+  }
+
+  function stop() {
+    $this->_workflow->enterFooter();
+    $this->_workflow->stop();
+    $this->_outWriter->writeFooter();
+  }
+
+  function bailOut($_reason_) {
+    $this->_workflow->enterBailOut();
+    $this->_outWriter->writeBailOut($_reason_);
+  }
+
+  function skipAll($_reason_) {
+    $this->_workflow->enterSkipAll();
+    $this->_outWriter->writeSkipAll($_reason_);
+  }
+
+  function plan($_num_of_tests_) {
+    $this->_workflow->enterPlan();
+    $this->_outWriter->writePlan($_num_of_tests_);
+  }
+
+  function startSubtest() {
+    $this->_workflow->startSubtest();
+    $this->_outWriter->startSubtest();
+    $this->_errWriter->startSubtest();
+  }
+
+  function endSubtest() {
+    $this->_workflow->endSubtest();
+    $this->_outWriter->endSubtest();
+    $this->_errWriter->endSubtest();
+  }
+
+  function startTagging(TagTestDirective $_tagger_) {
+    $this->_workflow->startTagging($_tagger_);
+  }
+
+  function endTagging($_tagger_) {
+    $this->_workflow->endTagging($_tagger_);
+  }
+
+  function addTestCaseResult(TestCaseResult $_test_, $_number_) {
+    $this->_workflow->enterTestCaseResult();
+    $this->_outWriter->writeTestCaseResult($_test_, $_number_);
+  }
+
+  function addAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
+    $this->_workflow->enterTestCaseResult();
+    $this->_outWriter->writeAlteredTestCaseResult($_test_, $_number_);
+  }
+
+  function addComment($_comment_) {
+    $this->_workflow->enterComment();
+    $this->_outWriter->writeComment($_comment_);
+  }
+
+  function addError($_errmsg_) {
+    $this->_workflow->enterError();
+    $this->_errWriter->write($_errmsg_);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // Test producer
 // =================================================================================================
 
@@ -194,12 +298,8 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 class TestProducer {
   private
-    /// Out stream.
-    $_outWriter,
-    /// Error stream.
-    $_errWriter,
-    /// Test workflow.
-    $_workflow,
+    /// Test engine.
+    $_engine,
     /// Test set.
     $_set,
     /// Was the producer interrupted?
@@ -208,11 +308,9 @@ class TestProducer {
     $_runtimeErrorsCount = 0;
 
   function __construct(ITestOutWriter $_outWriter_, ITestErrWriter $_errWriter_) {
-    $this->_outWriter = $_outWriter_;
-    $this->_errWriter = $_errWriter_;
-    $this->_workflow  = new _\TestWorkflow();
+    $this->_engine = new TestEngine($_outWriter_, $_errWriter_);
     // NB: Until we have a plan, we use a dynamic test set.
-    $this->_set       = new _\DynamicTestResultSet();
+    $this->_set    = new _\DynamicTestResultSet();
   }
 
   // Properties
@@ -239,11 +337,7 @@ class TestProducer {
   }
 
   function running() {
-    return $this->_workflow->running();
-  }
-
-  protected function getTagger_() {
-    return $this->_workflow->getTagger();
+    return $this->_engine->running();
   }
 
   //
@@ -253,15 +347,15 @@ class TestProducer {
   }
 
   final function start() {
-    $this->_start();
+    $this->_engine->start();
 
-    $this->startCore_();
+    //$this->startCore_();
   }
 
   final function stop() {
     if (!$this->_interrupted) {
       $this->_endTestResultSet();
-      $this->_stop();
+      $this->_engine->stop();
     }
 
     $this->stopCore_();
@@ -275,14 +369,14 @@ class TestProducer {
 
   function bailOutOnException(\Exception $_ex_) {
     $this->_bailedOut = \TRUE;
-    $this->_addBailOut($_ex_->getMessage());
-    $this->_stop();
+    $this->_engine->bailOut($_ex_->getMessage());
+    $this->_engine->stop();
     $this->_bailOutInterrupt(\FALSE);
   }
 
   function captureRuntimeError($_error_) {
     $this->_runtimeErrorsCount++;
-    $this->_addError($_error_);
+    $this->_engine->addError($_error_);
   }
 
   // Test methods
@@ -290,15 +384,15 @@ class TestProducer {
 
   function skipAll($_reason_) {
     $this->_set = new _\EmptyTestResultSet();
-    $this->_addSkipAll($_reason_);
-    $this->_stop();
+    $this->_engine->skipAll($_reason_);
+    $this->_engine->stop();
     $this->_skipAllInterrupt();
   }
 
   function bailOut($_reason_) {
     $this->_bailedOut = \TRUE;
-    $this->_addBailOut($_reason_);
-    $this->_stop();
+    $this->_engine->bailOut($_reason_);
+    $this->_engine->stop();
     $this->_bailOutInterrupt();
   }
 
@@ -310,19 +404,19 @@ class TestProducer {
         $_how_many_));
     }
     $this->_set = new _\FixedSizeTestResultSet($_how_many_);
-    $this->_addPlan($_how_many_);
+    $this->_engine->plan($_how_many_);
   }
 
   function assert($_test_, $_description_) {
     $test = new TestCaseResult($_description_, \TRUE === $_test_);
 
-    if (\NULL !== ($tagger = $this->getTagger_())) {
+    if (\NULL !== ($tagger = $this->_engine->getTagger())) {
       $test = $tagger->alter($test);
       $number = $this->_set->addAlteredTest($test);
-      $this->_addAlteredTestCaseResult($test, $number);
+      $this->_engine->addAlteredTestCaseResult($test, $number);
     } else {
       $number = $this->_set->addTest($test);
-      $this->_addTestCaseResult($test, $number);
+      $this->_engine->addTestCaseResult($test, $number);
     }
 
     return $test->passed();
@@ -339,16 +433,16 @@ class TestProducer {
     $test = $_directive_->alter(new TestCaseResult('', \TRUE));
     for ($i = 1; $i <= $_how_many_; $i++) {
       $number = $this->_set->addAlteredTest($test);
-      $this->_addAlteredTestCaseResult($test, $number);
+      $this->_engine->addAlteredTestCaseResult($test, $number);
     }
   }
 
   function startTagging(TagTestDirective $_tagger_) {
-    $this->_startTagging($_tagger_);
+    $this->_engine->startTagging($_tagger_);
   }
 
   function endTagging(TagTestDirective $_tagger_) {
-    $this->_endTagging($_tagger_);
+    $this->_engine->endTagging($_tagger_);
   }
 
   function subtest(\Closure $_fun_, $_description_) {
@@ -357,13 +451,13 @@ class TestProducer {
     $set = $this->_set;
     $this->_set = new _\DynamicTestResultSet();
     // Notify outputs.
-    $this->_startSubtest();
+    $this->_engine->startSubtest();
     // Execute the subtests.
     $_fun_();
     //
     $this->_endTestResultSet();
     // Restore outputs.
-    $this->_endSubtest();
+    $this->_engine->endSubtest();
     //
     $passed = $this->_set->passed();
     // Restore the orginal TestResultSet.
@@ -373,11 +467,11 @@ class TestProducer {
   }
 
   function note($_note_) {
-    $this->_addComment($_note_);
+    $this->_engine->addComment($_note_);
   }
 
   function warn($_errmsg_) {
-    $this->_addError($_errmsg_);
+    $this->_engine->addError($_errmsg_);
   }
 
   // Lifecycle management
@@ -388,18 +482,16 @@ class TestProducer {
     $this->_bailedOut          = \FALSE;
     $this->_runtimeErrorsCount = 0;
     $this->_interrupted        = \FALSE;
-    $this->_errWriter->reset();
-    $this->_outWriter->reset();
-    $this->_workflow->stop();
+    $this->_engine->reset();
   }
 
   protected function stopCore_() {
     ;
   }
 
-  protected function startCore_() {
-    ;
-  }
+//  protected function startCore_() {
+//    ;
+//  }
 
   // Utilities
   // ---------
@@ -413,8 +505,8 @@ class TestProducer {
     $result->passed             = $this->passed();
     $result->bailedOut          = $this->_bailedOut;
     $result->runtimeErrorsCount = $this->_runtimeErrorsCount;
-    $result->failuresCount      = $this->getFailuresCount();
-    $result->testsCount         = $this->getTestsCount();
+    $result->failuresCount      = $this->_set->getFailuresCount();
+    $result->testsCount         = $this->_set->getTestsCount();
 
     return $result;
   }
@@ -422,7 +514,10 @@ class TestProducer {
   private function _endTestResultSet() {
     // Print helpful messages if something went wrong.
     // NB: This must stay above _postPlan().
-    $this->_set->close($this->_errWriter);
+    $msgs = $this->_set->close();
+    foreach ($msgs as $msg) {
+      $this->_engine->addComment($msg);
+    }
 
     $this->_postPlan();
   }
@@ -432,7 +527,7 @@ class TestProducer {
       && ($tests_count = $this->_set->getTestsCount()) > 0
     ) {
       // We actually run tests.
-      $this->_addPlan($tests_count);
+      $this->_engine->plan($tests_count);
     }
   }
 
@@ -457,76 +552,6 @@ class TestProducer {
     $this->_interrupted = \TRUE;
     // THIS IS BAD! but I do not see any other simple way to do it.
     throw new SkipAllTestProducerInterrupt();
-  }
-
-  // Core methods
-  // ------------
-
-  private function _start() {
-    $this->_workflow->start();
-    $this->_workflow->enterHeader();
-    $this->_outWriter->writeHeader();
-  }
-
-  private function _stop() {
-    $this->_workflow->enterFooter();
-    $this->_workflow->stop();
-    $this->_outWriter->writeFooter();
-  }
-
-  private function _startSubtest() {
-    $this->_workflow->startSubtest();
-    $this->_outWriter->startSubtest();
-    $this->_errWriter->startSubtest();
-  }
-
-  private function _endSubtest() {
-    $this->_workflow->endSubtest();
-    $this->_outWriter->endSubtest();
-    $this->_errWriter->endSubtest();
-  }
-
-  private function _startTagging(TagTestDirective $_tagger_) {
-    $this->_workflow->startTagging($_tagger_);
-  }
-
-  private function _endTagging($_tagger_) {
-    $this->_workflow->endTagging($_tagger_);
-  }
-
-  private function _addPlan($_num_of_tests_) {
-    $this->_workflow->enterPlan();
-    $this->_outWriter->writePlan($_num_of_tests_);
-  }
-
-  private function _addSkipAll($_reason_) {
-    $this->_workflow->enterSkipAll();
-    $this->_outWriter->writeSkipAll($_reason_);
-  }
-
-  private function _addTestCaseResult(TestCaseResult $_test_, $_number_) {
-    $this->_workflow->enterTestCaseResult();
-    $this->_outWriter->writeTestCaseResult($_test_, $_number_);
-  }
-
-  private function _addAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
-    $this->_workflow->enterTestCaseResult();
-    $this->_outWriter->writeAlteredTestCaseResult($_test_, $_number_);
-  }
-
-  private function _addBailOut($_reason_) {
-    $this->_workflow->enterBailOut();
-    $this->_outWriter->writeBailOut($_reason_);
-  }
-
-  private function _addComment($_comment_) {
-    $this->_workflow->enterComment();
-    $this->_outWriter->writeComment($_comment_);
-  }
-
-  private function _addError($_errmsg_) {
-    $this->_workflow->enterError();
-    $this->_errWriter->write($_errmsg_);
   }
 }
 
@@ -601,11 +626,7 @@ abstract class TestResultSet_ {
     return $this->_failuresCount;
   }
 
-  protected function getErrStream_() {
-    return $this->_errWriter;
-  }
-
-  abstract function close(Framework\ITestErrWriter $_errWriter_);
+  abstract function close();
 
   abstract function passed();
 
@@ -640,8 +661,8 @@ final class EmptyTestResultSet extends TestResultSet_ {
     return \TRUE;
   }
 
-  function close(Framework\ITestErrWriter $_errWriter_) {
-    ;
+  function close() {
+    return array();
   }
 
   function addTest(Framework\TestCaseResult $_test_) {
@@ -661,21 +682,22 @@ final class DynamicTestResultSet extends TestResultSet_ {
     ;
   }
 
-  function close(Framework\ITestErrWriter $_errWriter_) {
+  function close() {
+    $msgs = array();
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
-        $_errWriter_->write(
-          \sprintf('Looks like you failed %s test%s of %s run.',
-          $failures_count, $s, $tests_count));
+        $msgs[] = \sprintf('Looks like you failed %s test%s of %s run.',
+          $failures_count, $s, $tests_count);
       }
-      $_errWriter_->write('No plan!');
+      $msgs[] = 'No plan!';
     } else {
       // No tests run.
-      $_errWriter_->write('No plan. No tests run!');
+      $msgs[] = 'No plan. No tests run!';
     }
+    return $msgs;
   }
 
   function passed() {
@@ -710,29 +732,30 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
       && 0 === $this->getExtrasCount();
   }
 
-  function close(Framework\ITestErrWriter $_errWriter_) {
+  function close() {
+    $msgs = array();
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
       if ($extras_count != 0) {
         // Count missmatch.
         $s = $this->_length > 1 ? 's' : '';
-        $_errWriter_->write(
-          \sprintf('Looks like you planned %s test%s but ran %s.',
-          $this->_length, $s, $tests_count));
+        $msgs[] = \sprintf('Looks like you planned %s test%s but ran %s.',
+          $this->_length, $s, $tests_count);
       }
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
         $qualifier = 0 == $extras_count ? '' : ' run';
-        $_errWriter_->write(
-          \sprintf('Looks like you failed %s test%s of %s%s.',
-          $failures_count, $s, $tests_count, $qualifier));
+        $msgs[] = \sprintf('Looks like you failed %s test%s of %s%s.',
+          $failures_count, $s, $tests_count, $qualifier);
       }
     } else {
       // No tests run.
-      $_errWriter_->write('No tests run!');
+      $msgs[] = 'No tests run!';
     }
+
+    return $msgs;
   }
 }
 
@@ -749,7 +772,7 @@ class TestWorkflowException extends Narvalo\Exception { }
 
 // {{{ TestWorkflow
 
-final class TestWorkflow extends Narvalo\StartStop_ {
+final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
   const
     Start            = 0,
     Header           = 1,

@@ -139,11 +139,7 @@ class FileHandle extends Narvalo\SafeHandle_ {
   }
 
   protected function releaseHandle_() {
-    if (Narvalo\SafeHandle_::InvalidHandleValue !== $this->handle_) {
-      return \FALSE !== \fclose($this->handle_);
-    } else {
-      return \FALSE;
-    }
+    return \FALSE !== \fclose($this->handle_);
   }
 }
 

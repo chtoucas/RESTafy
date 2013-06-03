@@ -143,7 +143,7 @@ use \Narvalo\Test\Framework;
 
 // {{{ RuntimeErrorCatcher
 
-final class RuntimeErrorCatcher extends Narvalo\StartStop_ {
+final class RuntimeErrorCatcher extends Narvalo\StartStopWorkflow_ {
   private $_producer;
 
   function __construct(Framework\TestProducer $_producer_) {

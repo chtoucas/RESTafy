@@ -334,7 +334,7 @@ class DisposableObject {
     ;
   }
 
-  /// This method run when the object is either disposed or finalized:
+  /// This method run when the object is either disposed or finalized (if you supply a finalizer):
   /// - free all external resources hold by the object and nullify them
   /// - optionally nullify large value fields
   /// WARNING: This method should NEVER throw or catch an exception.
@@ -464,9 +464,10 @@ abstract class SafeHandle_ implements IDisposable {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ StartStop_
 
-abstract class StartStop_ {
+// {{{ StartStopWorkflow_
+
+abstract class StartStopWorkflow_ {
   private $_running = \FALSE;
 
   protected function __construct() {
