@@ -368,7 +368,7 @@ class DisposableObject {
 // {{{ SafeHandle_
 
 abstract class SafeHandle_ implements IDisposable {
-  const InvalidHandleValue = -1;
+  const _InvalidHandleValue = -1;
 
   protected $handle_;
   private
@@ -392,7 +392,11 @@ abstract class SafeHandle_ implements IDisposable {
   }
 
   final function invalid() {
-    return self::InvalidHandleValue === $this->handle_;
+    return self::_InvalidHandleValue === $this->handle_;
+  }
+
+  final function setHandleAsInvalid() {
+    $this->handle_ = self::_InvalidHandleValue;
   }
 
   final function closed() {
@@ -449,7 +453,7 @@ abstract class SafeHandle_ implements IDisposable {
       // If we don't own the handle.
       !$this->_ownsHandle
       // If the handle is invalid.
-      || self::InvalidHandleValue === $this->handle_
+      || self::_InvalidHandleValue === $this->handle_
     ) {
       return;
     }
@@ -458,7 +462,7 @@ abstract class SafeHandle_ implements IDisposable {
       Log::Warning('Unable to release the handle.');
     }
 
-    $this->handle_ = self::InvalidHandleValue;
+    $this->handle_ = self::_InvalidHandleValue;
   }
 }
 

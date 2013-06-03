@@ -123,24 +123,11 @@ final class File {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ FileHandle
 
-class FileHandle extends Narvalo\SafeHandle_ {
-  function __construct($_handle_, $_ownsHandle_) {
+final class FileHandle extends Narvalo\SafeHandle_ {
+  function __construct($_preexistingHandle_, $_ownsHandle_) {
     parent::__construct($_ownsHandle_);
 
-    $this->setHandle_($_handle_);
-  }
-
-  static function Create($_handle_) {
-    return new self($_handle_, \FALSE /* ownsHandle */);
-  }
-
-  static function FromPath($_path_, $_mode_) {
-    $handle = \fopen($_path_, $_mode_);
-    if (\FALSE === $handle) {
-      return new self(Narvalo\SafeHandle_::InvalidHandleValue, \TRUE /* ownsHandle */);
-    } else {
-      return new self($handle, \TRUE /* ownsHandle */);
-    }
+    $this->setHandle_($_preexistingHandle_);
   }
 
   protected function releaseHandle_() {
@@ -161,10 +148,7 @@ class FileStream extends Narvalo\DisposableObject {
 
   function __construct($_path_, $_mode_, $_extended_ = \FALSE) {
     // FIXME: Binary mode?
-    $fh = FileHandle::FromPath($_path_, self::_FileModeToString($_mode_, $_extended_));
-    if ($fh->invalid()) {
-      self::_ThrowOnFailedOpen($_path_, $_mode_);
-    }
+    $fh = self::_CreateFileHandle($_path_, $_mode_, $_extended_);
     $this->_fh = $fh;
     // NB: It is important to use a reference, otherwise the handle will not be reset
     // during the finalization of the FileHandle.
@@ -247,6 +231,15 @@ class FileStream extends Narvalo\DisposableObject {
 
   // Private methods
   // ---------------
+
+  private static function _CreateFileHandle($_path_, $_mode_, $_extended_) {
+    $handle = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));
+    if (\FALSE === $handle) {
+      self::_ThrowOnFailedOpen($_path_, $_mode_);
+    } else {
+      return new FileHandle($handle, \TRUE /* ownsHandle */);
+    }
+  }
 
   private static function _FileModeToString($_mode_, $_extended_) {
     switch ($_mode_) {
