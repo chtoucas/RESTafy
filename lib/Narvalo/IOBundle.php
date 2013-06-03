@@ -124,8 +124,9 @@ final class File {
 // {{{ FileHandle
 
 class FileHandle extends Narvalo\SafeHandle_ {
-  protected function __construct($_handle_, $_ownsHandle_) {
+  function __construct($_handle_, $_ownsHandle_) {
     parent::__construct($_ownsHandle_);
+
     $this->setHandle_($_handle_);
   }
 
@@ -165,7 +166,7 @@ class FileStream extends Narvalo\DisposableObject {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
     $this->_fh = $fh;
-    // NB: It is important to use a reference, otherwise the handle will not be updated by PHP
+    // NB: It is important to use a reference, otherwise the handle will not be reset
     // during the finalization of the FileHandle.
     $this->_handle =& $fh->getHandle();
     $this->_setFileAccess($_mode_, $_extended_);
