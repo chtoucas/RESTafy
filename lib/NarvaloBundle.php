@@ -337,6 +337,7 @@ class DisposableObject {
   /// This method run when the object is either disposed or finalized (if you supply a finalizer):
   /// - free all external resources hold by the object and nullify them
   /// - optionally nullify large value fields
+  /// NB: In most cases, you are better of using a SafeHandle_.
   /// WARNING: This method should NEVER throw or catch an exception.
   protected function free_() {
     ;
@@ -410,7 +411,6 @@ abstract class SafeHandle_ implements IDisposable {
     if (0 === $this->_refCount) {
       throw new ObjectDisposedException(Type::Of($this));
     }
-
     $this->_refCount++;
   }
 
@@ -418,7 +418,6 @@ abstract class SafeHandle_ implements IDisposable {
     if (0 === $this->_refCount) {
       throw new ObjectDisposedException(Type::Of($this));
     }
-
     if (0 === --$this->_refCount) {
       $this->_release();
     }
@@ -626,9 +625,9 @@ abstract class Logger_ implements ILogger {
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ StandardLogger
+// {{{ DefaultLogger
 
-class StandardLogger extends Logger_ {
+class DefaultLogger extends Logger_ {
   function __construct($_level_) {
     parent::__construct($_level_);
   }
@@ -674,7 +673,7 @@ final class Log {
 
   private static function _GetLogger() {
     if (\NULL === self::$_Logger) {
-      self::SetLogger(new StandardLogger(
+      self::SetLogger(new DefaultLogger(
         LoggerLevel::Fatal | LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice));
     }
     return self::$_Logger;

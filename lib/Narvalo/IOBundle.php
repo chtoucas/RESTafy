@@ -124,9 +124,13 @@ final class File {
 // {{{ FileHandle
 
 class FileHandle extends Narvalo\SafeHandle_ {
-  function __construct($_handle_, $_ownsHandle_) {
+  protected function __construct($_handle_, $_ownsHandle_) {
     parent::__construct($_ownsHandle_);
     $this->setHandle_($_handle_);
+  }
+
+  static function Create($_handle_) {
+    return new self($_handle_, \FALSE /* ownsHandle */);
   }
 
   static function FromPath($_path_, $_mode_) {
@@ -161,8 +165,8 @@ class FileStream extends Narvalo\DisposableObject {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     }
     $this->_fh = $fh;
-    // NB: It is important to use a reference, otherwise the field will not be updated by PHP
-    // during finalization.
+    // NB: It is important to use a reference, otherwise the handle will not be updated by PHP
+    // during the finalization of the FileHandle.
     $this->_handle =& $fh->getHandle();
     $this->_setFileAccess($_mode_, $_extended_);
   }
@@ -230,13 +234,14 @@ class FileStream extends Narvalo\DisposableObject {
   }
 
   protected function close_() {
-    if (\NULL !== $this->_fh) {
-      $this->_fh->close();
-    }
-
     // Reset the state of the object.
     $this->_canRead  = \FALSE;
     $this->_canWrite = \FALSE;
+
+    // Close the underlying file handle.
+    if (\NULL !== $this->_fh) {
+      $this->_fh->close();
+    }
   }
 
   // Private methods
