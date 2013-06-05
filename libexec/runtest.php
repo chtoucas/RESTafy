@@ -4,13 +4,10 @@
 namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
-require_once 'Narvalo/Test/FrameworkBundle.php';
-require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo;
-use \Narvalo\Test\Framework;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
@@ -25,22 +22,15 @@ try {
 // ------------------------------------------------------------------------------------------------
 
 class RunTestApp {
-  private $_runner;
-
-  function __construct(Framework\TestProducer $_producer_) {
-    $this->_runner = new TestRunner($_producer_);
-  }
-
   static function Main(array $_argv_) {
     $options  = RunTestOptions::Parse($_argv_);
-    $producer = Tap\TapProducer::CreateDefault();
-    $producer->register();
 
-    (new self($producer))->run($options);
+    (new self())->run($options);
   }
 
   function run(RunTestOptions $_options_) {
-    $this->_runner->run(new Sets\FileTestSet($_options_->getFilePath()));
+    $runner = new Tap\TapRunner();
+    $runner->run(new Sets\FileTestSet($_options_->getFilePath()));
   }
 }
 

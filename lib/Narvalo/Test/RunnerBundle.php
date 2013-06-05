@@ -37,7 +37,7 @@ class TestRunner {
     } catch (Framework\TestProducerInterrupt $e) {
       ;
     } catch (\Exception $e) {
-      $this->_producer->bailOutOnException($e);
+      $this->_producer->bailOut($e->getMessage());
     }
 
     $this->_errorCatcher->stop();
@@ -77,17 +77,13 @@ class TestHarness {
     $_writer,
     $_runner;
 
-  function __construct(
-    ITestHarnessWriter       $_writer_,
-    Framework\ITestOutWriter $_outWriter_ = \NULL,
-    Framework\ITestOutWriter $_errWriter_ = \NULL
-  ) {
+  function __construct(ITestHarnessWriter $_writer_, Framework\TestEngine $_engine_ = \NULL) {
     $this->_writer = $_writer_;
 
-    $producer = new Framework\TestProducer(
-      $_outWriter_ ?: new _\NoopTestOutWriter(),
-      $_errWriter_ ?: new _\NoopTestErrWriter()
-    );
+    $engine = $_engine_
+      ?: new Framework\TestEngine(new _\NoopTestOutWriter(), new _\NoopTestErrWriter());
+
+    $producer = new Framework\TestProducer($engine);
     $producer->register();
 
     $this->_runner = new TestRunner($producer);

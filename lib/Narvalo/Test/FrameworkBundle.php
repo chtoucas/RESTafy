@@ -307,34 +307,14 @@ class TestProducer {
     $_bailedOut          = \FALSE,
     $_runtimeErrorsCount = 0;
 
-  function __construct(ITestOutWriter $_outWriter_, ITestErrWriter $_errWriter_) {
-    $this->_engine = new TestEngine($_outWriter_, $_errWriter_);
+  function __construct(TestEngine $_engine_) {
+    $this->_engine = $_engine_;
     // NB: Until we have a plan, we use a dynamic test set.
     $this->_set    = new _\DynamicTestResultSet();
   }
 
   // Properties
   // ----------
-
-  function bailedOut() {
-    return $this->_bailedOut;
-  }
-
-  function passed() {
-    return 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
-  }
-
-  function getTestsCount() {
-    return $this->_set->getTestsCount();
-  }
-
-  function getFailuresCount() {
-    return $this->_set->getFailuresCount();
-  }
-
-  function getRuntimeErrorsCount() {
-    return $this->_runtimeErrorsCount;
-  }
 
   function running() {
     return $this->_engine->running();
@@ -348,8 +328,6 @@ class TestProducer {
 
   final function start() {
     $this->_engine->start();
-
-    //$this->startCore_();
   }
 
   final function stop() {
@@ -358,20 +336,17 @@ class TestProducer {
       $this->_engine->stop();
     }
 
-    $this->stopCore_();
-
-    $result = $this->_createResult();
+    $result = new TestSetResult();
+    $result->passed
+      = 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
+    $result->bailedOut          = $this->_bailedOut;
+    $result->runtimeErrorsCount = $this->_runtimeErrorsCount;
+    $result->failuresCount      = $this->_set->getFailuresCount();
+    $result->testsCount         = $this->_set->getTestsCount();
 
     $this->_reset();
 
     return $result;
-  }
-
-  function bailOutOnException(\Exception $_ex_) {
-    $this->_bailedOut = \TRUE;
-    $this->_engine->bailOut($_ex_->getMessage());
-    $this->_engine->stop();
-    $this->_bailOutInterrupt(\FALSE);
   }
 
   function captureRuntimeError($_error_) {
@@ -446,7 +421,6 @@ class TestProducer {
   }
 
   function subtest(\Closure $_fun_, $_description_) {
-    // FIXME: If the subtest exit, it will stop the whole test.
     // Switch to a new TestResultSet.
     $set = $this->_set;
     $this->_set = new _\DynamicTestResultSet();
@@ -485,30 +459,11 @@ class TestProducer {
     $this->_engine->reset();
   }
 
-  protected function stopCore_() {
-    ;
-  }
-
-//  protected function startCore_() {
-//    ;
-//  }
-
   // Utilities
   // ---------
 
   private static function _IsStrictlyPositiveInteger($_value_) {
     return (int)$_value_ === $_value_ && $_value_ > 0;
-  }
-
-  private function _createResult() {
-    $result = new TestSetResult();
-    $result->passed             = $this->passed();
-    $result->bailedOut          = $this->_bailedOut;
-    $result->runtimeErrorsCount = $this->_runtimeErrorsCount;
-    $result->failuresCount      = $this->_set->getFailuresCount();
-    $result->testsCount         = $this->_set->getTestsCount();
-
-    return $result;
   }
 
   private function _endTestResultSet() {
