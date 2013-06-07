@@ -4,33 +4,71 @@
 namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
+require_once 'Narvalo/IOBundle.php';
+require_once 'Narvalo/Test/FrameworkBundle.php';
+require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo;
+use \Narvalo\IO;
+use \Narvalo\Test\Framework;
+use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
 try {
-  RunTestApp::Main($argv);
+  $exit_code = RunTestApp::Main($argv);
+  exit($exit_code);
 } catch (\Exception $e) {
   Narvalo\Log::Fatal($e);
   echo $e->getMessage(), \PHP_EOL;
   exit(1);
 }
 
-// ------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 class RunTestApp {
+  const
+    SuccessCode = 0,
+    // NB: TAP uses 255 but in PHP this is a reserved code.
+    FailureCode = 254;
+
   static function Main(array $_argv_) {
     $options  = RunTestOptions::Parse($_argv_);
 
-    (new self())->run($options);
+    return (new self())->run($options);
   }
 
   function run(RunTestOptions $_options_) {
-    $runner = new Tap\TapRunner();
-    $runner->run(new Sets\FileTestSet($_options_->getFilePath()));
+    $outWriter = new Tap\TapOutWriter(IO\File::GetStandardOutput(), \TRUE);
+    $errWriter = new Tap\TapErrWriter(IO\File::GetStandardOutput());
+    $engine    = new Framework\TestEngine($outWriter, $errWriter);
+    $producer  = new Framework\TestProducer($engine);
+    $producer->register();
+
+    $runner = new Runner\TestRunner($producer);
+    $result = $runner->run(new Sets\FileTestSet($_options_->getFilePath()));
+
+    $errWriter->dispose();
+    $outWriter->dispose();
+
+    return $this->_getExitCode($result);
+  }
+
+  private function _getExitCode(Framework\TestSetResult $result) {
+    if ($result->runtimeErrorsCount > 0) {
+      return self::FailureCode;
+    } elseif ($result->passed) {
+      return self::SuccessCode;
+    } elseif ($result->bailedOut) {
+      return self::FailureCode;
+    } elseif (($count = $result->failuresCount) > 0) {
+      return $count < self::FailureCode ? $count : (self::FailureCode - 1);
+    } else {
+      // Other kind of errors: extra tests, unattended interrupt.
+      return self::FailureCode;
+    }
   }
 }
 

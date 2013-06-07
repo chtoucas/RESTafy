@@ -4,9 +4,13 @@
 namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
+require_once 'Narvalo/IOBundle.php';
+require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo;
+use \Narvalo\IO;
+use \Narvalo\Test\Runner;
 use \Narvalo\Test\Tap;
 
 try {
@@ -17,7 +21,7 @@ try {
   exit(1);
 }
 
-// ------------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 class ProveApp {
   static function Main(array $_argv_) {
@@ -27,8 +31,12 @@ class ProveApp {
   }
 
   function run(ProveOptions $_options_) {
-    $harness = new Tap\TapHarness();
+    $writer = new Tap\TapHarnessWriter(IO\File::GetStandardOutput());
+
+    $harness = new Runner\TestHarness($writer);
     $harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
+
+    $writer->dispose();
   }
 }
 

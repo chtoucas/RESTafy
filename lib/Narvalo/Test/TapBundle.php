@@ -12,13 +12,11 @@ require_once 'NarvaloBundle.php';
 require_once 'Narvalo/IOBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
-require_once 'Narvalo/Test/SetsBundle.php';
 
 use \Narvalo;
 use \Narvalo\IO;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
-use \Narvalo\Test\Sets;
 
 define('_CRLF_REGEX_PART',       '(?:\r|\n)+');
 // RegEx to find any combination of \r and \n in a string.
@@ -27,9 +25,6 @@ define('_CRLF_REGEX',            '{' . _CRLF_REGEX_PART . '}');
 define('_TRAILING_CRLF_REGEX',   '{' . _CRLF_REGEX_PART . '\z}s');
 // RegEx to find any combination of \r and \n inside a normalized string.
 define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
-
-// TAP streams
-// =================================================================================================
 
 // {{{ TapWriter
 
@@ -243,62 +238,6 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
     if (\NULL !== $this->_stream) {
       $this->_stream->close();
     }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// TAP runners
-// =================================================================================================
-
-// {{{ TapRunner
-
-class TapRunner extends Runner\TestRunner {
-  const
-    SuccessCode = 0,
-    // NB: TAP uses 255 but in PHP this is a reserved code.
-    FailureCode = 254;
-
-  function __construct() {
-    $outWriter = new TapOutWriter(IO\File::GetStandardOutput(), \TRUE);
-    $errWriter = new TapErrWriter(IO\File::GetStandardOutput());
-    $producer = new Framework\TestProducer(new Framework\TestEngine($outWriter, $errWriter));
-    $producer->register();
-
-    parent::__construct($producer);
-  }
-
-  function run(Sets\ITestSet $_set_) {
-    $result = parent::run($_set_);
-
-    $exit_code = $this->getExitCode_($result);
-
-    exit($exit_code);
-  }
-
-  protected function getExitCode_(Framework\TestSetResult $result) {
-    if ($result->runtimeErrorsCount > 0) {
-      return self::FailureCode;
-    } elseif ($result->passed) {
-      return self::SuccessCode;
-    } elseif ($result->bailedOut) {
-      return self::FailureCode;
-    } elseif (($count = $result->failuresCount) > 0) {
-      return $count < self::FailureCode ? $count : (self::FailureCode - 1);
-    } else {
-      // Other kind of errors: extra tests, unattended interrupt.
-      return self::FailureCode;
-    }
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TapHarness
-
-class TapHarness extends Runner\TestHarness {
-  function __construct() {
-    parent::__construct(new TapHarnessWriter(IO\File::GetStandardOutput()));
   }
 }
 
