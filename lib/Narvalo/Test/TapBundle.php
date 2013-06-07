@@ -188,6 +188,10 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
     $this->_stream = $_stream_;
   }
 
+  function close() {
+    $this->dispose();
+  }
+
   function writeResult($_name_, Framework\TestSetResult $_result_) {
     if ($_result_->passed) {
       $status = 'ok';

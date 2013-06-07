@@ -336,17 +336,16 @@ class TestProducer {
       $this->_engine->stop();
     }
 
-    $result = new TestSetResult();
-    $result->passed
-      = 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
-    $result->bailedOut          = $this->_bailedOut;
-    $result->runtimeErrorsCount = $this->_runtimeErrorsCount;
-    $result->failuresCount      = $this->_set->getFailuresCount();
-    $result->testsCount         = $this->_set->getTestsCount();
+    $ret = new TestSetResult();
+    $ret->bailedOut          = $this->_bailedOut;
+    $ret->runtimeErrorsCount = $this->_runtimeErrorsCount;
+    $ret->failuresCount      = $this->_set->getFailuresCount();
+    $ret->testsCount         = $this->_set->getTestsCount();
+    $ret->passed = 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
 
     $this->_reset();
 
-    return $result;
+    return $ret;
   }
 
   function captureRuntimeError($_error_) {

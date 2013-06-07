@@ -18,8 +18,7 @@ use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
 try {
-  $exit_code = RunTestApp::Main($argv);
-  exit($exit_code);
+  exit(RunTestApp::Main($argv));
 } catch (\Exception $e) {
   Narvalo\Log::Fatal($e);
   echo $e->getMessage(), \PHP_EOL;
@@ -41,8 +40,9 @@ class RunTestApp {
   }
 
   function run(RunTestOptions $_options_) {
-    $outWriter = new Tap\TapOutWriter(IO\File::GetStandardOutput(), \TRUE);
-    $errWriter = new Tap\TapErrWriter(IO\File::GetStandardOutput());
+    $stdout    = IO\File::GetStandardOutput();
+    $outWriter = new Tap\TapOutWriter($stdout, \TRUE);
+    $errWriter = new Tap\TapErrWriter($stdout);
     $engine    = new Framework\TestEngine($outWriter, $errWriter);
     $producer  = new Framework\TestProducer($engine);
     $producer->register();
@@ -50,13 +50,13 @@ class RunTestApp {
     $runner = new Runner\TestRunner($producer);
     $result = $runner->run(new Sets\FileTestSet($_options_->getFilePath()));
 
-    $errWriter->dispose();
-    $outWriter->dispose();
+    $errWriter->close();
+    $outWriter->close();
 
-    return $this->_getExitCode($result);
+    return self::_GetExitCode($result);
   }
 
-  private function _getExitCode(Framework\TestSetResult $result) {
+  private static function _GetExitCode(Framework\TestSetResult $result) {
     if ($result->runtimeErrorsCount > 0) {
       return self::FailureCode;
     } elseif ($result->passed) {

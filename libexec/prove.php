@@ -36,7 +36,7 @@ class ProveApp {
     $harness = new Runner\TestHarness($writer);
     $harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
 
-    $writer->dispose();
+    $writer->close();
   }
 }
 
