@@ -17,13 +17,7 @@ use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-try {
-  exit(RunTestApp::Main($argv));
-} catch (\Exception $e) {
-  Narvalo\Log::Fatal($e);
-  echo $e->getMessage(), \PHP_EOL;
-  exit(1);
-}
+RunTestApp::Main($argv);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -34,15 +28,20 @@ class RunTestApp {
     FailureCode = 254;
 
   static function Main(array $_argv_) {
-    $options  = RunTestOptions::Parse($_argv_);
-
-    return (new self())->run($options);
+    try {
+      $options   = RunTestOptions::Parse($_argv_);
+      $exit_code = (new self())->run($options);
+      exit($exit_code);
+    } catch (\Exception $e) {
+      self::OnUnhandledException($e);
+    }
   }
 
   function run(RunTestOptions $_options_) {
     $stdout    = IO\File::GetStandardOutput();
     $outWriter = new Tap\TapOutWriter($stdout, \TRUE);
     $errWriter = new Tap\TapErrWriter($stdout);
+
     $engine    = new Framework\TestEngine($outWriter, $errWriter);
     $producer  = new Framework\TestProducer($engine);
     $producer->register();
@@ -52,6 +51,7 @@ class RunTestApp {
 
     $errWriter->close();
     $outWriter->close();
+    $stdout->close();
 
     return self::_GetExitCode($result);
   }
@@ -69,6 +69,12 @@ class RunTestApp {
       // Other kind of errors: extra tests, unattended interrupt.
       return self::FailureCode;
     }
+  }
+
+  private static function _OnUnhandledException(\Exception $_e_) {
+    Narvalo\Log::Fatal($_e_);
+    echo $_e_->getMessage(), \PHP_EOL;
+    exit(self::FailureCode);
   }
 }
 

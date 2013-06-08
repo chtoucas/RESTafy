@@ -7,6 +7,7 @@ namespace Narvalo;
 
 // {{{ Exception
 
+/// We really don't care about exception codes.
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
     parent::__construct($_message_, 0 /* code */, $_innerException_);
@@ -337,7 +338,7 @@ class DisposableObject {
   /// This method run when the object is either disposed or finalized (if you supply a finalizer):
   /// - free all external resources hold by the object and nullify them
   /// - optionally nullify large value fields
-  /// NB: In most cases, you are better of using a SafeHandle_.
+  /// NB: In most cases, you are better off using a SafeHandle_.
   /// WARNING: This method should NEVER throw or catch an exception.
   protected function free_() {
     ;
