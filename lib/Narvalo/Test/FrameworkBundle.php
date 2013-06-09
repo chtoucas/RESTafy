@@ -253,22 +253,22 @@ class TestEngine {
   }
 
   function addTestCaseResult(TestCaseResult $_test_, $_number_) {
-    $this->_workflow->enterTestCaseResult();
+    $this->_workflow->testCaseResult();
     $this->_outWriter->writeTestCaseResult($_test_, $_number_);
   }
 
   function addAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
-    $this->_workflow->enterTestCaseResult();
+    $this->_workflow->testCaseResult();
     $this->_outWriter->writeAlteredTestCaseResult($_test_, $_number_);
   }
 
   function addComment($_comment_) {
-    $this->_workflow->enterComment();
+    $this->_workflow->comment();
     $this->_outWriter->writeComment($_comment_);
   }
 
   function addError($_errmsg_) {
-    $this->_workflow->enterError();
+    $this->_workflow->error();
     $this->_errWriter->write($_errmsg_);
   }
 }
@@ -392,11 +392,11 @@ class TestProducer {
 
     if (\NULL !== ($tagger = $this->_engine->getTagger())) {
       $test = $tagger->alter($test);
-      $number = $this->_set->addAlteredTest($test);
-      $this->_engine->addAlteredTestCaseResult($test, $number);
+      $num = $this->_set->addAlteredTest($test);
+      $this->_engine->addAlteredTestCaseResult($test, $num);
     } else {
-      $number = $this->_set->addTest($test);
-      $this->_engine->addTestCaseResult($test, $number);
+      $num = $this->_set->addTest($test);
+      $this->_engine->addTestCaseResult($test, $num);
     }
 
     return $test->passed();
@@ -412,8 +412,8 @@ class TestProducer {
     }
     $test = $_directive_->alter(new TestCaseResult('', \TRUE));
     for ($i = 1; $i <= $_how_many_; $i++) {
-      $number = $this->_set->addAlteredTest($test);
-      $this->_engine->addAlteredTestCaseResult($test, $number);
+      $num = $this->_set->addAlteredTest($test);
+      $this->_engine->addAlteredTestCaseResult($test, $num);
     }
   }
 
@@ -426,15 +426,13 @@ class TestProducer {
   }
 
   function subtest(\Closure $_fun_, $_description_) {
-    // Save the current state.
-    $set       = $this->_set;
-    $bailedOut = $this->_bailedOut;
+    // Store the current state.
+    $set = $this->_set;
     $runtimeErrorsCount = $this->_runtimeErrorsCount;
 
     // Execute the subtests.
     $this->_engine->startSubtest();
     $this->_set = new _\DynamicTestResultSet();
-    $this->_bailedOut = \FALSE;
     $this->_runtimeErrorsCount = 0;
 
     try {
@@ -451,8 +449,8 @@ class TestProducer {
     $passed = $this->_passed();
 
     // Restore the original state.
-    $this->_set       = $set;
-    $this->_bailedOut = $bailedOut;
+    $this->_set = $set;
+    $this->_bailedOut = \FALSE;
     $this->_runtimeErrorsCount += $runtimeErrorsCount;
 
     // Report the result.
@@ -475,7 +473,8 @@ class TestProducer {
   }
 
   private function _passed() {
-    return 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
+    return !$this->_bailedOut && $this->_set->passed();
+    // XXX return 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
   }
 
   private function _reset() {
@@ -540,11 +539,11 @@ use \Narvalo\Test\Framework;
 
 abstract class TestResultSet_ {
   private
-    $_closed = \FALSE,
+    $_closed        = \FALSE,
     /// Number of failed tests.
     $_failuresCount = 0,
     /// List of tests.
-    $_tests = array();
+    $_tests         = array();
 
   protected function __construct() {
     ;
@@ -558,9 +557,18 @@ abstract class TestResultSet_ {
     return $this->_failuresCount;
   }
 
-  abstract function passed();
+  abstract protected function passedCore_();
 
   abstract protected function closeCore_(Framework\TestEngine $_engine_);
+
+  function passed() {
+    if (!$this->_closed) {
+      // NB: This is not taken care of by the workflow.
+      throw new Narvalo\InvalidOperationException(
+        'Before getting the test status, you must close it.');
+    }
+    return $this->passedCore_();
+  }
 
   function close(Framework\TestEngine $_engine_) {
     if ($this->_closed) {
@@ -571,21 +579,29 @@ abstract class TestResultSet_ {
   }
 
   function addTest(Framework\TestCaseResult $_test_) {
+    if ($this->_closed) {
+      // NB: This is not taken care of by the workflow.
+      throw new Narvalo\InvalidOperationException('You can not add a test to a closed set.');
+    }
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
-    $number = $this->getTestsCount();
-    $this->_tests[$number] = $_test_;
-    return 1 + $number;
+    $num = $this->getTestsCount();
+    $this->_tests[$num] = $_test_;
+    return 1 + $num;
   }
 
   function addAlteredTest(Framework\AlteredTestCaseResult $_test_) {
+    if ($this->_closed) {
+      // NB: This is not taken care of by the workflow.
+      throw new Narvalo\InvalidOperationException('You can not add a test to a closed set.');
+    }
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
-    $number = $this->getTestsCount();
-    $this->_tests[$number] = $_test_;
-    return 1 + $number;
+    $num = $this->getTestsCount();
+    $this->_tests[$num] = $_test_;
+    return 1 + $num;
   }
 }
 
@@ -597,20 +613,20 @@ final class EmptyTestResultSet extends TestResultSet_ {
     ;
   }
 
-  function passed() {
-    return \TRUE;
-  }
-
-  function closeCore_(Framework\TestEngine $_engine_) {
-    ;
-  }
-
   function addTest(Framework\TestCaseResult $_test_) {
     throw new Narvalo\NotSupportedException('You can not add a test to '.__CLASS__);
   }
 
   function addAlteredTest(Framework\AlteredTestCaseResult $_test_) {
     throw new Narvalo\NotSupportedException('You can not add an altered test to '.__CLASS__);
+  }
+
+  protected function passedCore_() {
+    return \TRUE;
+  }
+
+  protected function closeCore_(Framework\TestEngine $_engine_) {
+    ;
   }
 }
 
@@ -622,8 +638,13 @@ final class DynamicTestResultSet extends TestResultSet_ {
     ;
   }
 
+  protected function passedCore_() {
+    // We actually run tests and they all passed.
+    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
+  }
+
   /// Print helpful messages if something went wrong AND post plan.
-  function closeCore_(Framework\TestEngine $_engine_) {
+  protected function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       if (($failures_count = $this->getFailuresCount()) > 0) {
@@ -639,11 +660,6 @@ final class DynamicTestResultSet extends TestResultSet_ {
       // No tests run.
       $_engine_->addComment('No plan. No tests run!');
     }
-  }
-
-  function passed() {
-    // We actually run tests and they all passed.
-    return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
   }
 }
 
@@ -666,15 +682,15 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
     return $this->getTestsCount() - $this->_length;
   }
 
-  function passed() {
+  protected function passedCore_() {
     // We actually run tests, they all passed and there are no extras tests.
     return 0 === $this->getFailuresCount()
-      && 0 !== $this->getTestsCount()
+      && 0 !== $this->getTestsCount()       // XXX: no test = failure?
       && 0 === $this->getExtrasCount();
   }
 
   /// Print helpful messages if something went wrong.
-  function closeCore_(Framework\TestEngine $_engine_) {
+  protected function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
@@ -971,7 +987,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
-  function enterTestCaseResult() {
+  function testCaseResult() {
     $this->throwIfStopped_();
 
     switch ($this->_state) {
@@ -1040,7 +1056,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
-  function enterComment() {
+  function comment() {
     $this->throwIfStopped_();
 
     // This method does not change the current state.
@@ -1059,7 +1075,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
-  function enterError() {
+  function error() {
     $this->throwIfStopped_();
 
     // This method does not change the current state.
