@@ -196,10 +196,19 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
-    $status = $_result_->bailedOut() ? 'BAILED OUT!' : ($_result_->passed() ? 'ok' : 'KO');
+    $diagnostic = '';
 
-    if ($_result_->passed() && $_result_->getRuntimeErrorsCount() > 0) {
-      $status .= ' DUBIOUS';
+    if ($_result_->bailedOut()) {
+      $status = 'BAILED OUT!';
+    } else if ($_result_->passed()) {
+      $status = 'ok' . ($_result_->getRuntimeErrorsCount() > 0 ? ' DUBIOUS' : '');
+    } else {
+      $status = 'KO';
+
+      if (($tests_count = $_result_->getTestsCount()) > 0) {
+        $diagnostic = \sprintf(
+          'Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count);
+      }
     }
 
     if (($dotlen = 40 - \strlen($_name_)) > 0) {
@@ -209,28 +218,24 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
     }
 
     $this->_stream->writeLine($statusLine);
-
-    if (($tests_count = $_result_->getTestsCount()) > 0 && !$_result_->passed()) {
-      $this->_stream->writeLine(\sprintf(
-        'Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count));
+    if ('' !== $diagnostic) {
+      $this->_stream->writeLine($diagnostic);
     }
   }
 
   function writeSummary(Runner\TestHarnessSummary $_summary_) {
     if ($_summary_->passed) {
       $this->_stream->writeLine('All tests successful.');
+      $this->_stream->writeLine(\sprintf(
+        'Sets=%s, Tests=%s', $_summary_->setsCount, $_summary_->testsCount));
+      $this->_stream->writeLine('Result: PASS');
+    } else {
+      $this->_stream->writeLine(\sprintf(
+        'Sets=%s, Failures=%s', $_summary_->setsCount, $_summary_->failedSetsCount));
+      $this->_stream->writeLine(\sprintf(
+        'Tests=%s, Failures=%s', $_summary_->testsCount, $_summary_->failedTestsCount));
+      $this->_stream->writeLine('Result: FAIL');
     }
-    $this->_stream->writeLine(
-      \sprintf(
-        'Sets=%s, Failures=%s',
-        $_summary_->setsCount,
-        $_summary_->failedSetsCount));
-    $this->_stream->writeLine(
-      \sprintf(
-        'Tests=%s, Failures=%s',
-        $_summary_->testsCount,
-        $_summary_->failedTestsCount));
-    $this->_stream->writeLine(\sprintf('Result: %s', ($_summary_->passed ? 'PASS' : 'FAIL')));
   }
 
   protected function close_() {
