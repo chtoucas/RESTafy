@@ -196,9 +196,9 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
-    $status = $_result_->passed ? 'ok' : ($_result_->bailedOut ? 'BAILED OUT!' : 'KO');
+    $status = $_result_->bailedOut() ? 'BAILED OUT!' : ($_result_->passed() ? 'ok' : 'KO');
 
-    if ($_result_->runtimeErrorsCount > 0) {
+    if ($_result_->passed() && $_result_->getRuntimeErrorsCount() > 0) {
       $status .= ' DUBIOUS';
     }
 
@@ -210,9 +210,9 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
 
     $this->_stream->writeLine($statusLine);
 
-    if (!$_result_->passed) {
-      $this->_stream->writeLine(
-        \sprintf('Failed %s/%s subtests', $_result_->failuresCount, $_result_->testsCount));
+    if (!$_result_->passed()) {
+      $this->_stream->writeLine(\sprintf(
+        'Failed %s/%s subtests', $_result_->getFailuresCount(), $_result_->getTestsCount()));
     }
   }
 

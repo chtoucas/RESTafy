@@ -110,14 +110,14 @@ class TestHarness {
 
       $this->_writer->writeResult($set->getName(), $result);
 
-      if ($summary->passed && !$result->passed) {
+      if ($summary->passed && !$result->passed()) {
         $summary->passed = \FALSE;
       }
 
       $summary->setsCount++;
-      $summary->failedSetsCount  += $result->passed ? 0 : 1;
-      $summary->testsCount       += $result->testsCount;
-      $summary->failedTestsCount += $result->failuresCount;
+      $summary->failedSetsCount  += $result->passed() ? 0 : 1;
+      $summary->testsCount       += $result->getTestsCount();
+      $summary->failedTestsCount += $result->getFailuresCount();
     }
 
     $this->_writer->writeSummary($summary);

@@ -126,12 +126,36 @@ class AlteredTestCaseResult {
 // {{{ TestSetResult
 
 final class TestSetResult {
-  public
-    $passed             = \FALSE,
-    $bailedOut          = \FALSE,
-    $runtimeErrorsCount = 0,
-    $failuresCount      = 0,
-    $testsCount         = 0;
+  private
+    $_set,
+    $_bailedOut,
+    $_runtimeErrorsCount;
+
+  function __construct(_\TestResultSet_ $_set_, $_bailedOut_, $_runtimeErrorsCount_) {
+    $this->_set                = $_set_;
+    $this->_bailedOut          = $_bailedOut_;
+    $this->_runtimeErrorsCount = $_runtimeErrorsCount_;
+  }
+
+  function passed() {
+    return $this->_set->passed();
+  }
+
+  function bailedOut() {
+    return $this->_bailedOut;
+  }
+
+  function getFailuresCount() {
+    return $this->_set->getFailuresCount();
+  }
+
+  function getTestsCount() {
+    return $this->_set->getTestsCount();
+  }
+
+  function getRuntimeErrorsCount() {
+    return $this->_runtimeErrorsCount;
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -334,16 +358,11 @@ class TestProducer {
 
     $this->_engine->stop();
 
-    $ret = new TestSetResult();
-    $ret->bailedOut          = $this->_bailedOut;
-    $ret->runtimeErrorsCount = $this->_runtimeErrorsCount;
-    $ret->failuresCount      = $this->_set->getFailuresCount();
-    $ret->testsCount         = $this->_set->getTestsCount();
-    $ret->passed             = $this->_passed();
+    $result = $this->_createResult();
 
     $this->_reset();
 
-    return $ret;
+    return $result;
   }
 
   function captureRuntimeError($_error_) {
@@ -446,7 +465,7 @@ class TestProducer {
     $this->_set->close($this->_engine);
     $this->_engine->endSubtest();
 
-    $passed = $this->_passed();
+    $result = $this->_createResult();
 
     // Restore the original state.
     $this->_set = $set;
@@ -454,7 +473,7 @@ class TestProducer {
     $this->_runtimeErrorsCount += $runtimeErrorsCount;
 
     // Report the result.
-    $this->assert($passed, $_description_);
+    $this->assert(!$result->bailedOut() && $result->passed(), $_description_);
   }
 
   function note($_note_) {
@@ -472,9 +491,8 @@ class TestProducer {
     return (int)$_value_ === $_value_ && $_value_ > 0;
   }
 
-  private function _passed() {
-    return !$this->_bailedOut && $this->_set->passed();
-    // XXX return 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
+  private function _createResult() {
+    return new TestSetResult($this->_set, $this->_bailedOut, $this->_runtimeErrorsCount);
   }
 
   private function _reset() {
