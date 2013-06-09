@@ -253,8 +253,8 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   private function _writeWarning(Runner\TestHarnessSummary $_summary_) {
     if (($dubious_count = $_summary_->getDubiousSetsCount()) > 0) {
       $dubious_count > 1
-      ? $this->_stream->writeLine('WARNING: There is one dubious set')
-      : $this->_stream->writeLine(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
+        ? $this->_stream->writeLine('WARNING: There is one dubious set')
+        : $this->_stream->writeLine(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
     }
   }
 }

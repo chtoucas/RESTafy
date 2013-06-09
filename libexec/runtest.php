@@ -17,43 +17,76 @@ use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-RunTestApp::Main($argv);
-
 // -------------------------------------------------------------------------------------------------
 
-class RunTestApp {
+class TapApplication extends Narvalo\DisposableObject {
+  private
+    $_stdout,
+    $_runner;
+
+  function __construct() {
+    $this->_stdout = IO\File::GetStandardOutput();
+
+    $outWriter = new Tap\TapOutWriter($this->_stdout, \TRUE);
+    $errWriter = new Tap\TapErrWriter($this->_stdout);
+    $engine    = new Framework\TestEngine($outWriter, $errWriter);
+    $producer  = new Framework\TestProducer($engine);
+
+    $producer->register();
+
+    $this->_runner = new Runner\TestRunner($producer);
+  }
+
+  function run(Sets\ITestSet $_set_) {
+    $this->throwIfDisposed_();
+
+    return $this->_runner->run($_set_);
+  }
+
+  protected function close_() {
+    if (\NULL !== $this->_stdout) {
+      $this->_stdout->close();
+    }
+  }
+}
+
+class RunTestApp extends Narvalo\DisposableObject {
   const
     SuccessCode = 0,
     // NB: TAP uses 255 but in PHP this is a reserved code.
     FailureCode = 254;
 
+  private $_app;
+
+  function __construct() {
+    $this->_app = new TapApplication();
+  }
+
   static function Main(array $_argv_) {
+    $exit_code;
+
     try {
-      $options   = RunTestOptions::Parse($_argv_);
-      $exit_code = (new self())->run($options);
-      exit($exit_code);
+      $self = new self();
+
+      $opts = RunTestOptions::Parse($_argv_);
+      $result = $self->run($opts);
+      $exit_code = self::_GetExitCode($result);
     } catch (\Exception $e) {
       self::_OnUnhandledException($e);
+      $exit_code = self::FailureCode;
     }
+
+    exit($exit_code);
   }
 
   function run(RunTestOptions $_options_) {
-    $stdout    = IO\File::GetStandardOutput();
-    $outWriter = new Tap\TapOutWriter($stdout, \TRUE);
-    $errWriter = new Tap\TapErrWriter($stdout);
-    $engine    = new Framework\TestEngine($outWriter, $errWriter);
+    return $this->_app->run(new Sets\FileTestSet($_options_->getFilePath()));
+  }
 
-    $producer = new Framework\TestProducer($engine);
-    $producer->register();
-
-    $runner = new Runner\TestRunner($producer);
-    $result = $runner->run(new Sets\FileTestSet($_options_->getFilePath()));
-
-    $errWriter->close();
-    $outWriter->close();
-    $stdout->close();
-
-    return self::_GetExitCode($result);
+  protected function close_() {
+    if (\NULL !== $this->_stdout) {
+      $this->_runner->dispose();
+    }
   }
 
   private static function _GetExitCode(Framework\TestSetResult $result) {
@@ -73,8 +106,10 @@ class RunTestApp {
 
   private static function _OnUnhandledException(\Exception $_e_) {
     Narvalo\Log::Fatal($_e_);
-    echo $_e_->getMessage(), \PHP_EOL;
-    exit(self::FailureCode);
+
+    $stderr = IO\File::GetStandardError();
+    $stderr->writeLine($_e_->getMessage());
+    $stderr->close();
   }
 }
 
@@ -100,5 +135,9 @@ class RunTestOptions {
     return $self;
   }
 }
+
+// -------------------------------------------------------------------------------------------------
+
+RunTestApp::Main($argv);
 
 // EOF

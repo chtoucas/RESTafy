@@ -116,16 +116,9 @@ class TestHarness {
     $_writer,
     $_runner;
 
-  function __construct(ITestHarnessWriter $_writer_, Framework\TestEngine $_engine_ = \NULL) {
+  function __construct(ITestHarnessWriter $_writer_, TestRunner $_runner_) {
     $this->_writer = $_writer_;
-
-    $engine = $_engine_
-      ?: new Framework\TestEngine(new _\NoopTestOutWriter(), new _\NoopTestErrWriter());
-
-    $producer = new Framework\TestProducer($engine);
-    $producer->register();
-
-    $this->_runner = new TestRunner($producer);
+    $this->_runner = $_runner_;
   }
 
   function executeSets(array $_sets_) {
@@ -200,80 +193,6 @@ final class RuntimeErrorCatcher extends Narvalo\StartStopWorkflow_ {
 
   protected function stopCore_() {
     \restore_error_handler();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// Noop streams
-// =================================================================================================
-
-// {{{ NoopTestOutWriter
-
-final class NoopTestOutWriter implements Framework\ITestOutWriter {
-  function reset() {
-    ;
-  }
-
-  function startSubtest() {
-    ;
-  }
-
-  function endSubtest() {
-    ;
-  }
-
-  function writeHeader() {
-    ;
-  }
-
-  function writeFooter() {
-    ;
-  }
-
-  function writePlan($_num_of_tests_) {
-    ;
-  }
-
-  function writeSkipAll($_reason_) {
-    ;
-  }
-
-  function writeTestCaseResult(Framework\TestCaseResult $_test_, $_number_) {
-    ;
-  }
-
-  function writeAlteredTestCaseResult(Framework\AlteredTestCaseResult $_test_, $_number_) {
-    ;
-  }
-
-  function writeBailOut($_reason_) {
-    ;
-  }
-
-  function writeComment($_comment_) {
-    ;
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ NoopTestErrWriter
-
-final class NoopTestErrWriter implements Framework\ITestErrWriter {
-  function reset() {
-    ;
-  }
-
-  function startSubtest() {
-    ;
-  }
-
-  function endSubtest() {
-    ;
-  }
-
-  function write($_value_) {
-    ;
   }
 }
 

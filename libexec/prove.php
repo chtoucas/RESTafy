@@ -5,43 +5,75 @@ namespace Narvalo\Test\Runner;
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo/IOBundle.php';
+require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
 
 use \Narvalo;
 use \Narvalo\IO;
+use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
 use \Narvalo\Test\Tap;
 
-ProveApp::Main($argv);
-
 // -------------------------------------------------------------------------------------------------
 
-class ProveApp {
+class ProveApp extends Narvalo\DisposableObject {
+  const
+    SuccessCode = 0,
+    FailureCode = 1;
+
+  private
+    $_stdout,
+    $_harness;
+
+  function __construct() {
+    $this->_stdout = IO\File::GetStandardOutput();
+
+    $outWriter = new Framework\NoopTestOutWriter();
+    $errWriter = new Framework\NoopTestErrWriter();
+    $engine    = new Framework\TestEngine($outWriter, $errWriter);
+    $producer  = new Framework\TestProducer($engine);
+    $runner    = new Runner\TestRunner($producer);
+    $writer    = new Tap\TapHarnessWriter($this->_stdout);
+
+    $producer->register();
+
+    $this->_harness = new Runner\TestHarness($writer, $runner);
+  }
+
   static function Main(array $_argv_) {
+    $exit_code;
+
     try {
-      $options = ProveOptions::Parse($_argv_);
-      (new self())->run($options);
+      $self = new self();
+
+      $opts = ProveOptions::Parse($_argv_);
+      $self->run($opts);
+      $exit_code = self::SuccessCode;
     } catch (\Exception $e) {
       self::_OnUnhandledException($e);
+      $exit_code = self::FailureCode;
     }
+
+    exit($exit_code);
   }
 
   function run(ProveOptions $_options_) {
-    $stdout = IO\File::GetStandardOutput();
-    $writer = new Tap\TapHarnessWriter($stdout);
+    $this->_harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
+  }
 
-    $harness = new Runner\TestHarness($writer);
-    $harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
-
-    $writer->close();
-    $stdout->close();
+  protected function close_() {
+    if (\NULL !== $this->_stdout) {
+      $this->_stdout->close();
+    }
   }
 
   private static function _OnUnhandledException(\Exception $_e_) {
     Narvalo\Log::Fatal($_e_);
-    echo $_e_->getMessage(), \PHP_EOL;
-    exit(1);
+
+    $stderr = IO\File::GetStandardError();
+    $stderr->writeLine($_e_->getMessage());
+    $stderr->close();
   }
 }
 
@@ -64,5 +96,9 @@ class ProveOptions {
     return $self;
   }
 }
+
+// -------------------------------------------------------------------------------------------------
+
+ProveApp::Main($argv);
 
 // EOF

@@ -195,6 +195,77 @@ interface ITestErrWriter {
 
 // }}} ---------------------------------------------------------------------------------------------
 
+// {{{ NoopTestOutWriter
+
+final class NoopTestOutWriter implements ITestOutWriter {
+  function reset() {
+    ;
+  }
+
+  function startSubtest() {
+    ;
+  }
+
+  function endSubtest() {
+    ;
+  }
+
+  function writeHeader() {
+    ;
+  }
+
+  function writeFooter() {
+    ;
+  }
+
+  function writePlan($_num_of_tests_) {
+    ;
+  }
+
+  function writeSkipAll($_reason_) {
+    ;
+  }
+
+  function writeTestCaseResult(TestCaseResult $_test_, $_number_) {
+    ;
+  }
+
+  function writeAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
+    ;
+  }
+
+  function writeBailOut($_reason_) {
+    ;
+  }
+
+  function writeComment($_comment_) {
+    ;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ NoopTestErrWriter
+
+final class NoopTestErrWriter implements ITestErrWriter {
+  function reset() {
+    ;
+  }
+
+  function startSubtest() {
+    ;
+  }
+
+  function endSubtest() {
+    ;
+  }
+
+  function write($_value_) {
+    ;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
 // Test engine
 // =================================================================================================
 
