@@ -210,9 +210,9 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
 
     $this->_stream->writeLine($statusLine);
 
-    if (!$_result_->passed()) {
+    if (($tests_count = $_result_->getTestsCount()) > 0 && !$_result_->passed()) {
       $this->_stream->writeLine(\sprintf(
-        'Failed %s/%s subtests', $_result_->getFailuresCount(), $_result_->getTestsCount()));
+        'Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count));
     }
   }
 

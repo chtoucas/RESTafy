@@ -331,7 +331,7 @@ class TestProducer {
 
   function __construct(TestEngine $_engine_) {
     $this->_engine = $_engine_;
-    // NB: Until we have a plan, we use a dynamic test set.
+    // NB: Until we make a plan, we use a dynamic test set.
     $this->_set    = new _\DynamicTestResultSet();
   }
 
@@ -355,10 +355,9 @@ class TestProducer {
 
   final function stop() {
     $this->_set->close($this->_engine);
-
     $this->_engine->stop();
 
-    $result = $this->_createResult();
+    $result = new TestSetResult($this->_set, $this->_bailedOut, $this->_runtimeErrorsCount);
 
     $this->_reset();
 
@@ -387,6 +386,7 @@ class TestProducer {
     throw new BailOutTestProducerInterrupt();
   }
 
+  /// Same as bailOut() but does not throw an exception. Only useful in a catch block.
   function bailOutOnException(\Exception $_e_) {
     $this->_bailedOut = \TRUE;
     $this->_engine->bailOut($_e_->getMessage());
@@ -449,7 +449,7 @@ class TestProducer {
     $set = $this->_set;
     $runtimeErrorsCount = $this->_runtimeErrorsCount;
 
-    // Execute the subtests.
+    // Execute the subtest.
     $this->_engine->startSubtest();
     $this->_set = new _\DynamicTestResultSet();
     $this->_runtimeErrorsCount = 0;
@@ -465,7 +465,7 @@ class TestProducer {
     $this->_set->close($this->_engine);
     $this->_engine->endSubtest();
 
-    $result = $this->_createResult();
+    $result = new TestSetResult($this->_set, $this->_bailedOut, $this->_runtimeErrorsCount);
 
     // Restore the original state.
     $this->_set = $set;
@@ -489,10 +489,6 @@ class TestProducer {
 
   private static function _IsStrictlyPositiveInteger($_value_) {
     return (int)$_value_ === $_value_ && $_value_ > 0;
-  }
-
-  private function _createResult() {
-    return new TestSetResult($this->_set, $this->_bailedOut, $this->_runtimeErrorsCount);
   }
 
   private function _reset() {
