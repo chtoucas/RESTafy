@@ -61,12 +61,51 @@ interface ITestHarnessWriter {
 // {{{ TestHarnessSummary
 
 class TestHarnessSummary {
-  public
-    $passed           = \TRUE,
-    $setsCount        = 0,
-    $failedSetsCount  = 0,
-    $testsCount       = 0,
-    $failedTestsCount = 0;
+  private
+    $_passed           = \TRUE,
+    $_setsCount        = 0,
+    $_failedSetsCount  = 0,
+    $_dubiousSetsCount = 0,
+    $_testsCount       = 0,
+    $_failedTestsCount = 0;
+
+  function passed() {
+    return $this->_passed;
+  }
+
+  function getSetsCount() {
+    return $this->_setsCount;
+  }
+
+  function getFailedSetsCount() {
+    return $this->_failedSetsCount;
+  }
+
+  function getDubiousSetsCount() {
+    return $this->_dubiousSetsCount;
+  }
+
+  function getTestsCount() {
+    return $this->_testsCount;
+  }
+
+  function getFailedTestsCount() {
+    return $this->_failedTestsCount;
+  }
+
+  function addTestSetResult(Framework\TestSetResult $_result_) {
+    $failed = $_result_->bailedOut() || !$_result_->passed();
+
+    if ($this->_passed && $failed) {
+      $this->_passed = \FALSE;
+    }
+
+    $this->_setsCount++;
+    $this->_failedSetsCount  += $failed ? 1 : 0;
+    $this->_dubiousSetsCount += $_result_->getRuntimeErrorsCount() > 0 ? 1 : 0;
+    $this->_testsCount       += $_result_->getTestsCount();
+    $this->_failedTestsCount += $_result_->getFailuresCount();
+  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -90,16 +129,15 @@ class TestHarness {
   }
 
   function executeSets(array $_sets_) {
-    return $this->execute_(new \ArrayIterator($_sets_));
+    $this->execute_(new \ArrayIterator($_sets_));
   }
 
   function executeFiles(array $_paths_) {
-    return $this->execute_(new Sets\FileTestSetIterator($_paths_));
+    $this->execute_(new Sets\FileTestSetIterator($_paths_));
   }
 
   function scanDirectoryAndExecute($_path_, $_file_ext_ = 'phpt') {
-    return $this->execute_(
-      Sets\InDirectoryFileTestSetIterator::FromPath($_path_, $_file_ext_));
+    $this->execute_(Sets\InDirectoryFileTestSetIterator::FromPath($_path_, $_file_ext_));
   }
 
   protected function execute_(\Iterator $_it_) {
@@ -110,18 +148,10 @@ class TestHarness {
 
       $this->_writer->writeResult($set->getName(), $result);
 
-      if ($summary->passed && !$result->passed()) {
-        $summary->passed = \FALSE;
-      }
-
-      $summary->setsCount++;
-      $summary->failedSetsCount  += $result->passed() ? 0 : 1;
-      $summary->testsCount       += $result->getTestsCount();
-      $summary->failedTestsCount += $result->getFailuresCount();
+      $summary->addTestSetResult($result);
     }
 
     $this->_writer->writeSummary($summary);
-    return $summary;
   }
 }
 

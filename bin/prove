@@ -6,6 +6,6 @@ cd ${PROJECT_DIR}
 
 rm -f ${PROJECT_DIR}/tmp/prove.log
 
-prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -f' t/
+prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -d include_path=./lib -f' t/
 
 cd - > /dev/null

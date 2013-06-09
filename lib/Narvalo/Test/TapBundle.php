@@ -204,14 +204,14 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
       $status = 'ok' . ($_result_->getRuntimeErrorsCount() > 0 ? ' DUBIOUS' : '');
     } else {
       $status = 'KO';
-
-      if (($tests_count = $_result_->getTestsCount()) > 0) {
-        $diagnostic = \sprintf(
-          'Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count);
-      }
     }
 
-    if (($dotlen = 40 - \strlen($_name_)) > 0) {
+    if (!$_result_->passed() && ($tests_count = $_result_->getTestsCount()) > 0) {
+      $diagnostic = \sprintf(
+        'Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count);
+    }
+
+    if (($dotlen = 50 - \strlen($_name_)) > 0) {
       $statusLine = $_name_ . \str_repeat('.', $dotlen) . ' ' . $status;
     } else {
       $statusLine = $_name_ . '... '. $status;
@@ -224,16 +224,22 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   }
 
   function writeSummary(Runner\TestHarnessSummary $_summary_) {
-    if ($_summary_->passed) {
-      $this->_stream->writeLine('All tests successful.');
+    $this->_stream->writeLine('-----------------------');
+
+    if ($_summary_->passed()) {
+      $this->_stream->writeLine('All tests successful');
       $this->_stream->writeLine(\sprintf(
-        'Sets=%s, Tests=%s', $_summary_->setsCount, $_summary_->testsCount));
+        'Sets=%s, Tests=%s', $_summary_->getSetsCount(), $_summary_->getTestsCount()));
+      $this->_writeWarning($_summary_);
       $this->_stream->writeLine('Result: PASS');
     } else {
       $this->_stream->writeLine(\sprintf(
-        'Sets=%s, Failures=%s', $_summary_->setsCount, $_summary_->failedSetsCount));
-      $this->_stream->writeLine(\sprintf(
-        'Tests=%s, Failures=%s', $_summary_->testsCount, $_summary_->failedTestsCount));
+        'Failed %s/%s (%s/%s) of test sets (units) run',
+        $_summary_->getFailedSetsCount(),
+        $_summary_->getSetsCount(),
+        $_summary_->getFailedTestsCount(),
+        $_summary_->getTestsCount()));
+      $this->_writeWarning($_summary_);
       $this->_stream->writeLine('Result: FAIL');
     }
   }
@@ -241,6 +247,14 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   protected function close_() {
     if (\NULL !== $this->_stream) {
       $this->_stream->close();
+    }
+  }
+
+  private function _writeWarning(Runner\TestHarnessSummary $_summary_) {
+    if (($dubious_count = $_summary_->getDubiousSetsCount()) > 0) {
+      $dubious_count > 1
+      ? $this->_stream->writeLine('WARNING: There is one dubious set')
+      : $this->_stream->writeLine(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
     }
   }
 }

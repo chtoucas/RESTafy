@@ -57,13 +57,13 @@ class RunTestApp {
   }
 
   private static function _GetExitCode(Framework\TestSetResult $result) {
-    if ($result->runtimeErrorsCount > 0) {
+    if ($result->getRuntimeErrorsCount() > 0) {
       return self::FailureCode;
-    } elseif ($result->passed) {
+    } elseif ($result->passed()) {
       return self::SuccessCode;
-    } elseif ($result->bailedOut) {
+    } elseif ($result->bailedOut()) {
       return self::FailureCode;
-    } elseif (($count = $result->failuresCount) > 0) {
+    } elseif (($count = $result->getFailuresCount()) > 0) {
       return $count < self::FailureCode ? $count : (self::FailureCode - 1);
     } else {
       // Other kind of errors: extra tests, unattended interrupt.
