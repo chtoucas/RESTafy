@@ -37,7 +37,7 @@ class TestRunner {
     } catch (Framework\TestProducerInterrupt $e) {
       ;
     } catch (\Exception $e) {
-      $this->_producer->bailOut($e->getMessage());
+      $this->_producer->bailOutOnException($e);
     }
 
     $this->_errorCatcher->stop();

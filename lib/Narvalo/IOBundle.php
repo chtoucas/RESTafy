@@ -97,8 +97,7 @@ final class File {
     }
   }
 
-  /// WARNING: This method does not report on exceptional conditions
-  /// like an authorization failure.
+  /// WARNING: This method does not report on exceptional conditions like an authorization failure.
   static function Exists($_path_) {
     return \file_exists($_path_);
   }

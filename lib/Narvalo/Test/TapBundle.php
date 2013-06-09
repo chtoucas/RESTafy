@@ -113,24 +113,14 @@ final class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
   }
 
   function writeTestCaseResult(Framework\TestCaseResult $_test_, $_number_) {
-    $status = $_test_->passed() ? 'ok' : 'not ok';
-    if ('' !== ($desc = $_test_->getDescription())) {
-      $line = \sprintf('%s %d - %s', $status, $_number_, self::_FormatDescription($desc));
-    } else {
-      $line = \sprintf('%s %d', $status, $_number_);
-    }
-    $this->writeTapLine_($line);
+    $this->writeTapLine_(
+      self::_GetTestLine($_test_->passed(), $_number_, $_test_->getDescription()));
   }
 
   function writeAlteredTestCaseResult(Framework\AlteredTestCaseResult $_test_, $_number_) {
+    $line = self::_GetTestLine($_test_->passed(), $_number_, $_test_->getDescription());
     $reason = self::_FormatReason($_test_->getAlterationReason());
-    if ('' !== ($desc = $_test_->getDescription())) {
-      $line = \sprintf('ok %d - %s # %s %s',
-        $_number_, self::_FormatDescription($desc), $_test_->getAlterationName(), $reason);
-    } else {
-      $line = \sprintf('ok %d # %s %s', $_number_, $_test_->getAlterationName(), $reason);
-    }
-    $this->writeTapLine_($line);
+    $this->writeTapLine_(\sprintf('%s # %s %s', $line, $_test_->getAlterationName(), $reason));
   }
 
   function writeBailOut($_reason_) {
@@ -142,6 +132,19 @@ final class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
       return;
     }
     $this->writeTapLine_($this->formatMultiLine_('# ', $_comment_));
+  }
+
+  // Private methods
+  // ---------------
+
+  private static function _GetTestLine($_passed_, $_number_, $_desc_) {
+    $status = $_passed_ ? 'ok' : 'not ok';
+    if ('' !== $_desc_) {
+      $line = \sprintf('%s %d - %s', $status, $_number_, self::_FormatDescription($_desc_));
+    } else {
+      $line = \sprintf('%s %d', $status, $_number_);
+    }
+    return $line;
   }
 
   private static function _FormatDescription($_desc_) {
@@ -193,15 +196,7 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   }
 
   function writeResult($_name_, Framework\TestSetResult $_result_) {
-    if ($_result_->passed) {
-      $status = 'ok';
-    } else {
-      if ($_result_->bailedOut) {
-        $status = 'BAILED OUT!';
-      } else {
-        $status = 'KO';
-      }
-    }
+    $status = $_result_->passed ? 'ok' : ($_result_->bailedOut ? 'BAILED OUT!' : 'KO');
 
     if ($_result_->runtimeErrorsCount > 0) {
       $status .= ' DUBIOUS';

@@ -13,30 +13,35 @@ use \Narvalo\IO;
 use \Narvalo\Test\Runner;
 use \Narvalo\Test\Tap;
 
-try {
-  ProveApp::Main($argv);
-} catch (\Exception $e) {
-  Narvalo\Log::Fatal($e);
-  echo $e->getMessage(), \PHP_EOL;
-  exit(1);
-}
+ProveApp::Main($argv);
 
 // -------------------------------------------------------------------------------------------------
 
 class ProveApp {
   static function Main(array $_argv_) {
-    $options = ProveOptions::Parse($_argv_);
-
-    (new self())->run($options);
+    try {
+      $options = ProveOptions::Parse($_argv_);
+      (new self())->run($options);
+    } catch (\Exception $e) {
+      self::_OnUnhandledException($e);
+    }
   }
 
   function run(ProveOptions $_options_) {
-    $writer = new Tap\TapHarnessWriter(IO\File::GetStandardOutput());
+    $stdout = IO\File::GetStandardOutput();
+    $writer = new Tap\TapHarnessWriter($stdout);
 
     $harness = new Runner\TestHarness($writer);
     $harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
 
     $writer->close();
+    $stdout->close();
+  }
+
+  private static function _OnUnhandledException(\Exception $_e_) {
+    Narvalo\Log::Fatal($_e_);
+    echo $_e_->getMessage(), \PHP_EOL;
+    exit(1);
   }
 }
 

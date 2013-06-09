@@ -33,7 +33,7 @@ class RunTestApp {
       $exit_code = (new self())->run($options);
       exit($exit_code);
     } catch (\Exception $e) {
-      self::OnUnhandledException($e);
+      self::_OnUnhandledException($e);
     }
   }
 

@@ -207,28 +207,28 @@ class TestEngine {
 
   function start() {
     $this->_workflow->start();
-    $this->_workflow->enterHeader();
+    $this->_workflow->header();
     $this->_outWriter->writeHeader();
   }
 
   function stop() {
-    $this->_workflow->enterFooter();
+    $this->_workflow->footer();
     $this->_workflow->stop();
     $this->_outWriter->writeFooter();
   }
 
   function bailOut($_reason_) {
-    $this->_workflow->enterBailOut();
+    $this->_workflow->bailOut();
     $this->_outWriter->writeBailOut($_reason_);
   }
 
   function skipAll($_reason_) {
-    $this->_workflow->enterSkipAll();
+    $this->_workflow->skipAll();
     $this->_outWriter->writeSkipAll($_reason_);
   }
 
   function plan($_num_of_tests_) {
-    $this->_workflow->enterPlan();
+    $this->_workflow->plan();
     $this->_outWriter->writePlan($_num_of_tests_);
   }
 
@@ -302,8 +302,6 @@ class TestProducer {
     $_engine,
     /// Test set.
     $_set,
-    /// Was the producer interrupted?
-    $_interrupted        = \FALSE,
     $_bailedOut          = \FALSE,
     $_runtimeErrorsCount = 0;
 
@@ -320,7 +318,8 @@ class TestProducer {
     return $this->_engine->running();
   }
 
-  //
+  // Core methods
+  // ------------
 
   final function register() {
     (new TestModule())->initialize($this);
@@ -331,17 +330,16 @@ class TestProducer {
   }
 
   final function stop() {
-    if (!$this->_interrupted) {
-      $this->_endTestResultSet();
-      $this->_engine->stop();
-    }
+    $this->_set->close($this->_engine);
+
+    $this->_engine->stop();
 
     $ret = new TestSetResult();
     $ret->bailedOut          = $this->_bailedOut;
     $ret->runtimeErrorsCount = $this->_runtimeErrorsCount;
     $ret->failuresCount      = $this->_set->getFailuresCount();
     $ret->testsCount         = $this->_set->getTestsCount();
-    $ret->passed = 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
+    $ret->passed             = $this->_passed();
 
     $this->_reset();
 
@@ -353,22 +351,30 @@ class TestProducer {
     $this->_engine->addError($_error_);
   }
 
-  // Test methods
-  // ------------
+  // Test interrupts
+  // ---------------
 
   function skipAll($_reason_) {
     $this->_set = new _\EmptyTestResultSet();
     $this->_engine->skipAll($_reason_);
-    $this->_engine->stop();
-    $this->_skipAllInterrupt();
+    // THIS IS BAD but I do not see any other simple way to stop the execution here.
+    throw new SkipAllTestProducerInterrupt();
   }
 
   function bailOut($_reason_) {
     $this->_bailedOut = \TRUE;
     $this->_engine->bailOut($_reason_);
-    $this->_engine->stop();
-    $this->_bailOutInterrupt();
+    // THIS IS BAD but I do not see any other simple way to stop the execution here.
+    throw new BailOutTestProducerInterrupt();
   }
+
+  function bailOutOnException(\Exception $_e_) {
+    $this->_bailedOut = \TRUE;
+    $this->_engine->bailOut($_e_->getMessage());
+  }
+
+  // Test methods
+  // ------------
 
   function plan($_how_many_) {
     if (!self::_IsStrictlyPositiveInteger($_how_many_)) {
@@ -420,22 +426,36 @@ class TestProducer {
   }
 
   function subtest(\Closure $_fun_, $_description_) {
-    // Switch to a new TestResultSet.
-    $set = $this->_set;
-    $this->_set = new _\DynamicTestResultSet();
-    // Notify outputs.
-    $this->_engine->startSubtest();
+    // Save the current state.
+    $set       = $this->_set;
+    $bailedOut = $this->_bailedOut;
+    $runtimeErrorsCount = $this->_runtimeErrorsCount;
+
     // Execute the subtests.
-    $_fun_();
-    //
-    $this->_endTestResultSet();
-    // Restore outputs.
+    $this->_engine->startSubtest();
+    $this->_set = new _\DynamicTestResultSet();
+    $this->_bailedOut = \FALSE;
+    $this->_runtimeErrorsCount = 0;
+
+    try {
+      $_fun_();
+    } catch (TestProducerInterrupt $e) {
+      ;
+    } catch (\Exception $e) {
+      $this->bailOutOnException($e);
+    }
+
+    $this->_set->close($this->_engine);
     $this->_engine->endSubtest();
-    //
-    $passed = $this->_set->passed();
-    // Restore the orginal TestResultSet.
-    $this->_set = $set;
-    // Report the result to the parent producer.
+
+    $passed = $this->_passed();
+
+    // Restore the original state.
+    $this->_set       = $set;
+    $this->_bailedOut = $bailedOut;
+    $this->_runtimeErrorsCount += $runtimeErrorsCount;
+
+    // Report the result.
     $this->assert($passed, $_description_);
   }
 
@@ -447,65 +467,22 @@ class TestProducer {
     $this->_engine->addError($_errmsg_);
   }
 
-  // Lifecycle management
-  // --------------------
-
-  private function _reset() {
-    $this->_set                = new _\DynamicTestResultSet();
-    $this->_bailedOut          = \FALSE;
-    $this->_runtimeErrorsCount = 0;
-    $this->_interrupted        = \FALSE;
-    $this->_engine->reset();
-  }
-
-  // Utilities
-  // ---------
+  // Private methods
+  // ---------------
 
   private static function _IsStrictlyPositiveInteger($_value_) {
     return (int)$_value_ === $_value_ && $_value_ > 0;
   }
 
-  private function _endTestResultSet() {
-    // Print helpful messages if something went wrong.
-    // NB: This must stay above _postPlan().
-    $msgs = $this->_set->close();
-    foreach ($msgs as $msg) {
-      $this->_engine->addComment($msg);
-    }
-
-    $this->_postPlan();
+  private function _passed() {
+    return 0 === $this->_runtimeErrorsCount && !$this->_bailedOut && $this->_set->passed();
   }
 
-  private function _postPlan() {
-    if ($this->_set instanceof _\DynamicTestResultSet
-      && ($tests_count = $this->_set->getTestsCount()) > 0
-    ) {
-      // We actually run tests.
-      $this->_engine->plan($tests_count);
-    }
-  }
-
-  // Producer interrupts
-  // -------------------
-
-  private function _interrupt() {
-    $this->_interrupted = \TRUE;
-    // THIS IS BAD! but I do not see any other simple way to do it.
-    throw new TestProducerInterrupt();
-  }
-
-  private function _bailOutInterrupt($_throw_ = \TRUE) {
-    $this->_interrupted = \TRUE;
-    // THIS IS BAD! but I do not see any other simple way to do it.
-    if ($_throw_) {
-      throw new BailOutTestProducerInterrupt();
-    }
-  }
-
-  private function _skipAllInterrupt() {
-    $this->_interrupted = \TRUE;
-    // THIS IS BAD! but I do not see any other simple way to do it.
-    throw new SkipAllTestProducerInterrupt();
+  private function _reset() {
+    $this->_set                = new _\DynamicTestResultSet();
+    $this->_bailedOut          = \FALSE;
+    $this->_runtimeErrorsCount = 0;
+    $this->_engine->reset();
   }
 }
 
@@ -563,6 +540,7 @@ use \Narvalo\Test\Framework;
 
 abstract class TestResultSet_ {
   private
+    $_closed = \FALSE,
     /// Number of failed tests.
     $_failuresCount = 0,
     /// List of tests.
@@ -580,9 +558,17 @@ abstract class TestResultSet_ {
     return $this->_failuresCount;
   }
 
-  abstract function close();
-
   abstract function passed();
+
+  abstract protected function closeCore_(Framework\TestEngine $_engine_);
+
+  function close(Framework\TestEngine $_engine_) {
+    if ($this->_closed) {
+      return;
+    }
+    $this->closeCore_($_engine_);
+    $this->_closed = \TRUE;
+  }
 
   function addTest(Framework\TestCaseResult $_test_) {
     if (!$_test_->passed()) {
@@ -615,8 +601,8 @@ final class EmptyTestResultSet extends TestResultSet_ {
     return \TRUE;
   }
 
-  function close() {
-    return array();
+  function closeCore_(Framework\TestEngine $_engine_) {
+    ;
   }
 
   function addTest(Framework\TestCaseResult $_test_) {
@@ -636,22 +622,23 @@ final class DynamicTestResultSet extends TestResultSet_ {
     ;
   }
 
-  function close() {
-    $msgs = array();
+  /// Print helpful messages if something went wrong AND post plan.
+  function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
-        $msgs[] = \sprintf('Looks like you failed %s test%s of %s run.',
-          $failures_count, $s, $tests_count);
+        $_engine_->addComment(\sprintf(
+          'Looks like you failed %s test%s of %s run.', $failures_count, $s, $tests_count));
       }
-      $msgs[] = 'No plan!';
+      $_engine_->addComment('No plan!');
+      // Post plan.
+      $_engine_->plan($tests_count);
     } else {
       // No tests run.
-      $msgs[] = 'No plan. No tests run!';
+      $_engine_->addComment('No plan. No tests run!');
     }
-    return $msgs;
   }
 
   function passed() {
@@ -686,30 +673,29 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
       && 0 === $this->getExtrasCount();
   }
 
-  function close() {
-    $msgs = array();
+  /// Print helpful messages if something went wrong.
+  function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
-      if ($extras_count != 0) {
+      if (0 !== $extras_count) {
         // Count missmatch.
         $s = $this->_length > 1 ? 's' : '';
-        $msgs[] = \sprintf('Looks like you planned %s test%s but ran %s.',
-          $this->_length, $s, $tests_count);
+        $_engine_->addComment(\sprintf(
+          'Looks like you planned %s test%s but ran %s.', $this->_length, $s, $tests_count));
       }
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
         $qualifier = 0 == $extras_count ? '' : ' run';
-        $msgs[] = \sprintf('Looks like you failed %s test%s of %s%s.',
-          $failures_count, $s, $tests_count, $qualifier);
+        $_engine_->addComment(\sprintf(
+          'Looks like you failed %s test%s of %s%s.',
+          $failures_count, $s, $tests_count, $qualifier));
       }
     } else {
       // No tests run.
-      $msgs[] = 'No tests run!';
+      $_engine_->addComment('No tests run!');
     }
-
-    return $msgs;
   }
 }
 
@@ -754,7 +740,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     return $this->_tagger;
   }
 
-  function enterHeader() {
+  function header() {
     $this->throwIfStopped_();
 
     if (self::Start === $this->_state) {
@@ -770,7 +756,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
-  function enterFooter() {
+  function footer() {
     $this->throwIfStopped_();
 
     // Check workflow's state.
@@ -778,10 +764,12 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
       // Valid states.
 
     case self::BailOut:
-    case self::DynamicPlanDecl:
-    case self::StaticPlanTests:
     case self::SkipAll:
       // XXX
+      return;
+
+    case self::DynamicPlanDecl:
+    case self::StaticPlanTests:
     case self::Header:
       break;
 
@@ -796,15 +784,20 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
         'Can not enter footer. The workflow will end in an invalid state: "%s".',
         self::_GetStateName($this->_state)));
     }
+
     // Check subtests' level.
     if (0 !== $this->_subtestLevel) {
       throw new TestWorkflowException(\sprintf(
-        'There is still "%s" opened subtest in the workflow.', $this->_subtestLevel));
+        'There is still %s opened subtest in the workflow: %s',
+        $this->_subtestLevel,
+        self::_GetStateName($this->_state)));
     }
+
     // Is any tag left opened?
     if (\NULL !== $this->_tagger) {
       throw new TestWorkflowException('There is still opened tag in the workflow.');
     }
+
     $this->_state = self::End;
   }
 
@@ -906,7 +899,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     $this->_tagger = \array_pop($this->_taggerStack);
   }
 
-  function enterPlan() {
+  function plan() {
     $this->throwIfStopped_();
 
     switch ($this->_state) {
@@ -943,7 +936,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
-  function enterSkipAll() {
+  function skipAll() {
     $this->throwIfStopped_();
 
     switch ($this->_state) {
@@ -1018,7 +1011,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
-  function enterBailOut() {
+  function bailOut() {
     $this->throwIfStopped_();
 
     switch ($this->_state) {
@@ -1100,14 +1093,15 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     case self::Start:
     case self::End:
-      // XXX reset() or no test at all.
+    case self::BailOut:
+    case self::SkipAll:
       break;
 
       // Invalid states.
 
     default:
       throw new TestWorkflowException(\sprintf(
-        'The workflow will end in an invalid state: "%s".', 
+        'The workflow will end in an invalid state: "%s".',
         self::_GetStateName($this->_state)));
     }
   }
