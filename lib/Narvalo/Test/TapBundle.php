@@ -10,14 +10,14 @@ namespace Narvalo\Test\Tap;
 
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo/IOBundle.php';
+require_once 'Narvalo/TermBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 
-require_once '_Aliens/Color2.php';
-
 use \Narvalo;
 use \Narvalo\IO;
+use \Narvalo\Term;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
 use \Narvalo\Test\Sets;
@@ -294,7 +294,7 @@ class DefaultTapErrWriter extends Tap\TapErrWriter {
   }
 
   function write($_value_) {
-    return parent::write($this->_color->convert("%r$_value_%n"));
+    return parent::write(Term\Colorize::Foreground(Term\FgColor::Red, $_value_));
   }
 }
 
@@ -302,16 +302,12 @@ class DefaultTapErrWriter extends Tap\TapErrWriter {
 // {{{ DefaultTapHarnessWriter
 
 class DefaultTapHarnessWriter extends Tap\TapHarnessWriter {
-  private $_color;
-
   function __construct() {
     parent::__construct(IO\File::GetStandardOutput());
-
-    $this->_color = new \Console_Color2();
   }
 
   protected function writeError_($_value_) {
-    return parent::writeError_($this->_color->convert("%r$_value_%n"));
+    return parent::writeError_(Term\Colorize::Foreground(Term\FgColor::Red, $_value_));
   }
 }
 

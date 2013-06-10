@@ -5,16 +5,107 @@ namespace Narvalo\Term;
 require_once 'NarvaloBundle.php';
 require_once 'Narvalo/IOBundle.php';
 
-require_once '_Aliens/Color2.php';
-
 use \Narvalo;
 use \Narvalo\IO;
 
+// {{{ FgColor
+
+final class FgColor {
+  const
+    Black  = 30,
+    Red    = 31,
+    Green  = 32,
+    Yellow = 33,
+    Blue   = 34,
+    Purple = 35,
+    Cyan   = 36,
+    Grey   = 37;
+
+  private function __construct() { }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ BgColor
+
+final class BgColor {
+  const
+    Black  = 40,
+    Red    = 41,
+    Green  = 42,
+    Brown  = 43,
+    Yellow = 43,
+    Blue   = 44,
+    Purple = 45,
+    Cyan   = 46,
+    Grey   = 47;
+
+  private function __construct() { }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ Style
+
+final class Style {
+  const
+    Normal     = 0,
+    Bold       = 1,
+    Dark       = 2,
+    Underline  = 4,
+    Blink      = 5,
+    Reverse    = 6,
+    Hidden     = 8;
+
+  private function __construct() { }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{
+
+class ColorizeOptions {
+  public
+    $fgColor,
+    $bgColor,
+    $style;
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ Colorize
+
+final class Colorize {
+  const Reset = "\033[0m";
+
+  static function Foreground($_fgcolor_, $_value_) {
+    return \sprintf("\033[%dm%s", $_fgcolor_, $_value_) . self::Reset;
+  }
+
+  static function Background($_bgcolor_, $_value_) {
+    return \sprintf("\033[%dm%s", $_bgcolor_, $_value_) . self::Reset;
+  }
+
+  static function Apply(ColorizeOptions $_opts_, $_value_) {
+    $codes = array();
+    if (\NULL !== $_opts_->fgColor) {
+      $codes[] = $_opts_->fgColor;
+    }
+    if (\NULL !== $_opts_->bgColor) {
+      $codes[] = $_opts_->bgColor;
+    }
+    if (\NULL !== $_opts_->style) {
+      $codes[] = $_opts_->style;
+    }
+    if (empty($code)) {
+      return $_value_;
+    }
+
+    return \sprintf("\033[%sm%s", \implode(';', $codes), $_value_) . self::Reset;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
 // {{{ StandardErrorLogger
 
 class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable {
   private
-    $_color,
     $_stream,
     $_disposed = \FALSE;
 
@@ -22,7 +113,6 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
     parent::__construct($_level_ ?: Narvalo\LoggerLevel::GetDefault());
 
     $this->_stream = IO\File::GetStandardError();
-    $this->_color  = new \Console_Color2();
   }
 
   protected function log_($_level_, $_msg_) {
@@ -30,7 +120,8 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
       '[%s] %s',
       Narvalo\LoggerLevel::ToString($_level_),
       $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
-    $this->_stream->writeLine($this->_color->convert("%r$msg%n"));
+
+    $this->_stream->writeLine(Colorize::Foreground(FgColor::Red, $msg));
   }
 
   function dispose() {
