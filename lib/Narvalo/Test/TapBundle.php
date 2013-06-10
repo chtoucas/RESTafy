@@ -12,11 +12,16 @@ require_once 'NarvaloBundle.php';
 require_once 'Narvalo/IOBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
+require_once 'Narvalo/Test/SetsBundle.php';
+
+require_once '_Aliens/Color2.php';
 
 use \Narvalo;
 use \Narvalo\IO;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
+use \Narvalo\Test\Sets;
+use \Narvalo\Test\Tap;
 
 define('_CRLF_REGEX_PART',       '(?:\r|\n)+');
 // RegEx to find any combination of \r and \n in a string.
@@ -265,6 +270,128 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
         ? $this->writeError_('WARNING: There is one dubious set')
         : $this->writeError_(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
     }
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// =================================================================================================
+
+// {{{ DefaultTapOutWriter
+
+class DefaultTapOutWriter extends Tap\TapOutWriter {
+  function __construct() {
+    parent::__construct(IO\File::GetStandardOutput(), \TRUE /* verbose */);
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ DefaultTapErrWriter
+
+class DefaultTapErrWriter extends Tap\TapErrWriter {
+  function __construct() {
+    parent::__construct(IO\File::GetStandardError());
+  }
+
+  function write($_value_) {
+    return parent::write($this->_color->convert("%r$_value_%n"));
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ DefaultTapHarnessWriter
+
+class DefaultTapHarnessWriter extends Tap\TapHarnessWriter {
+  private $_color;
+
+  function __construct() {
+    parent::__construct(IO\File::GetStandardOutput());
+
+    $this->_color = new \Console_Color2();
+  }
+
+  protected function writeError_($_value_) {
+    return parent::writeError_($this->_color->convert("%r$_value_%n"));
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+
+// {{{ DefaultTapRunner
+
+class DefaultTapRunner extends Runner\TestRunner implements Narvalo\IDisposable {
+  private
+    $_outWriter,
+    $_errWriter,
+    $_disposed = \FALSE;
+
+  function __construct() {
+    $this->_outWriter = new DefaultTapOutWriter();
+    $this->_errWriter = new DefaultTapErrWriter();
+    $engine = new Framework\TestEngine($this->_outWriter, $this->_errWriter);
+    $producer = new Framework\TestProducer($engine);
+    $producer->register();
+
+    parent::__construct($producer);
+  }
+
+  function dispose() {
+    $this->dispose_(\TRUE);
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
+    if ($_disposing_) {
+      if (\NULL !== $this->_outWriter) {
+        $this->_outWriter->close();
+      }
+      if (\NULL !== $this->_errWriter) {
+        $this->_errWriter->close();
+      }
+    }
+
+    $this->_disposed = \TRUE;
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ DefaultTapHarness
+
+class DefaultTapHarness extends Runner\TestHarness {
+  private
+    $_writer,
+    $_disposed = \FALSE;
+
+  function __construct() {
+    $engine = new Framework\TestEngine(
+      new Framework\NoopTestOutWriter(), new Framework\NoopTestErrWriter());
+    $producer = new Framework\TestProducer($engine);
+    $producer->register();
+
+    $this->_writer = new DefaultTapHarnessWriter();
+
+    parent::__construct($this->_writer, new Runner\TestRunner($producer));
+  }
+
+  function dispose() {
+    $this->dispose_(\TRUE);
+  }
+
+  protected function dispose_($_disposing_) {
+    if ($this->_disposed) {
+      return;
+    }
+
+    if ($_disposing_) {
+      if (\NULL !== $this->_writer) {
+        $this->_writer->close();
+      }
+    }
+
+    $this->_disposed = \TRUE;
   }
 }
 

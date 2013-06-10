@@ -529,10 +529,9 @@ abstract class StartStopWorkflow_ {
 
 interface ILogger {
   function debug($_msg_);
-  function error($_msg_);
-  function fatal(\Exception $_e_);
   function notice($_msg_);
   function warn($_msg_);
+  function error($_msg_);
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -541,14 +540,17 @@ interface ILogger {
 final class LoggerLevel {
   const
     None      = 0x00,
-    Fatal     = 0x01,
-    Error     = 0x02,
-    Warning   = 0x04,
-    Notice    = 0x08,
-    Debug     = 0x16;
+    Error     = 0x01,
+    Warning   = 0x02,
+    Notice    = 0x04,
+    Debug     = 0x08;
 
   private function __construct() {
     ;
+  }
+
+  static function GetDefault() {
+    return LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice;
   }
 
   static function ToString($_level_) {
@@ -557,8 +559,6 @@ final class LoggerLevel {
       return 'Debug';
     case self::Error:
       return 'Error';
-    case self::Fatal:
-      return 'Fatal';
     case self::None:
       return 'None';
     case self::Notice:
@@ -600,14 +600,6 @@ abstract class Logger_ implements ILogger {
     $this->log_(LoggerLevel::Error, $_msg_);
   }
 
-  function fatal(\Exception $_e_) {
-    if (!$this->isEnabled_(LoggerLevel::Fatal)) {
-      return;
-    }
-
-    $this->log_(LoggerLevel::Fatal, $_e_->getTraceAsString());
-  }
-
   function notice($_msg_) {
     if (!$this->isEnabled_(LoggerLevel::Notice)) {
       return;
@@ -633,12 +625,55 @@ abstract class Logger_ implements ILogger {
 // {{{ DefaultLogger
 
 class DefaultLogger extends Logger_ {
-  function __construct($_level_) {
-    parent::__construct($_level_);
+  function __construct($_level_ = \NULL) {
+    parent::__construct($_level_ ?: LoggerLevel::GetDefault());
   }
 
-  protected function log_($_level_, $_msg_) {
+  function log_($_level_, $_msg_) {
     \error_log(\sprintf('[%s] %s', LoggerLevel::ToString($_level_), $_msg_));
+  }
+}
+
+// }}} ---------------------------------------------------------------------------------------------
+// {{{ AggregateLogger
+
+class AggregateLogger implements ILogger {
+  private $_loggers;
+
+  function __construct() {
+    $this->_loggers = new \SplObjectStorage();
+  }
+
+  function attach(ILogger $_logger_) {
+    $this->_loggers->attach($_logger_);
+  }
+
+  function detach(ILogger $_logger_) {
+    $this->_loggers->detach($_logger_);
+  }
+
+  function debug($_msg_) {
+    foreach ($this->_loggers as $logger) {
+      $logger->debug($_msg_);
+    }
+  }
+
+  function error($_msg_) {
+    foreach ($this->_loggers as $logger) {
+      $logger->error($_msg_);
+    }
+  }
+
+  function notice($_msg_) {
+    foreach ($this->_loggers as $logger) {
+      $logger->notice($_msg_);
+    }
+  }
+
+  function warn($_msg_) {
+    foreach ($this->_loggers as $logger) {
+      $logger->warn($_msg_);
+    }
   }
 }
 
@@ -664,10 +699,6 @@ final class Log {
     self::_GetLogger()->error($_msg_);
   }
 
-  static function Fatal(\Exception $_e_) {
-    self::_GetLogger()->fatal($_e_);
-  }
-
   static function Warning($_msg_) {
     self::_GetLogger()->warn($_msg_);
   }
@@ -678,8 +709,7 @@ final class Log {
 
   private static function _GetLogger() {
     if (\NULL === self::$_Logger) {
-      self::SetLogger(new DefaultLogger(
-        LoggerLevel::Fatal | LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice));
+      self::SetLogger(new DefaultLogger());
     }
     return self::$_Logger;
   }
