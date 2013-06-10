@@ -9,6 +9,7 @@ require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/SetsBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
+require_once '_Aliens/Color2.php';
 
 use \Narvalo;
 use \Narvalo\IO;
@@ -19,18 +20,28 @@ use \Narvalo\Test\Tap;
 
 // -------------------------------------------------------------------------------------------------
 
+class DefaultTapOutWriter extends Tap\TapOutWriter {
+  function __construct() {
+    parent::__construct(IO\File::GetStandardOutput(), \TRUE /* verbose */);
+  }
+}
+
+class DefaultTapErrWriter extends Tap\TapErrWriter {
+  function __construct() {
+    parent::__construct(IO\File::GetStandardError());
+  }
+
+  function write($_value_) {
+    return parent::write($this->_color->convert("%r$_value_%n"));
+  }
+}
+
 class TapApplication extends Narvalo\DisposableObject {
-  private
-    $_stdout,
-    $_runner;
+  private $_runner;
 
   function __construct() {
-    $this->_stdout = IO\File::GetStandardOutput();
-
-    $outWriter = new Tap\TapOutWriter($this->_stdout, \TRUE);
-    $errWriter = new Tap\TapErrWriter($this->_stdout);
-    $engine    = new Framework\TestEngine($outWriter, $errWriter);
-    $producer  = new Framework\TestProducer($engine);
+    $engine   = new Framework\TestEngine(new DefaultTapOutWriter(), new DefaultTapErrWriter());
+    $producer = new Framework\TestProducer($engine);
 
     $producer->register();
 
@@ -41,12 +52,6 @@ class TapApplication extends Narvalo\DisposableObject {
     $this->throwIfDisposed_();
 
     return $this->_runner->run($_set_);
-  }
-
-  protected function close_() {
-    if (\NULL !== $this->_stdout) {
-      $this->_stdout->close();
-    }
   }
 }
 

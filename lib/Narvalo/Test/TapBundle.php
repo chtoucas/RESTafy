@@ -83,7 +83,7 @@ class TapWriter extends Narvalo\DisposableObject {
 
 // {{{ TapOutWriter
 
-final class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
+class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
   const Version = 12;
 
   private $_verbose;
@@ -172,7 +172,7 @@ final class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
 // }}} ---------------------------------------------------------------------------------------------
 // {{{ TapErrWriter
 
-final class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
+class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
   function write($_value_) {
     $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
   }
@@ -182,7 +182,7 @@ final class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
 
 // {{{ TapHarnessWriter
 
-final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestHarnessWriter {
+class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestHarnessWriter {
   private
     $_stream,
     $_indent = '';
@@ -198,17 +198,20 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
   function writeResult($_name_, Framework\TestSetResult $_result_) {
     $diagnostic = '';
 
+    $tests_count = $_result_->getTestsCount();
+
     if ($_result_->bailedOut()) {
       $status = 'BAILED OUT!';
+      $diagnostic = $tests_count > 0
+        ? \sprintf('Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count)
+        : 'Bailed out before any test could be run!';
     } else if ($_result_->passed()) {
       $status = 'ok' . ($_result_->getRuntimeErrorsCount() > 0 ? ' DUBIOUS' : '');
     } else {
       $status = 'KO';
-    }
-
-    if (!$_result_->passed() && ($tests_count = $_result_->getTestsCount()) > 0) {
-      $diagnostic = \sprintf(
-        'Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count);
+      $diagnostic = $tests_count > 0
+        ? \sprintf('Failed %s/%s of tests run', $_result_->getFailuresCount(), $tests_count)
+        : 'No test run!';
     }
 
     if (($dotlen = 50 - \strlen($_name_)) > 0) {
@@ -219,27 +222,29 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
 
     $this->_stream->writeLine($statusLine);
     if ('' !== $diagnostic) {
-      $this->_stream->writeLine($diagnostic);
+      $this->writeError_($diagnostic);
     }
   }
 
   function writeSummary(Runner\TestHarnessSummary $_summary_) {
-    $this->_stream->writeLine('-----------------------');
+    $this->_stream->writeLine('');
+    $this->_stream->writeLine('Test Harness Summary');
+    $this->_stream->writeLine('--------------------');
 
     if ($_summary_->passed()) {
       $this->_stream->writeLine('All tests successful');
       $this->_stream->writeLine(\sprintf(
         'Sets=%s, Tests=%s', $_summary_->getSetsCount(), $_summary_->getTestsCount()));
-      $this->_writeWarning($_summary_);
+      $this->_writeSummaryError($_summary_);
       $this->_stream->writeLine('Result: PASS');
     } else {
-      $this->_stream->writeLine(\sprintf(
+      $this->writeError_(\sprintf(
         'Failed %s/%s (%s/%s) of test sets (units) run',
         $_summary_->getFailedSetsCount(),
         $_summary_->getSetsCount(),
         $_summary_->getFailedTestsCount(),
         $_summary_->getTestsCount()));
-      $this->_writeWarning($_summary_);
+      $this->_writeSummaryError($_summary_);
       $this->_stream->writeLine('Result: FAIL');
     }
   }
@@ -250,11 +255,15 @@ final class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\
     }
   }
 
-  private function _writeWarning(Runner\TestHarnessSummary $_summary_) {
+  protected function writeError_($_value_) {
+    $this->_stream->writeLine($_value_);
+  }
+
+  private function _writeSummaryError(Runner\TestHarnessSummary $_summary_) {
     if (($dubious_count = $_summary_->getDubiousSetsCount()) > 0) {
       $dubious_count > 1
-        ? $this->_stream->writeLine('WARNING: There is one dubious set')
-        : $this->_stream->writeLine(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
+        ? $this->writeError_('WARNING: There is one dubious set')
+        : $this->writeError_(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
     }
   }
 }

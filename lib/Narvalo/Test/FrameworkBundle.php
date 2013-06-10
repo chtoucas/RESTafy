@@ -286,6 +286,9 @@ class TestEngine {
     $this->_workflow  = new _\TestWorkflow();
   }
 
+  // Properties
+  // ----------
+
   function running() {
     return $this->_workflow->running();
   }
@@ -294,27 +297,42 @@ class TestEngine {
     return $this->_workflow->getTagger();
   }
 
+  // Methods
+  // -------
+
   function reset() {
+    $this->_workflow->stop();
     $this->_errWriter->reset();
     $this->_outWriter->reset();
-    $this->_workflow->stop();
   }
 
   function start() {
     $this->_workflow->start();
+  }
+
+  function header() {
     $this->_workflow->header();
     $this->_outWriter->writeHeader();
   }
 
-  function stop() {
+  function footer() {
     $this->_workflow->footer();
-    $this->_workflow->stop();
     $this->_outWriter->writeFooter();
+  }
+
+  function stop() {
+    $this->_workflow->stop();
   }
 
   function bailOut($_reason_) {
     $this->_workflow->bailOut();
     $this->_outWriter->writeBailOut($_reason_);
+  }
+
+  function bailOutOnException(\Exception $_e_) {
+    // TODO: Write the exception trace to the error stream.
+    $this->_workflow->bailOut();
+    $this->_outWriter->writeBailOut($_e_->getMessage());
   }
 
   function skipAll($_reason_) {
@@ -422,10 +440,12 @@ class TestProducer {
 
   final function start() {
     $this->_engine->start();
+    $this->_engine->header();
   }
 
   final function stop() {
     $this->_set->close($this->_engine);
+    $this->_engine->footer();
     $this->_engine->stop();
 
     $result = new TestSetResult($this->_set, $this->_bailedOut, $this->_runtimeErrorsCount);
@@ -460,7 +480,7 @@ class TestProducer {
   /// Same as bailOut() but does not throw an exception. Only useful in a catch block.
   function bailOutOnException(\Exception $_e_) {
     $this->_bailedOut = \TRUE;
-    $this->_engine->bailOut($_e_->getMessage());
+    $this->_engine->bailOutOnException($_e_);
   }
 
   // Test methods

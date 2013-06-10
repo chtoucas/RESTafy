@@ -8,6 +8,7 @@ require_once 'Narvalo/IOBundle.php';
 require_once 'Narvalo/Test/FrameworkBundle.php';
 require_once 'Narvalo/Test/RunnerBundle.php';
 require_once 'Narvalo/Test/TapBundle.php';
+require_once '_Aliens/Color2.php';
 
 use \Narvalo;
 use \Narvalo\IO;
@@ -17,28 +18,36 @@ use \Narvalo\Test\Tap;
 
 // -------------------------------------------------------------------------------------------------
 
-class ProveApp extends Narvalo\DisposableObject {
+class DefaultTapHarnessWriter extends Tap\TapHarnessWriter {
+  private $_color;
+
+  function __construct() {
+    parent::__construct(IO\File::GetStandardOutput());
+
+    $this->_color = new \Console_Color2();
+  }
+
+  protected function writeError_($_value_) {
+    return parent::writeError_($this->_color->convert("%r$_value_%n"));
+  }
+}
+
+class ProveApp {
   const
     SuccessCode = 0,
     FailureCode = 1;
 
-  private
-    $_stdout,
-    $_harness;
+  private $_harness;
 
   function __construct() {
-    $this->_stdout = IO\File::GetStandardOutput();
-
-    $outWriter = new Framework\NoopTestOutWriter();
-    $errWriter = new Framework\NoopTestErrWriter();
-    $engine    = new Framework\TestEngine($outWriter, $errWriter);
-    $producer  = new Framework\TestProducer($engine);
-    $runner    = new Runner\TestRunner($producer);
-    $writer    = new Tap\TapHarnessWriter($this->_stdout);
+    $engine = new Framework\TestEngine(
+      new Framework\NoopTestOutWriter(), new Framework\NoopTestErrWriter());
+    $producer = new Framework\TestProducer($engine);
 
     $producer->register();
 
-    $this->_harness = new Runner\TestHarness($writer, $runner);
+    $this->_harness
+      = new Runner\TestHarness(new DefaultTapHarnessWriter(), new Runner\TestRunner($producer));
   }
 
   static function Main(array $_argv_) {
@@ -60,12 +69,6 @@ class ProveApp extends Narvalo\DisposableObject {
 
   function run(ProveOptions $_options_) {
     $this->_harness->scanDirectoryAndExecute($_options_->getDirectoryPath());
-  }
-
-  protected function close_() {
-    if (\NULL !== $this->_stdout) {
-      $this->_stdout->close();
-    }
   }
 
   private static function _OnUnhandledException(\Exception $_e_) {
