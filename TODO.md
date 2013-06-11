@@ -8,7 +8,7 @@ Narvalo\Test
 ============
 
 * Parse and output debug_backtrace();
-* YAML diagnostics.
+* YAML diagnostics for exceptions.
 * Interlinked directives and interlaced tags.
 * Comments & doc.
 * Review all XXX, FIXME & TODO.
