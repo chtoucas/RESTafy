@@ -16,10 +16,8 @@ bootstrap();
 // ------------------------------------------------------------------------------------------------
 
 function bootstrap() {
-  $stdout = IO\File::GetStandardOutput();
-
-  $outWriter = new Tap\TapOutWriter($stdout, \TRUE);
-  $errWriter = new Tap\TapErrWriter($stdout);
+  $outWriter = new Tap\TapOutWriter(\TRUE);
+  $errWriter = new Tap\TapErrWriter();
   $engine    = new Framework\TestEngine($outWriter, $errWriter);
   $producer  = new Framework\TestProducer($engine);
 
@@ -28,7 +26,6 @@ function bootstrap() {
 
   \register_shutdown_function(function() use ($producer, $stdout) {
     $producer->stop();
-    $stdout->close();
   });
 }
 

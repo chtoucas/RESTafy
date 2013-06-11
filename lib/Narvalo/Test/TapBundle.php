@@ -183,7 +183,7 @@ class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
 
   function write($_value_) {
     $msg  = $this->formatMultiLine_('# ', $_value_);
-    $this->writeTapLine_(Term\Ansi::Red() . $msg . Term\Ansi::Reset());
+    $this->writeTapLine_(Term\Ansi::Colorize($msg, Term\Ansi::Red));
   }
 }
 
@@ -277,11 +277,11 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
   }
 
   private function _writeError($_value_) {
-      $this->_stream->writeLine(Term\Ansi::Red() . $_value_ . Term\Ansi::Reset());
+      $this->_stream->writeLine(Term\Ansi::Colorize($_value_, Term\Ansi::Red));
   }
 
   private function _writeSuccess($_value_) {
-      $this->_stream->writeLine(Term\Ansi::Green() . $_value_ . Term\Ansi::Reset());
+      $this->_stream->writeLine(Term\Ansi::Colorize($_value_, Term\Ansi::Green));
   }
 }
 

@@ -66,30 +66,6 @@ final class Ansi {
       ? $_value_
       : \sprintf('[%sm%s[%dm', \join(';', $codes), $_value_, self::Reset);
   }
-
-  static function Green() {
-    static $_csi;
-    if (\NULL === $_csi) {
-      $_csi = Ansi::Color(Ansi::Green);
-    }
-    return $_csi;
-  }
-
-  static function Red() {
-    static $_csi;
-    if (\NULL === $_csi) {
-      $_csi = Ansi::Color(Ansi::Red);
-    }
-    return $_csi;
-  }
-
-  static function Reset() {
-    static $_csi;
-    if (\NULL === $_csi) {
-      $_csi = Ansi::Color(Ansi::Reset);
-    }
-    return $_csi;
-  }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
@@ -112,7 +88,7 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
       Narvalo\LoggerLevel::ToString($_level_),
       $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
 
-    $this->_stream->writeLine(Ansi::Red() . $msg . Ansi::Reset());
+    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::Red));
   }
 
   function dispose() {
