@@ -15,7 +15,7 @@ class ProveCommand extends Term\Command_ {
   function run() {
     $path = $this->_getDirectoryPath();
 
-    $harness = new Tap\DefaultTapHarness();
+    $harness = new Tap\TapHarness();
     $harness->scanDirectoryAndExecute($path);
     $harness->dispose();
 

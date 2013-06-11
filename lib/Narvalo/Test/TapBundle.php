@@ -75,17 +75,16 @@ class TapWriter extends Narvalo\DisposableObject {
     return $_prefix_ . \preg_replace(_MULTILINE_CRLF_REGEX, $prefix, $_value_);
   }
 
-  protected function _indent() {
+  private function _indent() {
     $this->_indent = '    ' . $this->_indent;
   }
 
-  protected function _unindent() {
+  private function _unindent() {
     $this->_indent = \substr($this->_indent, 4);
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-
 // {{{ TapOutWriter
 
 class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
@@ -93,8 +92,8 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
 
   private $_verbose;
 
-  function __construct(IO\FileStream $_stream_, $_verbose_) {
-    parent::__construct($_stream_);
+  function __construct($_verbose_) {
+    parent::__construct(IO\File::GetStandardOutput());
 
     $this->_verbose = $_verbose_;
   }
@@ -178,13 +177,17 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
 // {{{ TapErrWriter
 
 class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
+  function __construct() {
+    parent::__construct(IO\File::GetStandardError());
+  }
+
   function write($_value_) {
-    $this->writeTapLine_($this->formatMultiLine_('# ', $_value_));
+    $msg  = $this->formatMultiLine_('# ', $_value_);
+    $this->writeTapLine_(Term\Ansi::Colorize($msg, Term\Ansi::Red));
   }
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-
 // {{{ TapHarnessWriter
 
 class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestHarnessWriter {
@@ -192,8 +195,8 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
     $_stream,
     $_indent = '';
 
-  function __construct(IO\FileStream $_stream_) {
-    $this->_stream = $_stream_;
+  function __construct() {
+    $this->_stream = IO\File::GetStandardOutput();
   }
 
   function close() {
@@ -241,7 +244,7 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
       $this->_stream->writeLine(\sprintf(
         'Sets=%s, Tests=%s', $_summary_->getSetsCount(), $_summary_->getTestsCount()));
       $this->_writeSummaryError($_summary_);
-      $this->_stream->writeLine('Result: PASS');
+      $this->writeSuccess_('Result: PASS');
     } else {
       $this->writeError_(\sprintf(
         'Failed %s/%s (%s/%s) of test sets (units) run',
@@ -250,7 +253,7 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
         $_summary_->getFailedTestsCount(),
         $_summary_->getTestsCount()));
       $this->_writeSummaryError($_summary_);
-      $this->_stream->writeLine('Result: FAIL');
+      $this->writeError_('Result: FAIL');
     }
   }
 
@@ -261,15 +264,27 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
   }
 
   protected function writeError_($_value_) {
-    $this->_stream->writeLine($_value_);
+    $this->_stream->writeLine(self::_InRed($_value_));
+  }
+
+  protected function writeSuccess_($_value_) {
+    $this->_stream->writeLine(self::_InGreen($_value_));
   }
 
   private function _writeSummaryError(Runner\TestHarnessSummary $_summary_) {
     if (($dubious_count = $_summary_->getDubiousSetsCount()) > 0) {
-      $dubious_count > 1
+      1 == $dubious_count
         ? $this->writeError_('WARNING: There is one dubious set')
         : $this->writeError_(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
     }
+  }
+
+  private function _InRed($_value_) {
+    return Term\Ansi::Colorize($_value_, Term\Ansi::Red);
+  }
+
+  private function _InGreen($_value_) {
+    return Term\Ansi::Colorize($_value_, Term\Ansi::Green);
   }
 }
 
@@ -277,53 +292,17 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
 
 // =================================================================================================
 
-// {{{ DefaultTapOutWriter
+// {{{ TapRunner
 
-class DefaultTapOutWriter extends Tap\TapOutWriter {
-  function __construct() {
-    parent::__construct(IO\File::GetStandardOutput(), \TRUE /* verbose */);
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTapErrWriter
-
-class DefaultTapErrWriter extends Tap\TapErrWriter {
-  function __construct() {
-    parent::__construct(IO\File::GetStandardError());
-  }
-
-  function write($_value_) {
-    return parent::write(Term\Colorize::Foreground(Term\FgColor::Red, $_value_));
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTapHarnessWriter
-
-class DefaultTapHarnessWriter extends Tap\TapHarnessWriter {
-  function __construct() {
-    parent::__construct(IO\File::GetStandardOutput());
-  }
-
-  protected function writeError_($_value_) {
-    return parent::writeError_(Term\Colorize::Foreground(Term\FgColor::Red, $_value_));
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ DefaultTapRunner
-
-class DefaultTapRunner extends Runner\TestRunner implements Narvalo\IDisposable {
+class TapRunner extends Runner\TestRunner implements Narvalo\IDisposable {
   private
     $_outWriter,
     $_errWriter,
     $_disposed = \FALSE;
 
-  function __construct() {
-    $this->_outWriter = new DefaultTapOutWriter();
-    $this->_errWriter = new DefaultTapErrWriter();
+  function __construct($_verbose_) {
+    $this->_outWriter = new TapOutWriter($_verbose_);
+    $this->_errWriter = new TapErrWriter();
     $engine = new Framework\TestEngine($this->_outWriter, $this->_errWriter);
     $producer = new Framework\TestProducer($engine);
     $producer->register();
@@ -354,9 +333,9 @@ class DefaultTapRunner extends Runner\TestRunner implements Narvalo\IDisposable 
 }
 
 // }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultTapHarness
+// {{{ TapHarness
 
-class DefaultTapHarness extends Runner\TestHarness {
+class TapHarness extends Runner\TestHarness {
   private
     $_writer,
     $_disposed = \FALSE;
@@ -367,7 +346,7 @@ class DefaultTapHarness extends Runner\TestHarness {
     $producer = new Framework\TestProducer($engine);
     $producer->register();
 
-    $this->_writer = new DefaultTapHarnessWriter();
+    $this->_writer = new TapHarnessWriter();
 
     parent::__construct($this->_writer, new Runner\TestRunner($producer));
   }

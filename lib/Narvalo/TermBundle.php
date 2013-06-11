@@ -8,96 +8,61 @@ require_once 'Narvalo/IOBundle.php';
 use \Narvalo;
 use \Narvalo\IO;
 
-// {{{ FgColor
+// {{{ Ansi
 
-final class FgColor {
+final class Ansi {
+  // The following list of ANSI codes is taken from:
+  //  http://perldoc.perl.org/Term/ANSIColor.html
+  // See also:
+  //  http://en.wikipedia.org/wiki/ANSI_escape_code
   const
-    Black  = 30,
-    Red    = 31,
-    Green  = 32,
-    Yellow = 33,
-    Blue   = 34,
-    Purple = 35,
-    Cyan   = 36,
-    Grey   = 37;
-
-  private function __construct() { }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ BgColor
-
-final class BgColor {
-  const
-    Black  = 40,
-    Red    = 41,
-    Green  = 42,
-    Brown  = 43,
-    Yellow = 43,
-    Blue   = 44,
-    Purple = 45,
-    Cyan   = 46,
-    Grey   = 47;
-
-  private function __construct() { }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Style
-
-final class Style {
-  const
-    Normal     = 0,
+    // SGR (Select Graphic Rendition) parameters.
+    Clear      = 0,
+    Reset      = 0,   // Alias for Clear.
     Bold       = 1,
     Dark       = 2,
+    Faint      = 2,   // Alias for Faint.
+    Italic     = 3,
     Underline  = 4,
+    Underscore = 4,   // Alias fot Underscore.
     Blink      = 5,
-    Reverse    = 6,
-    Hidden     = 8;
+    Reverse    = 7,
+    Concealed  = 8,
 
-  private function __construct() { }
-}
+    // Foreground colors.
+    Black      = 30,
+    Red        = 31,
+    Green      = 32,
+    Yellow     = 33,
+    Blue       = 34,
+    Magenta    = 35,
+    Cyan       = 36,
+    White      = 37,
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{
+    // Background colors.
+    OnBlack    = 40,
+    OnRed      = 41,
+    OnGreen    = 42,
+    OnYellow   = 43,
+    OnBlue     = 44,
+    OnMagenta  = 45,
+    OnCyan     = 46,
+    OnWhite    = 47
+    ;
 
-class ColorizeOptions {
-  public
-    $fgColor,
-    $bgColor,
-    $style;
-}
+  // NB: The wired sequence ^[ found below is actually the ESC char.
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Colorize
-
-final class Colorize {
-  const Reset = "\033[0m";
-
-  static function Foreground($_fgcolor_, $_value_) {
-    return \sprintf("\033[%dm%s", $_fgcolor_, $_value_) . self::Reset;
+  static function Color() {
+    return \sprintf('[%sm', \join(\func_get_args(), ';'));
   }
 
-  static function Background($_bgcolor_, $_value_) {
-    return \sprintf("\033[%dm%s", $_bgcolor_, $_value_) . self::Reset;
-  }
-
-  static function Apply(ColorizeOptions $_opts_, $_value_) {
-    $codes = array();
-    if (\NULL !== $_opts_->fgColor) {
-      $codes[] = $_opts_->fgColor;
-    }
-    if (\NULL !== $_opts_->bgColor) {
-      $codes[] = $_opts_->bgColor;
-    }
-    if (\NULL !== $_opts_->style) {
-      $codes[] = $_opts_->style;
-    }
-    if (empty($code)) {
+  static function Colorize($_value_) {
+    $codes = \array_slice(\func_get_args(), 1);
+    if (empty($codes)) {
       return $_value_;
+    } else {
+      return \sprintf('[%sm%s[%dm', \join(';', $codes), $_value_, self::Reset);
     }
-
-    return \sprintf("\033[%sm%s", \implode(';', $codes), $_value_) . self::Reset;
   }
 }
 
@@ -121,7 +86,7 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
       Narvalo\LoggerLevel::ToString($_level_),
       $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
 
-    $this->_stream->writeLine(Colorize::Foreground(FgColor::Red, $msg));
+    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::Red));
   }
 
   function dispose() {

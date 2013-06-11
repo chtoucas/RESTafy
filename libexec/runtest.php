@@ -22,7 +22,7 @@ class RunTestCommand extends Term\Command_ {
   function run() {
     $path = $this->_getTestPath();
 
-    $runner = new Tap\DefaultTapRunner();
+    $runner = new Tap\TapRunner(\TRUE);
     $result = $runner->run(new Sets\FileTestSet($path));
     $runner->dispose();
 
