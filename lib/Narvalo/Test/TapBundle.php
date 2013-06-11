@@ -183,7 +183,7 @@ class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
 
   function write($_value_) {
     $msg  = $this->formatMultiLine_('# ', $_value_);
-    $this->writeTapLine_(Term\Ansi::Colorize($msg, Term\Ansi::Red));
+    $this->writeTapLine_(Term\Ansi::Red() . $msg . Term\Ansi::Reset());
   }
 }
 
@@ -228,32 +228,32 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
       $statusLine = $_name_ . '... '. $status;
     }
 
-    $this->_stream->writeLine($statusLine);
+    $this->_write($statusLine);
     if ('' !== $diagnostic) {
-      $this->writeError_($diagnostic);
+      $this->_writeError($diagnostic);
     }
   }
 
   function writeSummary(Runner\TestHarnessSummary $_summary_) {
-    $this->_stream->writeLine('');
-    $this->_stream->writeLine('Test Harness Summary');
-    $this->_stream->writeLine('--------------------');
+    $this->_write('');
+    $this->_write('Test Harness Summary');
+    $this->_write('--------------------');
 
     if ($_summary_->passed()) {
-      $this->_stream->writeLine('All tests successful');
-      $this->_stream->writeLine(\sprintf(
+      $this->_write('All tests successful');
+      $this->_write(\sprintf(
         'Sets=%s, Tests=%s', $_summary_->getSetsCount(), $_summary_->getTestsCount()));
-      $this->_writeSummaryError($_summary_);
-      $this->writeSuccess_('Result: PASS');
+      $this->_writeWarning($_summary_);
+      $this->_writeSuccess('Result: PASS');
     } else {
-      $this->writeError_(\sprintf(
+      $this->_writeError(\sprintf(
         'Failed %s/%s (%s/%s) of test sets (units) run',
         $_summary_->getFailedSetsCount(),
         $_summary_->getSetsCount(),
         $_summary_->getFailedTestsCount(),
         $_summary_->getTestsCount()));
-      $this->_writeSummaryError($_summary_);
-      $this->writeError_('Result: FAIL');
+      $this->_writeWarning($_summary_);
+      $this->_writeError('Result: FAIL');
     }
   }
 
@@ -263,28 +263,25 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
     }
   }
 
-  protected function writeError_($_value_) {
-    $this->_stream->writeLine(self::_InRed($_value_));
-  }
-
-  protected function writeSuccess_($_value_) {
-    $this->_stream->writeLine(self::_InGreen($_value_));
-  }
-
-  private function _writeSummaryError(Runner\TestHarnessSummary $_summary_) {
+  private function _writeWarning(Runner\TestHarnessSummary $_summary_) {
     if (($dubious_count = $_summary_->getDubiousSetsCount()) > 0) {
-      1 == $dubious_count
-        ? $this->writeError_('WARNING: There is one dubious set')
-        : $this->writeError_(\sprintf('WARNING: There are %s dubious sets', $dubious_count));
+      $this->_writeError(
+        1 == $dubious_count
+          ? 'WARNING: There is one dubious set'
+          : \sprintf('WARNING: There are %s dubious sets', $dubious_count));
     }
   }
 
-  private function _InRed($_value_) {
-    return Term\Ansi::Colorize($_value_, Term\Ansi::Red);
+  private function _write($_value_) {
+      $this->_stream->writeLine($_value_);
   }
 
-  private function _InGreen($_value_) {
-    return Term\Ansi::Colorize($_value_, Term\Ansi::Green);
+  private function _writeError($_value_) {
+      $this->_stream->writeLine(Term\Ansi::Red() . $_value_ . Term\Ansi::Reset());
+  }
+
+  private function _writeSuccess($_value_) {
+      $this->_stream->writeLine(Term\Ansi::Green() . $_value_ . Term\Ansi::Reset());
   }
 }
 

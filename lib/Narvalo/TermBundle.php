@@ -21,10 +21,10 @@ final class Ansi {
     Reset      = 0,   // Alias for Clear.
     Bold       = 1,
     Dark       = 2,
-    Faint      = 2,   // Alias for Faint.
+    Faint      = 2,   // Alias for Dark.
     Italic     = 3,
     Underline  = 4,
-    Underscore = 4,   // Alias fot Underscore.
+    Underscore = 4,   // Alias fot Underline.
     Blink      = 5,
     Reverse    = 7,
     Concealed  = 8,
@@ -52,17 +52,43 @@ final class Ansi {
 
   // NB: The wired sequence ^[ found below is actually the ESC char.
 
-  static function Color() {
+  static function Color($_code_) {
+    return \sprintf('[%dm', $_code_);
+  }
+
+  static function Colors() {
     return \sprintf('[%sm', \join(\func_get_args(), ';'));
   }
 
   static function Colorize($_value_) {
     $codes = \array_slice(\func_get_args(), 1);
-    if (empty($codes)) {
-      return $_value_;
-    } else {
-      return \sprintf('[%sm%s[%dm', \join(';', $codes), $_value_, self::Reset);
+    return empty($codes)
+      ? $_value_
+      : \sprintf('[%sm%s[%dm', \join(';', $codes), $_value_, self::Reset);
+  }
+
+  static function Green() {
+    static $_csi;
+    if (\NULL === $_csi) {
+      $_csi = Ansi::Color(Ansi::Green);
     }
+    return $_csi;
+  }
+
+  static function Red() {
+    static $_csi;
+    if (\NULL === $_csi) {
+      $_csi = Ansi::Color(Ansi::Red);
+    }
+    return $_csi;
+  }
+
+  static function Reset() {
+    static $_csi;
+    if (\NULL === $_csi) {
+      $_csi = Ansi::Color(Ansi::Reset);
+    }
+    return $_csi;
   }
 }
 
@@ -86,7 +112,7 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
       Narvalo\LoggerLevel::ToString($_level_),
       $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
 
-    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::Red));
+    $this->_stream->writeLine(Ansi::Red() . $msg . Ansi::Reset());
   }
 
   function dispose() {
