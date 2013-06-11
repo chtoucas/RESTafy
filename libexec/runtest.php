@@ -32,10 +32,10 @@ class RunTestCommand extends Term\Command_ {
   private static function _GetExitCode(Framework\TestSetResult $result) {
     if ($result->getRuntimeErrorsCount() > 0) {
       return self::FailureCode;
-    } elseif ($result->passed()) {
-      return self::SuccessCode;
     } elseif ($result->bailedOut()) {
       return self::FailureCode;
+    } elseif ($result->passed()) {
+      return self::SuccessCode;
     } elseif (($count = $result->getFailuresCount()) > 0) {
       return $count < self::FailureCode ? $count : (self::FailureCode - 1);
     } else {

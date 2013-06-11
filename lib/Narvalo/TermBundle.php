@@ -50,8 +50,6 @@ final class Ansi {
     OnWhite    = 47
     ;
 
-  // NB: The wired sequence ^[ found below is actually the ESC char.
-
   static function Color($_code_) {
     return \sprintf('[%dm', $_code_);
   }
