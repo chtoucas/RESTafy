@@ -3,7 +3,6 @@
 # http://www.awesomecommandlineapps.com/gems.html
 # http://mentalized.net/journal/2010/03/08/5_ways_to_run_commands_from_ruby/
 # http://stackoverflow.com/questions/3159945/running-command-line-commands-within-ruby-script
-# http://www.cygwin.com/cygwin-ug-net/using-utils.html#cygpath
 
 require 'rbconfig'
 
@@ -11,36 +10,36 @@ def os
     # http://stackoverflow.com/questions/11784109/detecting-operating-systems-in-ruby
     @os ||= (
         case RbConfig::CONFIG['host_os']
-        when /mswin|msys|mingw|cygwin|bccwin|wince|emc/ then 'windows'
-        when /darwin|mac os|linux|solaris|bsd/          then 'unix'
-        else raise 'Unknown OS'
+        when /cygwin/
+            then 'cygwin'
+        when /darwin|mac os|linux|solaris|bsd/
+            then 'unix'
+        else raise 'Unsupported OS'
         end
     )
 end
 
-def get_win_path(path)
-    (`cygpath -w -l -a -- "#{path}"`).strip!
+def _(path)
+    # Cf. http://www.cygwin.com/cygwin-ug-net/using-utils.html#cygpath
+    # FIXME: There is a problem in cygwin when the path contains a tilde: ~
+    os == 'cygwin' ? (`cygpath -wal -- "#{path}"`).strip! : path
 end
 
-dir = File.expand_path(File.dirname(__FILE__))
-phprc = File.join(dir, 'etc/php.ini')
-php_include_path = File.join(dir, 'lib')
+# Project directories.
+dir = File.join(File.expand_path(File.dirname(__FILE__)), '..')
+tmpdir = File.join(dir, 'tmp')
 
-if os == 'windows'
-    phprc = get_win_path phprc
-    php_include_path = get_win_path php_include_path
-end
+Dir.mkdir(tmpdir) unless File.exists?(tmpdir)
 
-#php_exe = `which php-cli 2>/dev/null`
-php_exe = (`which php 2>/dev/null`).strip!
+opts = {
+    # PHP ini file.
+    '-c' => _(File.join(dir, 'etc', 'php.ini')),
+    # PHP include path.
+    '-d' => 'include_path=%s' % _(File.join(dir, 'lib')),
+    # PHP error log.
+    #'-d' => 'error_log=%s' % _(File.join(tmpdir, 'php.log')),
+}
+args = opts.map{ |k, v| '%s "%s"' % [k, v]}.push(ARGV).join(' ')
 
-#if !File.executable? php_exe
-#    raise 'Unable to find PHP executable'
-#end
-
-php_cmd = "#{php_exe} -c \"#{phprc}\" -d include_path=\"#{php_include_path}\" --ini"
-#.sub!('~', '\~')
-
-puts php_cmd
-#exec(php_cmd)
+exec("/usr/bin/env php #{args}")
 

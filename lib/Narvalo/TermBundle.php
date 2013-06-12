@@ -135,8 +135,6 @@ abstract class Cmd_ {
       Narvalo\Log::SetLogger(static::CreateLogger_());
 
       $exit_code = (new static($argv))->run() ?: self::SuccessCode;
-
-      throw new \Exception('XXXX');
     } catch (\Exception $e) {
       static::OnUnhandledException_($e);
       $exit_code = static::FailureCode;
