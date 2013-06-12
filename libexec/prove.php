@@ -9,7 +9,7 @@ require_once 'Narvalo/Test/TapBundle.php';
 use \Narvalo\Term;
 use \Narvalo\Test\Tap;
 
-class ProveCommand extends Term\Command_ {
+class ProveCmd extends Term\Cmd_ {
   const DefaultDirectoryPath = 't';
 
   function run() {
@@ -30,6 +30,6 @@ class ProveCommand extends Term\Command_ {
 
 // =================================================================================================
 
-ProveCommand::Main();
+ProveCmd::Main();
 
 // EOF

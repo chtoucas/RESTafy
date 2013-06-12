@@ -15,7 +15,7 @@ use \Narvalo\Test\Framework;
 use \Narvalo\Test\Sets;
 use \Narvalo\Test\Tap;
 
-class RunTestCommand extends Term\Command_ {
+class RunTestCmd extends Term\Cmd_ {
   // NB: TAP uses 255 but in PHP this is a reserved code.
   const FailureCode = 254;
 
@@ -55,6 +55,6 @@ class RunTestCommand extends Term\Command_ {
 
 // =================================================================================================
 
-RunTestCommand::Main();
+RunTestCmd::Main();
 
 // EOF

@@ -25,6 +25,6 @@ if [ ! -x "${PHP_EXE}" ]; then
     echo "Sorry but can't find php."; exit 1
 fi
 
-"${PHP_EXE}" -d include_path="${PHP_INCLUDE_PATH}" "$@"
+"${PHP_EXE}" -c "${PHPRC}" -d include_path="${PHP_INCLUDE_PATH}" "$@"
 
 # EOF
