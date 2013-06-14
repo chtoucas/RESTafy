@@ -557,14 +557,14 @@ final class LoggerLevel {
     switch ($_level_) {
     case self::Debug:
       return 'Debug';
-    case self::Error:
-      return 'Error';
-    case self::None:
-      return 'None';
     case self::Notice:
       return 'Notice';
+    case self::Error:
+      return 'Error';
     case self::Warning:
       return 'Warning';
+    case self::None:
+      return 'None';
     default:
       return 'Unknown';
     }
@@ -592,20 +592,20 @@ abstract class Logger_ implements ILogger {
     $this->log_(LoggerLevel::Debug, $_msg_);
   }
 
-  function error($_msg_) {
-    if (!$this->isEnabled_(LoggerLevel::Error)) {
-      return;
-    }
-
-    $this->log_(LoggerLevel::Error, $_msg_);
-  }
-
   function notice($_msg_) {
     if (!$this->isEnabled_(LoggerLevel::Notice)) {
       return;
     }
 
     $this->log_(LoggerLevel::Notice, $_msg_);
+  }
+
+  function error($_msg_) {
+    if (!$this->isEnabled_(LoggerLevel::Error)) {
+      return;
+    }
+
+    $this->log_(LoggerLevel::Error, $_msg_);
   }
 
   function warn($_msg_) {
@@ -658,12 +658,6 @@ class AggregateLogger implements ILogger {
     }
   }
 
-  function error($_msg_) {
-    foreach ($this->_loggers as $logger) {
-      $logger->error($_msg_);
-    }
-  }
-
   function notice($_msg_) {
     foreach ($this->_loggers as $logger) {
       $logger->notice($_msg_);
@@ -673,6 +667,12 @@ class AggregateLogger implements ILogger {
   function warn($_msg_) {
     foreach ($this->_loggers as $logger) {
       $logger->warn($_msg_);
+    }
+  }
+
+  function error($_msg_) {
+    foreach ($this->_loggers as $logger) {
+      $logger->error($_msg_);
     }
   }
 }
@@ -695,16 +695,16 @@ final class Log {
     self::_GetLogger()->debug($_msg_);
   }
 
-  static function Error($_msg_) {
-    self::_GetLogger()->error($_msg_);
+  static function Notice($_msg_) {
+    self::_GetLogger()->notice($_msg_);
   }
 
   static function Warning($_msg_) {
     self::_GetLogger()->warn($_msg_);
   }
 
-  static function Notice($_msg_) {
-    self::_GetLogger()->notice($_msg_);
+  static function Error($_msg_) {
+    self::_GetLogger()->error($_msg_);
   }
 
   private static function _GetLogger() {

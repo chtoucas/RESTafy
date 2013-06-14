@@ -2,5 +2,5 @@
 
 require_relative '_restafy'
 
-RESTafy::exec(ARGV, false)
+RESTafy::exec(ARGV, true)
 
