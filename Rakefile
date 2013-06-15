@@ -8,8 +8,7 @@ PKG_VERSION = '0.1.0'
 task :default   => ['test:lib']
 
 task :init do
-    Dir.mkdir(RESTafy.tmp)           unless File.exists?(RESTafy.tmp)
-    FileUtils.touch(RESTafy.logfile) unless File.exists?(RESTafy.logfile)
+    RESTafy::init
 end
 
 namespace :test do

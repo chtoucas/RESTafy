@@ -12,11 +12,11 @@ module RESTafy
 
     # Properties.
 
-    def self.lib
+    def self.libdir
         @@lib ||= File.join @@base, 'lib'
     end
 
-    def self.blib
+    def self.blibdir
         @@blib ||= File.join @@base, 'blib'
     end
 
@@ -29,14 +29,39 @@ module RESTafy
     end
 
     def self.logfile
-        @@logfile ||= File.join(self::tmp, 'php.log')
+        @@logfile ||= File.join self::tmpdir, 'php.log'
     end
 
-    def self.tmp
-        @@tmp ||= File.join(@@base, 'tmp')
+    def self.tmpdir
+        @@tmp ||= File.join @@base, 'tmp'
+    end
+
+    def self.php_log
+        @@php_log ||= abspath(logfile)
+    end
+
+    def self.php_blibdir
+      @@php_blibdir ||= abspath(blibdir)
+    end
+
+    def self.php_libdir
+      @@php_libdir ||= abspath(libdir)
+    end
+
+    def self.php_ini
+      @@php_ini ||= abspath(ini)
+    end
+
+    def self.php_ini_dbg
+      @@php_ini_dbg ||= abspath(ini_dbg)
     end
 
     # Core methods.
+
+    def self.init()
+      Dir.mkdir(tmpdir)        unless File.exists?(tmpdir)
+      FileUtils.touch(logfile) unless File.exists?(logfile)
+    end
 
     def self.exec()
         if ARGV.empty? then
@@ -57,9 +82,9 @@ module RESTafy
     def self.build_cmd(argv, blib, debug)
         cmd = PHPCmd.new
         cmd.argv = argv
-        cmd.ini('include_path', php_lib(blib))
-        cmd.ini('error_log', php_log())
-        cmd.opt('-c', php_ini(debug))
+        cmd.ini('include_path', blib ? php_blibdir : php_libdir)
+        cmd.ini('error_log', php_log)
+        cmd.opt('-c', debug ? php_ini_dbg : php_ini)
         return cmd
     end
 
@@ -71,18 +96,6 @@ module RESTafy
     def self.test_cmd(file)
         argv = [File.join('libexec', 'runtest.php'), file]
         return build_cmd(argv, false, false)
-    end
-
-    def self.php_lib(blib)
-        abspath(blib ? blib() : lib())
-    end
-
-    def self.php_log
-        abspath(logfile())
-    end
-
-    def self.php_ini(debug)
-        abspath(debug ? ini_dbg() : ini())
     end
 
     def self.abspath(*args)
