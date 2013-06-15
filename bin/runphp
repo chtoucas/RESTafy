@@ -16,16 +16,16 @@ if [ ! -x "${PHP_EXE}" ]; then
     echo "Sorry but can't find php."; exit 1
 fi
 
-PROJECT_DIR=$(cd `dirname $0` && pwd)/..
-TMP_DIR="${PROJECT_DIR}/tmp"
+DIR=$(cd `dirname $0` && pwd)/..
+TMP="${DIR}/tmp"
 
-[ -d "${TMP_DIR}" ] || mkdir -p "${TMP_DIR}"
+[ -d "${TMP}" ] || mkdir -p "${TMP}"
 
-PHPRC="${PROJECT_DIR}/etc/php.ini"
+PHPRC="${DIR}/etc/php.ini"
 
 "${PHP_EXE}" \
-    -d include_path="${PROJECT_DIR}/lib" \
-    -d error_log="${TMP_DIR}/php.log" \
+    -d include_path="${DIR}/lib" \
+    -d error_log="${TMP}/php.log" \
     "$@"
 
 # EOF

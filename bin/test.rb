@@ -2,5 +2,6 @@
 
 require_relative '../RESTafy'
 
-RESTafy::exec
+# FIXME
+RESTafy::test(ARGV)
 
