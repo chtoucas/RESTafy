@@ -17,15 +17,28 @@ class RESTafy
             raise 'ARGV can not be empty.'
         end
 
-        Kernel.exec(build_cmd(ARGV, false, true).to_s())
+        system(build_cmd(ARGV, false, true).to_s)
     end
 
     def prove(dir, blib)
-        Kernel.exec(prove_cmd(dir, blib).to_s())
+        system(prove_cmd(dir, blib).to_s)
     end
 
     def test(file)
-        Kernel.exec(test_cmd(file).to_s())
+        system(test_cmd(file).to_s)
+    end
+
+    def lint
+        # php -l
+        pattern = @env.lib_dir + '/**/*.php'
+        Dir.glob(pattern) do |file|
+            system(lint_cmd(file, false).to_s)
+        end
+    end
+
+    def blib
+        # php -w
+        puts "TODO"
     end
 
     protected
@@ -33,34 +46,32 @@ class RESTafy
     def build_cmd(argv, blib, debug)
         cmd = PHPCmd.new
         cmd.argv = argv
-        cmd.ini('include_path', blib ? blibdir : libdir)
-        cmd.ini('error_log', log)
+        cmd.ini('include_path', blib ? blib_dir : lib_dir)
+        cmd.ini('error_log', log_file)
         cmd.opt('-c', debug ? ini_dbg : ini)
         return cmd
     end
 
     def prove_cmd(dir, blib)
-        argv = [File.join('libexec', 'prove.php'), dir]
+    	exe = File.join @env.libexec_dir, 'prove.php'
+        argv = [quoted_path(exe), dir]
         return build_cmd(argv, blib, false)
     end
 
     def test_cmd(file)
-        argv = [File.join('libexec', 'runtest.php'), file]
+    	exe = File.join @env.libexec_dir, 'runtest.php'
+        argv = [quoted_path(exe), file]
         return build_cmd(argv, false, false)
+    end
+
+    def lint_cmd(file, blib)
+        return build_cmd(['-l', quoted_path(file)], blib, false)
     end
 
     private
 
-    def log
-        @log ||= path(@env.logfile)
-    end
-
-    def blibdir
-        @blibdir ||= path(@env.blibdir)
-    end
-
-    def libdir
-        @libdir ||= path(@env.libdir)
+    def blib_dir
+        @blib_dir ||= path(@env.blib_dir)
     end
 
     def ini
@@ -69,6 +80,18 @@ class RESTafy
 
     def ini_dbg
         @ini_dbg ||= path(@env.ini_dbg)
+    end
+
+    def lib_dir
+        @lib_dir ||= path(@env.lib_dir)
+    end
+
+    def log_file
+        @log_file ||= path(@env.log_file)
+    end
+
+    def quoted_path(path)
+	'"' + path(path) + '"'
     end
 
     def path(path)
@@ -91,34 +114,44 @@ class RESTafyEnv
 
     def self.prepare
         inst = self.instance
-        Dir.mkdir(inst.tmpdir) unless File.exists?(inst.tmpdir)
+        Dir.mkdir(inst.tmp_dir) unless File.exists?(inst.tmp_dir)
         if inst.is_cygwin? then
-            FileUtils.touch(inst.logfile) unless File.exists?(inst.logfile)
+            FileUtils.touch(inst.log_file) unless File.exists?(inst.log_file)
         end
     end
 
-    def libdir
-        @lib ||= File.join @base, 'lib'
+    # Project directories.
+
+    def blib_dir
+        @blib_dir ||= File.join @base, 'blib'
     end
 
-    def blibdir
-        @blib ||= File.join @base, 'blib'
+    def etc_dir
+        @etc_dir ||= File.join @base, 'etc'
+    end
+
+    def lib_dir
+        @lib_dir ||= File.join @base, 'lib'
+    end
+
+    def libexec_dir
+        @libexec_dir ||= File.join @base, 'libexec'
+    end
+
+    def tmp_dir
+        @tmp_dir ||= File.join @base, 'tmp'
     end
 
     def ini
-        @ini ||= File.join @base, 'etc', 'php.ini'
+        @ini ||= File.join etc_dir, 'php.ini'
     end
 
     def ini_dbg
-        @ini_dbg ||= File.join @base, 'etc', 'php-dbg.ini'
+        @ini_dbg ||= File.join etc_dir, 'php-dbg.ini'
     end
 
-    def logfile
-        @logfile ||= File.join tmpdir, 'php.log'
-    end
-
-    def tmpdir
-        @tmp ||= File.join @base, 'tmp'
+    def log_file
+        @log_file ||= File.join tmp_dir, 'php.log'
     end
 
     def is_cygwin?
