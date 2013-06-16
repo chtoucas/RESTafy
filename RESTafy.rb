@@ -2,6 +2,7 @@
 # http://stackoverflow.com/questions/3159945/running-command-line-commands-within-ruby-script
 
 require 'fileutils'
+require 'open3'
 require 'rbconfig'
 require 'singleton'
 
@@ -12,12 +13,13 @@ class RESTafy
         @env = env || RESTafyEnv.instance
     end
 
+    # WARNING: Completely replace the current process.
     def exec()
         if ARGV.empty? then
             raise 'ARGV can not be empty.'
         end
 
-        system(build_cmd(ARGV, false, true).to_s)
+        Kernel.exec(build_cmd(ARGV, false, true).to_s)
     end
 
     def prove(dir, blib)
@@ -29,10 +31,22 @@ class RESTafy
     end
 
     def lint
-        # php -l
-        pattern = @env.lib_dir + '/**/*.php'
+        errs = []
+        pattern = File.join @env.lib_dir, '**', '*.php'
         Dir.glob(pattern) do |file|
-            system(lint_cmd(file, false).to_s)
+            stdin, stdout, stderr = Open3.popen3(lint_cmd(file, false).to_s)
+            unless stdout.readlines[0] =~ /^No syntax errors detected in/ then
+                errs.push(file)
+            end
+            print '.'
+        end
+        puts ''
+        if errs.length == 1 then
+            puts red('There is 1 malformed file.')
+        elsif errs.length > 1 then
+            puts red('There are %s malformed files.' % errs.length)
+        else
+            puts green('No syntax errors detected.')
         end
     end
 
@@ -53,13 +67,13 @@ class RESTafy
     end
 
     def prove_cmd(dir, blib)
-    	exe = File.join @env.libexec_dir, 'prove.php'
+        exe = File.join @env.libexec_dir, 'prove.php'
         argv = [quoted_path(exe), dir]
         return build_cmd(argv, blib, false)
     end
 
     def test_cmd(file)
-    	exe = File.join @env.libexec_dir, 'runtest.php'
+        exe = File.join @env.libexec_dir, 'runtest.php'
         argv = [quoted_path(exe), file]
         return build_cmd(argv, false, false)
     end
@@ -91,7 +105,7 @@ class RESTafy
     end
 
     def quoted_path(path)
-	'"' + path(path) + '"'
+        '"' + path(path) + '"'
     end
 
     def path(path)
@@ -100,6 +114,13 @@ class RESTafy
         # Nevertheless when the file already exists, the problem disappears.
         @env.is_cygwin? ? %x(cygpath -law -- "#{path}").strip! : path
     end
+
+    def colorize(text, color_code)
+        "\033[#{color_code}m#{text}\033[0m"
+    end
+
+    def red(text); colorize(text, "31"); end
+    def green(text); colorize(text, "32"); end
 end
 
 
@@ -206,5 +227,26 @@ class PHPCmd
 end
 
 #---------------------------------------------------------------------------------------------------
+
+module Colors
+    def colorize(text, color_code)
+        "\033[#{color_code}m#{text}\033[0m"
+    end
+
+    {
+        :black => 30,
+        :red => 31,
+        :green => 32,
+        :yellow => 33,
+        :blue => 34,
+        :magenta => 35,
+        :cyan => 36,
+        :white => 37
+    }.each do |key, color_code|
+        define_method key do |text|
+            colorize(text, color_code)
+        end
+    end
+end
 
 # EOF

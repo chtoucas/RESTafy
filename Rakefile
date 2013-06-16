@@ -34,9 +34,9 @@ namespace :test do
         restafy.prove('samples', false)
     end
 
-#    task :prove do
-#    	prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -d include_path=./lib -f' t/
-#    end
+    #task :prove do
+    #    prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -d include_path=./lib -f' t/
+    #end
 end
 
 # Always run this task, whatever happens.
