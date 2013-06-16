@@ -14,7 +14,7 @@ class RESTafy
     end
 
     # WARNING: Completely replace the current process.
-    def exec()
+    def exec
         if ARGV.empty? then
             raise 'ARGV can not be empty.'
         end
@@ -22,12 +22,17 @@ class RESTafy
         Kernel.exec(build_cmd(ARGV, false, true).to_s)
     end
 
-    def prove(dir, blib)
-        system(prove_cmd(dir, blib).to_s)
+    # WARNING: Completely replace the current process.
+    def test
+        if ARGV.empty? then
+            raise 'ARGV can not be empty.'
+          end
+
+        Kernel.exec(test_cmd(ARGV).to_s)
     end
 
-    def test(file)
-        system(test_cmd(file).to_s)
+    def prove(dir, blib)
+        system(prove_cmd(dir, blib).to_s)
     end
 
     def lint
@@ -42,11 +47,11 @@ class RESTafy
         end
         puts ''
         if errs.length == 1 then
-            puts red('There is 1 malformed file.')
+            warn 'There is 1 malformed file.'
         elsif errs.length > 1 then
-            puts red('There are %s malformed files.' % errs.length)
+            warn 'There are %s malformed files.' % errs.length
         else
-            puts green('No syntax errors detected.')
+            success 'No syntax errors detected.'
         end
     end
 
@@ -68,41 +73,25 @@ class RESTafy
 
     def prove_cmd(dir, blib)
         exe = File.join @env.libexec_dir, 'prove.php'
-        argv = [quoted_path(exe), dir]
-        return build_cmd(argv, blib, false)
+        build_cmd([quoted_path(exe), dir], blib, false)
     end
 
-    def test_cmd(file)
+    def test_cmd(argv)
         exe = File.join @env.libexec_dir, 'runtest.php'
-        argv = [quoted_path(exe), file]
-        return build_cmd(argv, false, false)
+        build_cmd([quoted_path(exe)].push(argv), false, false)
     end
 
     def lint_cmd(file, blib)
-        return build_cmd(['-l', quoted_path(file)], blib, false)
+        build_cmd(['-l', quoted_path(file)], blib, false)
     end
 
     private
 
-    def blib_dir
-        @blib_dir ||= path(@env.blib_dir)
-    end
-
-    def ini
-        @ini ||= path(@env.ini)
-    end
-
-    def ini_dbg
-        @ini_dbg ||= path(@env.ini_dbg)
-    end
-
-    def lib_dir
-        @lib_dir ||= path(@env.lib_dir)
-    end
-
-    def log_file
-        @log_file ||= path(@env.log_file)
-    end
+    def blib_dir; @blib_dir ||= path(@env.blib_dir) end
+    def ini;      @ini      ||= path(@env.ini) end
+    def ini_dbg;  @ini_dbg  ||= path(@env.ini_dbg) end
+    def lib_dir;  @lib_dir  ||= path(@env.lib_dir) end
+    def log_file; @log_file ||= path(@env.log_file) end
 
     def quoted_path(path)
         '"' + path(path) + '"'
@@ -115,12 +104,8 @@ class RESTafy
         @env.is_cygwin? ? %x(cygpath -law -- "#{path}").strip! : path
     end
 
-    def colorize(text, color_code)
-        "\033[#{color_code}m#{text}\033[0m"
-    end
-
-    def red(text); colorize(text, "31"); end
-    def green(text); colorize(text, "32"); end
+    def warn(text);    puts "\033[31m#{text}\033[0m" end
+    def success(text); puts "\033[32m#{text}\033[0m" end
 end
 
 
@@ -143,37 +128,14 @@ class RESTafyEnv
 
     # Project directories.
 
-    def blib_dir
-        @blib_dir ||= File.join @base, 'blib'
-    end
-
-    def etc_dir
-        @etc_dir ||= File.join @base, 'etc'
-    end
-
-    def lib_dir
-        @lib_dir ||= File.join @base, 'lib'
-    end
-
-    def libexec_dir
-        @libexec_dir ||= File.join @base, 'libexec'
-    end
-
-    def tmp_dir
-        @tmp_dir ||= File.join @base, 'tmp'
-    end
-
-    def ini
-        @ini ||= File.join etc_dir, 'php.ini'
-    end
-
-    def ini_dbg
-        @ini_dbg ||= File.join etc_dir, 'php-dbg.ini'
-    end
-
-    def log_file
-        @log_file ||= File.join tmp_dir, 'php.log'
-    end
+    def blib_dir;     @blib_dir     ||= File.join @base, 'blib' end
+    def etc_dir;      @etc_dir      ||= File.join @base, 'etc' end
+    def lib_dir;      @lib_dir      ||= File.join @base, 'lib' end
+    def libexec_dir;  @libexec_dir  ||= File.join @base, 'libexec' end
+    def tmp_dir;      @tmp_dir      ||= File.join @base, 'tmp' end
+    def ini;          @ini          ||= File.join etc_dir, 'php.ini' end
+    def ini_dbg;      @ini_dbg      ||= File.join etc_dir, 'php-dbg.ini' end
+    def log_file;     @log_file     ||= File.join tmp_dir, 'php.log' end
 
     def is_cygwin?
         @is_cygwin ||= (
@@ -227,26 +189,5 @@ class PHPCmd
 end
 
 #---------------------------------------------------------------------------------------------------
-
-module Colors
-    def colorize(text, color_code)
-        "\033[#{color_code}m#{text}\033[0m"
-    end
-
-    {
-        :black => 30,
-        :red => 31,
-        :green => 32,
-        :yellow => 33,
-        :blue => 34,
-        :magenta => 35,
-        :cyan => 36,
-        :white => 37
-    }.each do |key, color_code|
-        define_method key do |text|
-            colorize(text, color_code)
-        end
-    end
-end
 
 # EOF
