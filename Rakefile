@@ -5,25 +5,24 @@ require_relative 'RESTafy'
 
 PKG_VERSION = '0.1.0'
 
-task :default   => ['test:lib']
+RESTafyEnv::prepare
+restafy = RESTafy.new
 
-task :init do
-    RESTafy::init
-end
+task :default   => ['test:lib']
 
 namespace :test do
     task :lib do
-        RESTafy::prove('t', false)
+        restafy.prove('t', false)
     end
 
     task :blib do
-        RESTafy::prove('t', true)
+        restafy.prove('t', true)
     end
 
     task :samples do
-        RESTafy::prove('samples', false)
+        restafy.prove('samples', false)
     end
 end
 
 # Always run this task, whatever happens.
-Rake::Task['init'].invoke
+#Rake::Task['init'].invoke

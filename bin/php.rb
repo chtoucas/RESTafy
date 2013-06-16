@@ -2,5 +2,5 @@
 
 require_relative '../RESTafy'
 
-RESTafy::exec
+RESTafy.new.exec()
 

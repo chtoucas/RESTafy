@@ -2,6 +2,6 @@
 
 require_relative '../RESTafy'
 
-# FIXME
-RESTafy::test(ARGV)
+RESTafyEnv::init
+RESTafy.new.test(ARGV)
 
