@@ -2,44 +2,44 @@ require 'fileutils'
 require 'rake'
 require 'rake/packagetask'
 
-PKG_VERSION = '0.1.0'
-
 BEGIN {
-    require_relative 'RESTafy'
+  require_relative 'RESTafy'
 
-    $restafy = RESTafy.new
+  $tasks = RESTafy::Tasks.new()
 }
+
+PKG_VERSION = '0.1.0'
 
 task :default   => ['test:lib']
 
 task :init do
-    RESTafyEnv::prepare
+  $tasks.prepare()
 end
 
 task :blib do
-    $restafy.blib
+  $tasks.blib()
 end
 
 task :lint do
-    $restafy.lint_dir 'lib'
+  $tasks.lint_dir('lib')
 end
 
 namespace :test do
-    task :lib do
-        $restafy.prove 't', false
-    end
+  task :lib do
+    $tasks.prove('t', false)
+  end
 
-    task :blib do
-        $restafy.prove 't', true
-    end
+  task :blib do
+    $tasks.prove('t', true)
+  end
 
-    task :samples do
-        $restafy.prove 'samples', false
-    end
+  task :samples do
+    $tasks.prove('samples', false)
+  end
 
-    #task :prove do
-    #    prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -d include_path=./lib -f' t/
-    #end
+  #task :prove do
+  #  prove -r --ext=.phpt --exec 'php -n -c ./etc/phpt.ini -d include_path=./lib -f' t/
+  #end
 end
 
 # Before anything, run this task.
