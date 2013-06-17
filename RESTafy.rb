@@ -67,13 +67,11 @@ module RESTafy
 
   class CmdFactory
     def prove_cmd(dir, blib)
-      exe = File.join(Env::libexec_dir, 'prove.php')
-      php_cmd [quoted_path(exe), dir], blib, false
+      php_cmd [libpath('prove.php'), dir], blib, false
     end
 
-    def test_cmd(argv)
-      exe = File.join(Env::libexec_dir, 'runtest.php')
-      php_cmd [quoted_path(exe)].push(argv), false, false
+    def test_cmd(file, blib)
+      php_cmd [libpath('runtest.php'), file], blib, false
     end
 
     def lint_cmd(file)
@@ -101,7 +99,8 @@ module RESTafy
     def lib_dir;  @lib_dir  ||= path(Env::lib_dir) end
     def log_file; @log_file ||= path(Env::log_file) end
 
-    def quoted_path(path)
+    def libpath(libexec)
+      path = File.join(Env::libexec_dir, libexec)
       %q{"} + path(path) + %q{"}
     end
 
