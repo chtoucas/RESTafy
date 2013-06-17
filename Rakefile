@@ -1,11 +1,14 @@
 require 'fileutils'
 require 'rake'
 require 'rake/packagetask'
-require_relative 'RESTafy'
 
 PKG_VERSION = '0.1.0'
 
-restafy = RESTafy.new
+BEGIN {
+    require_relative 'RESTafy'
+
+    $restafy = RESTafy.new
+}
 
 task :default   => ['test:lib']
 
@@ -14,24 +17,24 @@ task :init do
 end
 
 task :blib do
-    restafy.blib
+    $restafy.blib
 end
 
 task :lint do
-    restafy.lint
+    $restafy.lint_dir 'lib'
 end
 
 namespace :test do
     task :lib do
-        restafy.prove('t', false)
+        $restafy.prove 't', false
     end
 
     task :blib do
-        restafy.prove('t', true)
+        $restafy.prove 't', true
     end
 
     task :samples do
-        restafy.prove('samples', false)
+        $restafy.prove 'samples', false
     end
 
     #task :prove do
@@ -39,5 +42,7 @@ namespace :test do
     #end
 end
 
-# Always run this task, whatever happens.
+# Before anything, run this task.
 Rake::Task['init'].invoke
+
+# EOF

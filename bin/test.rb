@@ -2,5 +2,9 @@
 
 require_relative '../RESTafy'
 
-RESTafy.new.test(ARGV)
+if ARGV.empty? then raise 'ARGV can not be empty.' end
+
+cmd = RESTafy.new.test_cmd ARGV
+exec cmd.to_s
+
 
