@@ -13,7 +13,7 @@ PKG_VERSION = '0.1.0'
 task :default   => ['test:lib']
 
 task :init do
-  $tasks.prepare()
+  $tasks.prepare_env()
 end
 
 task :blib do

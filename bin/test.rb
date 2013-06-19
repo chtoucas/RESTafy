@@ -2,9 +2,8 @@
 
 require_relative '../RESTafy'
 
-if ARGV.empty? then raise 'ARGV can not be empty.' end
+if ARGV.empty? then RESTafy::TermCarp.croak 'ARGV can not be empty.' end
 
-cmd = RESTafy::CmdFactory.new().test_cmd(ARGV)
-exec(cmd.to_s())
+RESTafy::CmdFactory.new().runtest_cmd(ARGV).exec()
 
-
+# EOF

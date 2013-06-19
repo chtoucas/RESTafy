@@ -1,5 +1,5 @@
-# http://mentalized.net/journal/2010/03/08/5_ways_to_run_commands_from_ruby/
-# http://stackoverflow.com/questions/3159945/running-command-line-commands-within-ruby-script
+# http://tomdoc.org/
+# https://github.com/bbatsov/ruby-style-guide#percent-literals
 
 require 'fileutils'
 require 'open3'
@@ -11,21 +11,58 @@ require_relative 'etc/Config'
 
 module RESTafy
 
+  module TermColors
+    def red(text);      "\e[31m#{text}\e[0m" end
+    def green(text);    "\e[32m#{text}\e[0m" end
+    def yellow(text);   "\e[33m#{text}\e[0m" end
+    def magenta(text);  "\e[35m#{text}\e[0m" end
+    def cyan(text);     "\e[36m#{text}\e[0m" end
+  end
+
+  module TermCarp_
+    include TermColors
+
+    # Confess something to the user.
+    def confess(text); puts cyan(text) end
+
+    # Warn of errors.
+    def warn(text); puts red(text) end
+
+    # Die on error.
+    def croak(text); puts red(text); exit(1) end
+
+    # Success message.
+    def bless(text); puts green(text) end
+  end
+
+  class TermCarp
+    extend TermCarp_
+  end
+
   class Tasks
+    include TermCarp_
+
     def initialize
+      @env = Env.instance
       @factory = CmdFactory.new()
     end
 
-    def prepare
-      Dir.mkdir(Env::tmp_dir) unless File.exists?(Env::tmp_dir)
-      if Env::is_cygwin? then
-        FileUtils.touch(Env::log_file) unless File.exists?(Env::log_file)
+    def clean_env
+      confess 'clean_env() not yet implemented.'
+    end
+
+    def prepare_env
+      FileUtils.mkdir_p(@env.tmp_dir) unless File.exists?(@env.tmp_dir)
+      if @env.is_cygwin?
+        # NB: There is a problem in cygwin whith paths containing a tilde (short-name DOS style).
+        # Nevertheless when the file already exists, the problem disappears and we correctly
+        # get a long-name DOS path.
+        FileUtils.touch(@env.log_file) unless File.exists?(@env.log_file)
       end
     end
 
     def prove(dir, blib)
-      cmd = @factory.prove_cmd(dir, blib)
-      system(cmd.to_s())
+      @factory.prove_cmd(dir, blib).system()
     end
 
     def lint_dir(dir)
@@ -36,54 +73,53 @@ module RESTafy
         print '.'
       end
       puts ''
-      if errs.length == 0 then
-        Tasks::success 'No syntax errors detected.'
-      elsif errs.length == 1 then
-        Tasks::warn %q{There is 1 malformed file: "%s"} % errs[0]
+      if errs.length == 0
+        bless 'No syntax errors detected.'
+      elsif errs.length == 1
+        warn %q{There is 1 malformed file: "%s"} % errs[0]
       else
-        Tasks::warn 'There are %s malformed files:' % errs.length
-        errs.each { |err| Tasks::warn '  %s' % err }
+        warn 'There are %s malformed files:' % errs.length
+        errs.each { |err| warn '  %s' % err }
       end
     end
 
     def lint(file)
       cmd = @factory.lint_cmd(file)
-      stdin, stdout, stderr = Open3.popen3(cmd.to_s())
-      stdout.readlines[0].chomp! =~ %r{^No syntax errors detected in}
+      stdout, stderr, status = cmd.capture3()
+      status.success? && stdout.chomp! =~ /^No syntax errors detected in/
     end
 
     def blib
       # php -w
-      puts "TODO"
+      confess 'blib() not yet implemented.'
     end
-
-    protected
-
-    def self.warn(text);    puts "\033[31m#{text}\033[0m" end
-    def self.success(text); puts "\033[32m#{text}\033[0m" end
   end
 
   
 
   class CmdFactory
+    def initialize
+      @env = Env.instance
+    end
+
     def prove_cmd(dir, blib)
       php_cmd [libpath('prove.php'), dir], blib, false
     end
 
-    def test_cmd(file, blib)
+    def runtest_cmd(file, blib)
       php_cmd [libpath('runtest.php'), file], blib, false
     end
 
     def lint_cmd(file)
-      PHPLint.new(Env::php_exe, quoted_path(file))
+      PHPLint.new(@env.php_exe, quoted_path(file))
     end
 
     def strip_cmd(file)
-      PHPStrip.new(Env::php_exe, quoted_path(file))
+      PHPStrip.new(@env.php_exe, quoted_path(file))
     end
 
     def php_cmd(argv, blib, debug)
-      cmd = PHPCmd.new(Env::php_exe)
+      cmd = PHPCmd.new(@env.php_exe)
       cmd.argv = argv
       cmd.include_path = blib ? blib_dir : lib_dir
       cmd.error_log = log_file
@@ -93,49 +129,95 @@ module RESTafy
 
     private
 
-    def blib_dir; @blib_dir ||= path(Env::blib_dir) end
-    def ini;      @ini      ||= path(Env::ini) end
-    def ini_dbg;  @ini_dbg  ||= path(Env::ini_dbg) end
-    def lib_dir;  @lib_dir  ||= path(Env::lib_dir) end
-    def log_file; @log_file ||= path(Env::log_file) end
+    def blib_dir; @blib_dir ||= path(@env.blib_dir) end
+    def ini;      @ini      ||= path(@env.ini) end
+    def ini_dbg;  @ini_dbg  ||= path(@env.ini_dbg) end
+    def lib_dir;  @lib_dir  ||= path(@env.lib_dir) end
+    def log_file; @log_file ||= path(@env.log_file) end
+
+    def quoted_path(path)
+      %q{"} + path(path) + %q{"}
+    end
 
     def libpath(libexec)
-      path = File.join(Env::libexec_dir, libexec)
-      %q{"} + path(path) + %q{"}
+      path = File.join(@env.libexec_dir, libexec)
+      quoted_path(path)
     end
 
     def path(path)
       # Cf. http://www.cygwin.com/cygwin-ug-net/using-utils.html#cygpath
-      # NB: There is a problem in cygwin whith paths containing a tilde (short-name DOS style).
-      # Nevertheless when the file already exists, the problem disappears.
-      Env::is_cygwin? ? %x{cygpath -law -- "#{path}"}.chomp! : path
+      @env.is_cygwin? ? %x{cygpath -law -- "#{path}"}.chomp! : path
     end
   end
 
   
 
-  module Env
-    def self.php_exe;      Config::PHP_EXE end
-    def self.base_dir;     Config::BASE_DIR end
+  class Env
+    include Singleton
+    include Config
 
-    def self.blib_dir;     @@blib_dir     ||= File.join(self::base_dir, '_blib') end
-    def self.build_dir;    @@build_dir    ||= File.join(self::base_dir, '_build') end
-    def self.etc_dir;      @@etc_dir      ||= File.join(self::base_dir, 'etc') end
-    def self.lib_dir;      @@lib_dir      ||= File.join(self::base_dir, 'lib') end
-    def self.libexec_dir;  @@libexec_dir  ||= File.join(self::base_dir, 'libexec') end
-    def self.tmp_dir;      @@tmp_dir      ||= File.join(self::base_dir, 'tmp') end
-    def self.ini;          @@ini          ||= File.join(self::etc_dir, 'php.ini') end
-    def self.ini_dbg;      @@ini_dbg      ||= File.join(self::etc_dir, 'php-dbg.ini') end
-    def self.log_file;     @@log_file     ||= File.join(self::tmp_dir, 'php.log') end
+    attr_reader :base_dir, :php_exe
 
-    def self.is_cygwin?
-      @@is_cygwin ||= RbConfig::CONFIG['host_os'] =~ %r{cygwin}
+    def initialize
+      @base_dir = BASE_DIR
+      @php_exe  = PHP_EXE
+    end
+
+    def blib_dir;     @blib_dir     ||= File.join(base_dir, '_blib') end
+    def build_dir;    @build_dir    ||= File.join(base_dir, '_build') end
+    def etc_dir;      @etc_dir      ||= File.join(base_dir, 'etc') end
+    def lib_dir;      @lib_dir      ||= File.join(base_dir, 'lib') end
+    def libexec_dir;  @libexec_dir  ||= File.join(base_dir, 'libexec') end
+    def tmp_dir;      @tmp_dir      ||= File.join(base_dir, 'tmp') end
+    def ini;          @ini          ||= File.join(etc_dir, 'php.ini') end
+    def ini_dbg;      @ini_dbg      ||= File.join(etc_dir, 'php-dbg.ini') end
+    def log_file;     @log_file     ||= File.join(tmp_dir, 'php.log') end
+
+    def is_cygwin?
+      @is_cygwin ||= RbConfig::CONFIG['host_os'] == 'cygwin'
+    end
+  end
+
+  
+
+  module ForeignCmd
+    # http://mentalized.net/journal/2010/03/08/5_ways_to_run_commands_from_ruby/
+    # http://stackoverflow.com/questions/3159945/running-command-line-commands-within-ruby-script
+
+    # Completely replace the current process
+    # stderr & stdout output.
+    def exec
+      Kernel.exec(self.to_s())
+    end
+
+    # Execute in a subshell.
+    # stderr output, stdout captured.
+    def backticks
+      %x(self.to_s())
+    end
+
+    # stderr & stdout captured.
+    def popen3
+      Open3.popen3(self.to_s())
+    end
+
+    # stderr & stdout captured.
+    def capture3
+      Open3.capture3(self.to_s())
+    end
+
+    # Execute in a subshell.
+    # stderr & stdout output.
+    def system
+      Kernel.system(self.to_s())
     end
   end
 
   
 
   class PHPCmd
+    include ForeignCmd
+
     attr_writer :argv
 
     def initialize(exe)
@@ -165,7 +247,7 @@ module RESTafy
 
       args = (opts << ini << @argv).join(' ')
 
-      %Q{#{@exe} #{args}}
+      %{#{@exe} #{args}}
     end
 
     protected
