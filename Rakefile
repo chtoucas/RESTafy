@@ -1,6 +1,4 @@
-require 'fileutils'
 require 'rake'
-require 'rake/packagetask'
 
 BEGIN {
   require_relative 'RESTafy'

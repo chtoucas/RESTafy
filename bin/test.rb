@@ -1,9 +1,13 @@
 #!/usr/bin/env ruby
 
 require_relative '../RESTafy'
+include RESTafy
 
-if ARGV.empty? then RESTafy::TermCarp.croak 'ARGV can not be empty.' end
+if ARGV.empty? then Term.croak 'ARGV can not be empty.' end
 
-RESTafy::CmdFactory.new().runtest_cmd(ARGV).exec()
+CmdFactory
+    .new(Env.instance)
+    .runtest_cmd(ARGV)
+    .exec()
 
 # EOF

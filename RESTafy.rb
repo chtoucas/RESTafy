@@ -5,46 +5,54 @@ require 'fileutils'
 require 'open3'
 require 'rbconfig'
 require 'singleton'
-require_relative 'etc/Config'
 
 #---------------------------------------------------------------------------------------------------
 
 module RESTafy
 
-  module TermColors
-    def red(text);      "\e[31m#{text}\e[0m" end
-    def green(text);    "\e[32m#{text}\e[0m" end
-    def yellow(text);   "\e[33m#{text}\e[0m" end
-    def magenta(text);  "\e[35m#{text}\e[0m" end
-    def cyan(text);     "\e[36m#{text}\e[0m" end
-  end
+  module Term
 
-  module TermCarp_
-    include TermColors
+    module Colors
+      def self.red(text);      "\e[31m#{text}\e[0m" end
+      def self.green(text);    "\e[32m#{text}\e[0m" end
+      def self.yellow(text);   "\e[33m#{text}\e[0m" end
+      def self.magenta(text);  "\e[35m#{text}\e[0m" end
+      def self.cyan(text);     "\e[36m#{text}\e[0m" end
+    end
 
     # Confess something to the user.
-    def confess(text); puts cyan(text) end
+    def confess(text)
+      puts Colors.cyan(text)
+    end
 
     # Warn of errors.
-    def warn(text); puts red(text) end
+    def warn(text)
+      puts Colors.red(text)
+    end
 
-    # Die on error.
-    def croak(text); puts red(text); exit(1) end
+    # Die of errors.
+    def croak(text)
+      puts Colors.red(text)
+      exit(1)
+    end
 
     # Success message.
-    def bless(text); puts green(text) end
-  end
+    def bless(text)
+      puts Colors.green(text)
+    end
 
-  class TermCarp
-    extend TermCarp_
+    module_function :confess
+    module_function :warn
+    module_function :croak
+    module_function :bless
   end
 
   class Tasks
-    include TermCarp_
+    include Term
 
-    def initialize
-      @env = Env.instance
-      @factory = CmdFactory.new()
+    def initialize(env = nil)
+      @env = env || Env.instance
+      @factory = CmdFactory.new(@env)
     end
 
     def clean_env
@@ -54,9 +62,8 @@ module RESTafy
     def prepare_env
       FileUtils.mkdir_p(@env.tmp_dir) unless File.exists?(@env.tmp_dir)
       if @env.is_cygwin?
-        # NB: There is a problem in cygwin whith paths containing a tilde (short-name DOS style).
-        # Nevertheless when the file already exists, the problem disappears and we correctly
-        # get a long-name DOS path.
+        # Under cygwin, unless the file already exists, paths containing a tilde (short-name DOS
+        # style) are not expanded.
         FileUtils.touch(@env.log_file) unless File.exists?(@env.log_file)
       end
     end
@@ -68,6 +75,7 @@ module RESTafy
     def lint_dir(dir)
       errs = []
       pattern = File.join(dir, '**', '*.php')
+      # Iterate over all PHP files and lint them.
       Dir.glob(pattern) do |file|
         errs << file unless lint(file)
         print '.'
@@ -76,7 +84,7 @@ module RESTafy
       if errs.length == 0
         bless 'No syntax errors detected.'
       elsif errs.length == 1
-        warn %q{There is 1 malformed file: "%s"} % errs[0]
+        warn %q{There is 1 malformed file: "%s".} % errs[0]
       else
         warn 'There are %s malformed files:' % errs.length
         errs.each { |err| warn '  %s' % err }
@@ -85,7 +93,7 @@ module RESTafy
 
     def lint(file)
       cmd = @factory.lint_cmd(file)
-      stdout, stderr, status = cmd.capture3()
+      stdout, stderr, status = cmd.capture()
       status.success? && stdout.chomp! =~ /^No syntax errors detected in/
     end
 
@@ -98,8 +106,8 @@ module RESTafy
   
 
   class CmdFactory
-    def initialize
-      @env = Env.instance
+    def initialize(env)
+      @env = env
     end
 
     def prove_cmd(dir, blib)
@@ -154,13 +162,13 @@ module RESTafy
 
   class Env
     include Singleton
-    include Config
 
-    attr_reader :base_dir, :php_exe
+    attr_reader :base_dir
+    attr_accessor :php_exe
 
     def initialize
-      @base_dir = BASE_DIR
-      @php_exe  = PHP_EXE
+      @base_dir = File.expand_path(File.dirname(__FILE__))
+      @php_exe  = '/usr/bin/env php'
     end
 
     def blib_dir;     @blib_dir     ||= File.join(base_dir, '_blib') end
@@ -184,30 +192,27 @@ module RESTafy
     # http://mentalized.net/journal/2010/03/08/5_ways_to_run_commands_from_ruby/
     # http://stackoverflow.com/questions/3159945/running-command-line-commands-within-ruby-script
 
-    # Completely replace the current process
-    # stderr & stdout output.
+    # Completely replace the current process: stderr & stdout output.
     def exec
       Kernel.exec(self.to_s())
     end
 
-    # Execute in a subshell.
-    # stderr output, stdout captured.
+    # Execute in a subshell: stderr output, stdout captured.
     def backticks
       %x(self.to_s())
     end
 
     # stderr & stdout captured.
-    def popen3
+    def open
       Open3.popen3(self.to_s())
     end
 
     # stderr & stdout captured.
-    def capture3
+    def capture
       Open3.capture3(self.to_s())
     end
 
-    # Execute in a subshell.
-    # stderr & stdout output.
+    # Execute in a subshell: stderr & stdout output.
     def system
       Kernel.system(self.to_s())
     end
