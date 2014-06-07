@@ -141,13 +141,12 @@ class TestHarness {
 
 namespace Narvalo\Test\Runner\Internal;
 
-use \Narvalo;
 use \Narvalo\Test\Framework;
 
 // Utilities
 // =================================================================================================
 
-final class RuntimeErrorCatcher extends Narvalo\StartStopWorkflow_ {
+final class RuntimeErrorCatcher extends Framework\StartStopWorkflowBase {
   private $_producer;
 
   function __construct(Framework\TestProducer $_producer_) {

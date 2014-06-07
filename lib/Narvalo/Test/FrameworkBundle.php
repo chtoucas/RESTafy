@@ -10,7 +10,7 @@ use \Narvalo\Test\Framework\Internal as _;
 // Test directives
 // =================================================================================================
 
-abstract class TestDirective_ {
+abstract class TestDirectiveBase {
   private
     $_name,
     $_reason;
@@ -35,7 +35,7 @@ abstract class TestDirective_ {
   }
 }
 
-class SkipTestDirective extends TestDirective_ {
+class SkipTestDirective extends TestDirectiveBase {
   function __construct($_reason_, $_name_) {
     parent::__construct($_reason_, $_name_);
   }
@@ -45,7 +45,7 @@ class SkipTestDirective extends TestDirective_ {
   }
 }
 
-class TagTestDirective extends TestDirective_ {
+class TagTestDirective extends TestDirectiveBase {
   function __construct($_reason_, $_name_) {
     parent::__construct($_reason_, $_name_);
   }
@@ -84,7 +84,7 @@ class AlteredTestCaseResult {
     $_directive,
     $_inner;
 
-  function __construct(TestCaseResult $_inner_, TestDirective_ $_directive_) {
+  function __construct(TestCaseResult $_inner_, TestDirectiveBase $_directive_) {
     $this->_inner     = $_inner_;
     $this->_directive = $_directive_;
   }
@@ -112,7 +112,7 @@ final class TestSetResult {
     $_bailedOut,
     $_runtimeErrorsCount;
 
-  function __construct(_\TestResultSet_ $_set_, $_bailedOut_, $_runtimeErrorsCount_) {
+  function __construct(_\TestResultSetBase $_set_, $_bailedOut_, $_runtimeErrorsCount_) {
     $this->_set                = $_set_;
     $this->_bailedOut          = $_bailedOut_;
     $this->_runtimeErrorsCount = $_runtimeErrorsCount_;
@@ -549,6 +549,57 @@ class TestModule {
   }
 }
 
+// Utilities
+// =================================================================================================
+
+abstract class StartStopWorkflowBase {
+  private $_running = \FALSE;
+
+  protected function __construct() { }
+
+  function __destruct() {
+    if ($this->_running) {
+      // REVIEW
+      Narvalo\Log::Warning(\sprintf(
+        '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
+        Narvalo\Type::Of($this)));
+    }
+  }
+
+  function running() {
+    return $this->_running;
+  }
+
+  final function start() {
+    if ($this->_running) {
+      throw new Narvalo\InvalidOperationException(
+        \sprintf('You can not start an already running %s.', Narvalo\Type::Of($this)));
+    }
+
+    $this->startCore_();
+
+    $this->_running = \TRUE;
+  }
+
+  final function stop() {
+    if ($this->_running) {
+      $this->stopCore_();
+      $this->_running = \FALSE;
+    }
+  }
+
+  abstract protected function startCore_();
+
+  abstract protected function stopCore_();
+
+  protected function throwIfStopped_() {
+    if (!$this->_running) {
+      throw new Narvalo\InvalidOperationException(
+        \sprintf('%s stopped. You forget to call start()?', Narvalo\Type::Of($this)));
+    }
+  }
+}
+
 // #################################################################################################
 
 namespace Narvalo\Test\Framework\Internal;
@@ -559,7 +610,7 @@ use \Narvalo\Test\Framework;
 // Test result sets
 // =================================================================================================
 
-abstract class TestResultSet_ {
+abstract class TestResultSetBase {
   private
     // TRUE if the set is closed.
     $_closed        = \FALSE,
@@ -632,7 +683,7 @@ abstract class TestResultSet_ {
   }
 }
 
-final class EmptyTestResultSet extends TestResultSet_ {
+final class EmptyTestResultSet extends TestResultSetBase {
   function __construct() { }
 
   function addTest(Framework\TestCaseResult $_test_) {
@@ -650,7 +701,7 @@ final class EmptyTestResultSet extends TestResultSet_ {
   protected function closeCore_(Framework\TestEngine $_engine_) { }
 }
 
-final class DynamicTestResultSet extends TestResultSet_ {
+final class DynamicTestResultSet extends TestResultSetBase {
   function __construct() { }
 
   protected function passedCore_() {
@@ -658,7 +709,7 @@ final class DynamicTestResultSet extends TestResultSet_ {
     return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
   }
 
-  // Print helpful messages if something went wrong AND post plan.
+  // Print helpful messages if something went wrong AND execute post plan logic.
   protected function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
@@ -680,7 +731,7 @@ final class DynamicTestResultSet extends TestResultSet_ {
   }
 }
 
-final class FixedSizeTestResultSet extends TestResultSet_ {
+final class FixedSizeTestResultSet extends TestResultSetBase {
   // Number of expected tests.
   private $_length;
 
@@ -736,7 +787,7 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
 
 class TestWorkflowException extends Narvalo\Exception { }
 
-final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
+final class TestWorkflow extends Framework\StartStopWorkflowBase {
   const
     START              = 0,
     HEADER             = 1,

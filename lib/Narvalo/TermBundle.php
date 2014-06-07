@@ -65,7 +65,7 @@ final class Ansi {
   }
 }
 
-class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable {
+class StandardErrorLogger extends Narvalo\LoggerBase implements Narvalo\IDisposable {
   private
     $_stream,
     $_disposed = \FALSE;
@@ -104,7 +104,7 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
   }
 }
 
-abstract class Cmd_ {
+abstract class CmdBase {
   const
     SUCCESS_CODE = 0,
     FAILURE_CODE = 1;

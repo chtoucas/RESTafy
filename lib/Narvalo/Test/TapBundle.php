@@ -20,8 +20,6 @@ use \Narvalo\IO;
 use \Narvalo\Term;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Runner;
-use \Narvalo\Test\Sets;
-use \Narvalo\Test\Tap;
 
 define('_CRLF_REGEX_PART',       '(?:\r|\n)+');
 // RegEx to find any combination of \r and \n in a string.
@@ -131,6 +129,7 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
     if (!$this->_verbose) {
       return;
     }
+
     $this->writeTapLine_($this->formatMultiLine_('# ', $_comment_));
   }
 
@@ -139,11 +138,13 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
 
   private static function _GetTestLine($_passed_, $_number_, $_desc_) {
     $status = $_passed_ ? 'ok' : 'not ok';
+
     if ('' !== $_desc_) {
       $line = \sprintf('%s %d - %s', $status, $_number_, self::_FormatDescription($_desc_));
     } else {
       $line = \sprintf('%s %d', $status, $_number_);
     }
+
     return $line;
   }
 
@@ -185,9 +186,7 @@ class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
 }
 
 class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestHarnessWriter {
-  private
-    $_stream,
-    $_indent = '';
+  private $_stream;
 
   function __construct() {
     $this->_stream = IO\File::GetStandardOutput();
@@ -282,6 +281,7 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
   }
 }
 
+// Runners
 // =================================================================================================
 
 class TapRunner extends Runner\TestRunner implements Narvalo\IDisposable {

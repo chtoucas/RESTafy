@@ -318,7 +318,7 @@ class DisposableObject {
   }
 }
 
-abstract class SafeHandle_ implements IDisposable {
+abstract class SafeHandleBase implements IDisposable {
   const _INVALID_HANDLE_VALUE = -1;
 
   protected $handle_;
@@ -424,54 +424,6 @@ abstract class SafeHandle_ implements IDisposable {
   }
 }
 
-abstract class StartStopWorkflow_ {
-  private $_running = \FALSE;
-
-  protected function __construct() { }
-
-  function __destruct() {
-    if ($this->_running) {
-      Log::Warning(\sprintf(
-        '%s forcefully stopped. You either forgot to call stop() or your script exited abnormally.',
-        Type::Of($this)));
-    }
-  }
-
-  function running() {
-    return $this->_running;
-  }
-
-  final function start() {
-    if ($this->_running) {
-      throw new InvalidOperationException(
-        \sprintf('You can not start an already running %s.', Type::Of($this)));
-    }
-
-    $this->startCore_();
-
-    $this->_running = \TRUE;
-  }
-
-  final function stop() {
-    if ($this->_running) {
-      $this->stopCore_();
-      $this->_running = \FALSE;
-    }
-  }
-
-  abstract protected function startCore_();
-
-  abstract protected function stopCore_();
-
-  protected function throwIfStopped_()
-  {
-    if (!$this->_running) {
-      throw new InvalidOperationException(
-        \sprintf('%s stopped. You forget to call start()?', Type::Of($this)));
-    }
-  }
-}
-
 // Diagnostics
 // =================================================================================================
 
@@ -511,7 +463,7 @@ final class LoggerLevel {
   }
 }
 
-abstract class Logger_ implements ILogger {
+abstract class LoggerBase implements ILogger {
   private $_level;
 
   protected function __construct($_level_) {
@@ -557,7 +509,7 @@ abstract class Logger_ implements ILogger {
   }
 }
 
-class DefaultLogger extends Logger_ {
+class DefaultLogger extends LoggerBase {
   function __construct($_level_ = \NULL) {
     parent::__construct($_level_ ? : LoggerLevel::GetDefault());
   }
@@ -696,6 +648,7 @@ trait Singleton {
   }
 
   // TODO: Explain this.
+  // REVIEW: Throw NotImplementedException?
   private function _initialize() { }
 
   // Private methods
@@ -778,7 +731,7 @@ class ProviderSection {
 final class ProviderHelper {
   static function InstantiateProvider(ProviderSection $_section_) {
     $providerClass = $_section_->getProviderClass();
-    $params = $_section_->getProviderParams();
+    $params        = $_section_->getProviderParams();
 
     if (\NULL === $params) {
       return new $providerClass();

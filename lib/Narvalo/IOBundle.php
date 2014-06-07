@@ -108,7 +108,7 @@ final class File {
   }
 }
 
-final class FileHandle extends Narvalo\SafeHandle_ {
+final class FileHandle extends Narvalo\SafeHandleBase {
   function __construct($_preexistingHandle_, $_ownsHandle_) {
     parent::__construct($_ownsHandle_);
 
