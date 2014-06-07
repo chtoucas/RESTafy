@@ -10,8 +10,6 @@ use \Narvalo\Test\Framework\Internal as _;
 // Test directives
 // =================================================================================================
 
-// {{{ TestDirective_
-
 abstract class TestDirective_ {
   private
     $_name,
@@ -37,9 +35,6 @@ abstract class TestDirective_ {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipTestDirective
-
 class SkipTestDirective extends TestDirective_ {
   function __construct($_reason_, $_name_) {
     parent::__construct($_reason_, $_name_);
@@ -49,9 +44,6 @@ class SkipTestDirective extends TestDirective_ {
     return \TRUE;
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TagTestDirective
 
 class TagTestDirective extends TestDirective_ {
   function __construct($_reason_, $_name_) {
@@ -63,12 +55,8 @@ class TagTestDirective extends TestDirective_ {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test results
 // =================================================================================================
-
-// {{{ TestCaseResult
 
 class TestCaseResult {
   private
@@ -90,9 +78,6 @@ class TestCaseResult {
     return $this->_passed;
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ AlteredTestCaseResult
 
 class AlteredTestCaseResult {
   private
@@ -120,10 +105,6 @@ class AlteredTestCaseResult {
     return $this->_directive->apply($this->_inner);
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TestSetResult
 
 final class TestSetResult {
   private
@@ -158,118 +139,79 @@ final class TestSetResult {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test streams
 // =================================================================================================
-
-// {{{ ITestOutWriter
 
 interface ITestOutWriter {
   function reset();
 
   function startSubtest();
+
   function endSubtest();
 
   function writeHeader();
+
   function writeFooter();
+
   function writePlan($_num_of_tests_);
+
   function writeSkipAll($_reason_);
+
   function writeTestCaseResult(TestCaseResult $_test_, $_number_);
+
   function writeAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_);
+
   function writeBailOut($_reason_);
+
   function writeComment($_comment_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ITestErrWriter
 
 interface ITestErrWriter {
   function reset();
 
   function startSubtest();
+
   function endSubtest();
 
   function write($_value_);
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ NoopTestOutWriter
-
 final class NoopTestOutWriter implements ITestOutWriter {
-  function reset() {
-    ;
-  }
+  function reset() { }
 
-  function startSubtest() {
-    ;
-  }
+  function startSubtest() { }
 
-  function endSubtest() {
-    ;
-  }
+  function endSubtest() { }
 
-  function writeHeader() {
-    ;
-  }
+  function writeHeader() { }
 
-  function writeFooter() {
-    ;
-  }
+  function writeFooter() { }
 
-  function writePlan($_num_of_tests_) {
-    ;
-  }
+  function writePlan($_num_of_tests_) { }
 
-  function writeSkipAll($_reason_) {
-    ;
-  }
+  function writeSkipAll($_reason_) { }
 
-  function writeTestCaseResult(TestCaseResult $_test_, $_number_) {
-    ;
-  }
+  function writeTestCaseResult(TestCaseResult $_test_, $_number_) { }
 
-  function writeAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) {
-    ;
-  }
+  function writeAlteredTestCaseResult(AlteredTestCaseResult $_test_, $_number_) { }
 
-  function writeBailOut($_reason_) {
-    ;
-  }
+  function writeBailOut($_reason_) { }
 
-  function writeComment($_comment_) {
-    ;
-  }
+  function writeComment($_comment_) { }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ NoopTestErrWriter
 
 final class NoopTestErrWriter implements ITestErrWriter {
-  function reset() {
-    ;
-  }
+  function reset() { }
 
-  function startSubtest() {
-    ;
-  }
+  function startSubtest() { }
 
-  function endSubtest() {
-    ;
-  }
+  function endSubtest() { }
 
-  function write($_value_) {
-    ;
-  }
+  function write($_value_) { }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // Test engine
 // =================================================================================================
-
-// {{{ TestEngine
 
 class TestEngine {
   private
@@ -286,9 +228,6 @@ class TestEngine {
     $this->_workflow  = new _\TestWorkflow();
   }
 
-  // Properties
-  // ----------
-
   function running() {
     return $this->_workflow->running();
   }
@@ -296,9 +235,6 @@ class TestEngine {
   function getTagger() {
     return $this->_workflow->getTagger();
   }
-
-  // Methods
-  // -------
 
   function reset() {
     $this->_workflow->stop();
@@ -386,28 +322,14 @@ class TestEngine {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test producer
 // =================================================================================================
 
-// {{{ TestProducerInterrupt
-
 class TestProducerInterrupt extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ SkipAllTestProducerInterrupt
 
 class SkipAllTestProducerInterrupt extends TestProducerInterrupt { }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ BailOutTestProducerInterrupt
-
 class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TestProducer
 
 class TestProducer {
   private
@@ -423,9 +345,6 @@ class TestProducer {
     // NB: Until we make a plan, we use a dynamic test set.
     $this->_set    = new _\DynamicTestResultSet();
   }
-
-  // Properties
-  // ----------
 
   function running() {
     return $this->_engine->running();
@@ -493,6 +412,7 @@ class TestProducer {
         \sprintf('Number of tests must be a strictly positive integer. You gave it "%s".',
         $_how_many_));
     }
+
     $this->_set = new _\FixedSizeTestResultSet($_how_many_);
     $this->_engine->plan($_how_many_);
   }
@@ -520,7 +440,9 @@ class TestProducer {
           'The number of skipped tests must be a strictly positive integer. You gave it "%s".',
           $_how_many_));
     }
+
     $test = $_directive_->alter(new TestCaseResult('', \TRUE));
+
     for ($i = 1; $i <= $_how_many_; $i++) {
       $num = $this->_set->addAlteredTest($test);
       $this->_engine->addAlteredTestCaseResult($test, $num);
@@ -548,7 +470,7 @@ class TestProducer {
     try {
       $_fun_();
     } catch (TestProducerInterrupt $e) {
-      ;
+      // FIXME: Explain this.
     } catch (\Exception $e) {
       $this->bailOutOnException($e);
     }
@@ -590,14 +512,10 @@ class TestProducer {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test modules
 // =================================================================================================
 
-// {{{ TestModule
-
-/// NB: you can create as many derived class as you wish, they will all share the same producer.
+/// NB: you can create as many derived class as you wish, they will always share the same producer.
 class TestModule {
   private static $_SharedProducer;
   private $_producer;
@@ -612,6 +530,7 @@ class TestModule {
       throw new Narvalo\InvalidOperationException(
         'Looks like you forgot to initialize '.__CLASS__.' with a TestProducer.');
     }
+
     return $this->_producer;
   }
 
@@ -620,6 +539,7 @@ class TestModule {
       throw new Narvalo\InvalidOperationException(
         'You can not initialize '.__CLASS__.' while a TestProducer is still running.');
     }
+
     $this->_producer = $_producer_;
   }
 
@@ -627,8 +547,6 @@ class TestModule {
     return \NULL === $this->_producer || !$this->_producer->running();
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // #################################################################################################
 
@@ -640,8 +558,6 @@ use \Narvalo\Test\Framework;
 // Test result sets
 // =================================================================================================
 
-// {{{ TestResultSet_
-
 abstract class TestResultSet_ {
   private
     $_closed        = \FALSE,
@@ -650,9 +566,7 @@ abstract class TestResultSet_ {
     /// List of tests.
     $_tests         = array();
 
-  protected function __construct() {
-    ;
-  }
+  protected function __construct() { }
 
   function getTestsCount() {
     return \count($this->_tests);
@@ -672,6 +586,7 @@ abstract class TestResultSet_ {
       throw new Narvalo\InvalidOperationException(
         'Before getting the test status, you must close it.');
     }
+
     return $this->passedCore_();
   }
 
@@ -679,6 +594,7 @@ abstract class TestResultSet_ {
     if ($this->_closed) {
       return;
     }
+
     $this->closeCore_($_engine_);
     $this->_closed = \TRUE;
   }
@@ -688,9 +604,11 @@ abstract class TestResultSet_ {
       // NB: This is not taken care of by the workflow.
       throw new Narvalo\InvalidOperationException('You can not add a test to a closed set.');
     }
+
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
+
     $num = $this->getTestsCount();
     $this->_tests[$num] = $_test_;
     return 1 + $num;
@@ -701,22 +619,19 @@ abstract class TestResultSet_ {
       // NB: This is not taken care of by the workflow.
       throw new Narvalo\InvalidOperationException('You can not add a test to a closed set.');
     }
+
     if (!$_test_->passed()) {
       $this->_failuresCount++;
     }
+
     $num = $this->getTestsCount();
     $this->_tests[$num] = $_test_;
     return 1 + $num;
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ EmptyTestResultSet
-
 final class EmptyTestResultSet extends TestResultSet_ {
-  function __construct() {
-    ;
-  }
+  function __construct() { }
 
   function addTest(Framework\TestCaseResult $_test_) {
     throw new Narvalo\NotSupportedException('You can not add a test to '.__CLASS__);
@@ -730,18 +645,11 @@ final class EmptyTestResultSet extends TestResultSet_ {
     return \TRUE;
   }
 
-  protected function closeCore_(Framework\TestEngine $_engine_) {
-    ;
-  }
+  protected function closeCore_(Framework\TestEngine $_engine_) { }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DynamicTestResultSet
-
 final class DynamicTestResultSet extends TestResultSet_ {
-  function __construct() {
-    ;
-  }
+  function __construct() { }
 
   protected function passedCore_() {
     // We actually run tests and they all passed.
@@ -758,7 +666,9 @@ final class DynamicTestResultSet extends TestResultSet_ {
         $_engine_->addComment(\sprintf(
           'Looks like you failed %s test%s of %s run.', $failures_count, $s, $tests_count));
       }
+
       $_engine_->addComment('No plan!');
+
       // Post plan.
       $_engine_->plan($tests_count);
     } else {
@@ -767,9 +677,6 @@ final class DynamicTestResultSet extends TestResultSet_ {
     }
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FixedSizeTestResultSet
 
 final class FixedSizeTestResultSet extends TestResultSet_ {
   /// Number of expected tests.
@@ -799,12 +706,14 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
       $extras_count = $this->getExtrasCount();
+
       if (0 !== $extras_count) {
         // Count missmatch.
         $s = $this->_length > 1 ? 's' : '';
         $_engine_->addComment(\sprintf(
           'Looks like you planned %s test%s but ran %s.', $this->_length, $s, $tests_count));
       }
+
       if (($failures_count = $this->getFailuresCount()) > 0) {
         // There are failures.
         $s = $failures_count > 1 ? 's' : '';
@@ -820,31 +729,24 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test workflow
 // =================================================================================================
 
-// {{{ TestWorkflowException
-
 class TestWorkflowException extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ TestWorkflow
 
 final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
   const
-    Start            = 0,
-    Header           = 1,
-    StaticPlanDecl   = 2,
-    DynamicPlanTests = 3,
+    START              = 0,
+    HEADER             = 1,
+    STATIC_PLAN_DECL   = 2,
+    DYNAMIC_PLAN_TESTS = 3,
+
     // Valid end states.
-    DynamicPlanDecl  = 4,
-    StaticPlanTests  = 5,
-    SkipAll          = 6,
-    BailOut          = 7,
-    End              = 8;
+    DYNAMIC_PLAN_DECL  = 4,
+    STATIC_PLAN_TESTS  = 5,
+    SKIP_ALL           = 6,
+    BAIL_OUT           = 7,
+    END                = 8;
 
   private
     $_state,
@@ -853,9 +755,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     $_tagger,
     $_taggerStack;
 
-  function __construct() {
-    ;
-  }
+  function __construct() { }
 
   function getTagger() {
     return $this->_tagger;
@@ -864,16 +764,16 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
   function header() {
     $this->throwIfStopped_();
 
-    if (self::Start === $this->_state) {
+    if (self::START === $this->_state) {
       // Valid states.
 
-      $this->_state = self::Header;
+      $this->_state = self::HEADER;
     } else {
       // Invalid states.
 
       throw new TestWorkflowException(\sprintf(
         'The header must come first. Invalid workflow state: "%s".',
-        self::_GetStateName($this->_state)));
+        self::_GetStateDisplayName($this->_state)));
     }
   }
 
@@ -883,27 +783,25 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid states.
+      case self::BAIL_OUT:
+      case self::SKIP_ALL:
+        // XXX
+        return;
 
-    case self::BailOut:
-    case self::SkipAll:
-      // XXX
-      return;
-
-    case self::DynamicPlanDecl:
-    case self::StaticPlanTests:
-    case self::Header:
-      break;
+      case self::DYNAMIC_PLAN_DECL:
+      case self::STATIC_PLAN_TESTS:
+      case self::HEADER:
+        break;
 
       // Invalid states.
-
-    case self::End:
-      throw new TestWorkflowException('Can not enter footer. Workflow already ended.');
-      //    case self::Header:
-      //      throw new TestWorkflowException('The workflow will end prematurely.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Can not enter footer. The workflow will end in an invalid state: "%s".',
-        self::_GetStateName($this->_state)));
+      case self::END:
+        throw new TestWorkflowException('Can not enter footer. Workflow already ended.');
+        //    case self::Header:
+        //      throw new TestWorkflowException('The workflow will end prematurely.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Can not enter footer. The workflow will end in an invalid state: "%s".',
+          self::_GetStateDisplayName($this->_state)));
     }
 
     // Check subtests' level.
@@ -911,7 +809,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
       throw new TestWorkflowException(\sprintf(
         'There is still %s opened subtest in the workflow: %s',
         $this->_subtestLevel,
-        self::_GetStateName($this->_state)));
+        self::_GetStateDisplayName($this->_state)));
     }
 
     // Is any tag left opened?
@@ -919,7 +817,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
       throw new TestWorkflowException('There is still opened tag in the workflow.');
     }
 
-    $this->_state = self::End;
+    $this->_state = self::END;
   }
 
   function startSubtest() {
@@ -927,35 +825,33 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     switch ($this->_state) {
       // Valid states.
-
-    case self::Header:
-    case self::DynamicPlanTests:
-    case self::StaticPlanDecl:
-    case self::StaticPlanTests:
-      break;
+      case self::HEADER:
+      case self::DYNAMIC_PLAN_TESTS:
+      case self::STATIC_PLAN_DECL:
+      case self::STATIC_PLAN_TESTS:
+        break;
 
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('Unable to start a subtest: missing header.');
-    case self::End:
-      throw new TestWorkflowException('Unable to start a subtest: workflow ended.');
-    case self::DynamicPlanDecl:
-      throw new TestWorkflowException(
-        'Unable to start a subtest: you already end your tests with a plan.');
-    case self::SkipAll:
-      throw new TestWorkflowException(
-        'You can not start a subtest and skip all tests at the same time.');
-    case self::BailOut:
-      throw new TestWorkflowException('You can not start a subtest after bailing out.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
+      case self::START:
+        throw new TestWorkflowException('Unable to start a subtest: missing header.');
+      case self::END:
+        throw new TestWorkflowException('Unable to start a subtest: workflow ended.');
+      case self::DYNAMIC_PLAN_DECL:
+        throw new TestWorkflowException(
+          'Unable to start a subtest: you already end your tests with a plan.');
+      case self::SKIP_ALL:
+        throw new TestWorkflowException(
+          'You can not start a subtest and skip all tests at the same time.');
+      case self::BAIL_OUT:
+        throw new TestWorkflowException('You can not start a subtest after bailing out.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Invalid workflow state: "%s".', self::_GetStateDisplayName($this->_state)));
     }
 
     // FIXME: Reset tag stack?
     \array_push($this->_subStates, $this->_state);
-    $this->_state = self::Header;
+    $this->_state = self::HEADER;
     $this->_subtestLevel++;
   }
 
@@ -975,31 +871,30 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     switch ($this->_state) {
       // Valid states.
-
-    case self::Header:
-    case self::DynamicPlanTests:
-    case self::StaticPlanDecl:
-    case self::StaticPlanTests:
-      break;
+      case self::HEADER:
+      case self::DYNAMIC_PLAN_TESTS:
+      case self::STATIC_PLAN_DECL:
+      case self::STATIC_PLAN_TESTS:
+        break;
 
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('Unable to start a tag: missing header.');
-    case self::End:
-      throw new TestWorkflowException('Unable to start a tag: workflow ended.');
-    case self::DynamicPlanDecl:
-      throw new TestWorkflowException(
-        'Unable to start a tag: you already end your tests with a plan.');
-    case self::SkipAll:
-      throw new TestWorkflowException(
-        'You can not start a tag and skip all tests at the same time.');
-    case self::BailOut:
-      throw new TestWorkflowException('You can not start a tag after bailing out.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
+      case self::START:
+        throw new TestWorkflowException('Unable to start a tag: missing header.');
+      case self::END:
+        throw new TestWorkflowException('Unable to start a tag: workflow ended.');
+      case self::DYNAMIC_PLAN_DECL:
+        throw new TestWorkflowException(
+          'Unable to start a tag: you already end your tests with a plan.');
+      case self::SKIP_ALL:
+        throw new TestWorkflowException(
+          'You can not start a tag and skip all tests at the same time.');
+      case self::BAIL_OUT:
+        throw new TestWorkflowException('You can not start a tag after bailing out.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Invalid workflow state: "%s".', self::_GetStateDisplayName($this->_state)));
     }
+
     // Keep the upper-level directive in memory.
     if (\NULL === $this->_tagger) {
       $this->_tagger = $_tagger_;
@@ -1017,6 +912,7 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     } else if ($_tagger_ !== $this->_tagger) {
       throw new TestWorkflowException('You can not interlinked tagging directives.');
     }
+
     $this->_tagger = \array_pop($this->_taggerStack);
   }
 
@@ -1025,35 +921,33 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     switch ($this->_state) {
       // Valid states.
-
-    case self::Header:
-      // Static plan.
-      $this->_state = self::StaticPlanDecl;
-      break;
-    case self::DynamicPlanTests:
-      // Dynamic plan.
-      $this->_state = self::DynamicPlanDecl;
-      break;
+      case self::HEADER:
+        // Static plan.
+        $this->_state = self::STATIC_PLAN_DECL;
+        break;
+      case self::DYNAMIC_PLAN_TESTS:
+        // Dynamic plan.
+        $this->_state = self::DYNAMIC_PLAN_DECL;
+        break;
 
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('You can not plan: missing header.');
-    case self::End:
-      throw new TestWorkflowException('You can not plan: workflow already ended.');
-    case self::DynamicPlanDecl:
-    case self::StaticPlanDecl:
-    case self::StaticPlanTests:
-      throw new TestWorkflowException(\sprintf(
-        'You can not plan twice. Invalid workflow state: "%s".',
-        self::_GetStateName($this->_state)));
-    case self::SkipAll:
-      throw new TestWorkflowException('You can not plan and skip all tests at the same time.');
-    case self::BailOut:
-      throw new TestWorkflowException('You can not plan after bailing out.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
+      case self::START:
+        throw new TestWorkflowException('You can not plan: missing header.');
+      case self::END:
+        throw new TestWorkflowException('You can not plan: workflow already ended.');
+      case self::DYNAMIC_PLAN_DECL:
+      case self::STATIC_PLAN_DECL:
+      case self::STATIC_PLAN_TESTS:
+        throw new TestWorkflowException(\sprintf(
+          'You can not plan twice. Invalid workflow state: "%s".',
+          self::_GetStateDisplayName($this->_state)));
+      case self::SKIP_ALL:
+        throw new TestWorkflowException('You can not plan and skip all tests at the same time.');
+      case self::BAIL_OUT:
+        throw new TestWorkflowException('You can not plan after bailing out.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Invalid workflow state: "%s".', self::_GetStateDisplayName($this->_state)));
     }
   }
 
@@ -1062,33 +956,31 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     switch ($this->_state) {
       // Valid states.
-
-    case self::Header:
-      // Skip All plan.
-      $this->_state = self::SkipAll;
-      break;
+      case self::HEADER:
+        // Skip All plan.
+        $this->_state = self::SKIP_ALL;
+        break;
 
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('Unable to skip all tests: missing header.');
-    case self::End:
-      throw new TestWorkflowException('Unable to skip all tests: workflow already closed.');
-    case self::DynamicPlanTests:
-      throw new TestWorkflowException('Unable to skip all tests: you already run at least one test.');
-    case self::DynamicPlanDecl:
-    case self::StaticPlanDecl:
-    case self::StaticPlanTests:
-      throw new TestWorkflowException(\sprintf(
-        'Unable to skip all tests: you already made a plan. Invalid workflow state: "%s".',
-        self::_GetStateName($this->_state)));
-    case self::SkipAll:
-      throw new TestWorkflowException('You already asked to skip all tests.');
-    case self::BailOut:
-      throw new TestWorkflowException('You can not skip all tests after bailing out.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
+      case self::START:
+        throw new TestWorkflowException('Unable to skip all tests: missing header.');
+      case self::END:
+        throw new TestWorkflowException('Unable to skip all tests: workflow already closed.');
+      case self::DYNAMIC_PLAN_TESTS:
+        throw new TestWorkflowException('Unable to skip all tests: you already run at least one test.');
+      case self::DYNAMIC_PLAN_DECL:
+      case self::STATIC_PLAN_DECL:
+      case self::STATIC_PLAN_TESTS:
+        throw new TestWorkflowException(\sprintf(
+          'Unable to skip all tests: you already made a plan. Invalid workflow state: "%s".',
+          self::_GetStateDisplayName($this->_state)));
+      case self::SKIP_ALL:
+        throw new TestWorkflowException('You already asked to skip all tests.');
+      case self::BAIL_OUT:
+        throw new TestWorkflowException('You can not skip all tests after bailing out.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Invalid workflow state: "%s".', self::_GetStateDisplayName($this->_state)));
     }
   }
 
@@ -1097,38 +989,36 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     switch ($this->_state) {
       // Valid states.
-
-    case self::Header:
-      // Dynamic plan. First test.
-      $this->_state = self::DynamicPlanTests;
-      break;
-    case self::DynamicPlanTests:
-      // Dynamic plan. Later test.
-      break;
-    case self::StaticPlanDecl:
-      // Static plan. First test.
-      $this->_state = self::StaticPlanTests;
-      break;
-    case self::StaticPlanTests:
-      // Static plan. Later test.
-      break;
+      case self::HEADER:
+        // Dynamic plan. First test.
+        $this->_state = self::DYNAMIC_PLAN_TESTS;
+        break;
+      case self::DYNAMIC_PLAN_TESTS:
+        // Dynamic plan. Later test.
+        break;
+      case self::STATIC_PLAN_DECL:
+        // Static plan. First test.
+        $this->_state = self::STATIC_PLAN_TESTS;
+        break;
+      case self::STATIC_PLAN_TESTS:
+        // Static plan. Later test.
+        break;
 
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('Unable to register a test: missing header.');
-    case self::End:
-      throw new TestWorkflowException('Unable to register a test: workflow already ended.');
-    case self::DynamicPlanDecl:
-      throw new TestWorkflowException(
-        'Unable to register a test: you already end your tests with a plan.');
-    case self::SkipAll:
-      throw new TestWorkflowException('You can not register a test if you asked to skip all tests.');
-    case self::BailOut:
-      throw new TestWorkflowException('You can not register a test after bailing out.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
+      case self::START:
+        throw new TestWorkflowException('Unable to register a test: missing header.');
+      case self::END:
+        throw new TestWorkflowException('Unable to register a test: workflow already ended.');
+      case self::DYNAMIC_PLAN_DECL:
+        throw new TestWorkflowException(
+          'Unable to register a test: you already end your tests with a plan.');
+      case self::SKIP_ALL:
+        throw new TestWorkflowException('You can not register a test if you asked to skip all tests.');
+      case self::BAIL_OUT:
+        throw new TestWorkflowException('You can not register a test after bailing out.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Invalid workflow state: "%s".', self::_GetStateDisplayName($this->_state)));
     }
   }
 
@@ -1137,27 +1027,25 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     switch ($this->_state) {
       // Valid states.
-
-    case self::Header:
-    case self::DynamicPlanTests:
-    case self::DynamicPlanDecl:
-    case self::StaticPlanDecl:
-    case self::StaticPlanTests:
-    case self::SkipAll:
-      $this->_state = self::BailOut;
-      break;
+      case self::HEADER:
+      case self::DYNAMIC_PLAN_TESTS:
+      case self::DYNAMIC_PLAN_DECL:
+      case self::STATIC_PLAN_DECL:
+      case self::STATIC_PLAN_TESTS:
+      case self::SKIP_ALL:
+        $this->_state = self::BAIL_OUT;
+        break;
 
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('You can not bail out: missing header.');
-    case self::End:
-      throw new TestWorkflowException('You can not bail out: workflow already ended.');
-    case self::BailOut:
-      throw new TestWorkflowException('You can not bail out twice.');
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'Invalid workflow state: "%s".', self::_GetStateName($this->_state)));
+      case self::START:
+        throw new TestWorkflowException('You can not bail out: missing header.');
+      case self::END:
+        throw new TestWorkflowException('You can not bail out: workflow already ended.');
+      case self::BAIL_OUT:
+        throw new TestWorkflowException('You can not bail out twice.');
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'Invalid workflow state: "%s".', self::_GetStateDisplayName($this->_state)));
     }
   }
 
@@ -1167,16 +1055,14 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     // This method does not change the current state.
     switch ($this->_state) {
       // Invalid states.
-
-    case self::Start:
-      throw new TestWorkflowException('You can not write a comment: missing header.');
-    case self::End:
-      throw new TestWorkflowException('You can not write a comment: workflow already ended.');
+      case self::START:
+        throw new TestWorkflowException('You can not write a comment: missing header.');
+      case self::END:
+        throw new TestWorkflowException('You can not write a comment: workflow already ended.');
 
       // Valid states.
-
-    default:
-      break;
+      default:
+        break;
     }
   }
 
@@ -1185,22 +1071,20 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
 
     // This method does not change the current state.
     switch ($this->_state) {
-      // Invalid states.
-
-    case self::Start:
+    // Invalid states.
+    case self::START:
       throw new TestWorkflowException('You can not write an error: missing header.');
-    case self::End:
+    case self::END:
       throw new TestWorkflowException('You can not write an error: workflow already closed.');
 
-      // Valid states.
-
+    // Valid states.
     default:
       break;
     }
   }
 
   protected function startCore_() {
-    $this->_state        = self::Start;
+    $this->_state        = self::START;
     $this->_subStates    = array();
     $this->_subtestLevel = 0;
     $this->_tagger       = \NULL;
@@ -1211,48 +1095,44 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     // Check workflow's state.
     switch ($this->_state) {
       // Valid states.
-
-    case self::Start:
-    case self::End:
-    case self::BailOut:
-    case self::SkipAll:
-      break;
+      case self::START:
+      case self::END:
+      case self::BAIL_OUT:
+      case self::SKIP_ALL:
+        break;
 
       // Invalid states.
-
-    default:
-      throw new TestWorkflowException(\sprintf(
-        'The workflow will end in an invalid state: "%s".',
-        self::_GetStateName($this->_state)));
+      default:
+        throw new TestWorkflowException(\sprintf(
+          'The workflow will end in an invalid state: "%s".',
+          self::_GetStateDisplayName($this->_state)));
     }
   }
 
-  private static function _GetStateName($_state_) {
+  private static function _GetStateDisplayName($_state_) {
     switch ($_state_) {
-    case self::Start:
-      return 'Start';
-    case self::Header:
-      return 'Header';
-    case self::StaticPlanDecl:
-      return 'StaticPlanDecl';
-    case self::DynamicPlanTests:
-      return 'DynamicPlanTests';
-    case self::DynamicPlanDecl:
-      return 'DynamicPlanDecl';
-    case self::StaticPlanTests:
-      return 'StaticPlanTests';
-    case self::SkipAll:
-      return 'SkipAll';
-    case self::BailOut:
-      return 'BailOut';
-    case self::End:
-      return 'End';
-    default:
-      throw new Narvalo\ArgumentException('state', 'Unknown state.');
+      case self::START:
+        return 'Start';
+      case self::HEADER:
+        return 'Header';
+      case self::STATIC_PLAN_DECL:
+        return 'StaticPlanDecl';
+      case self::DYNAMIC_PLAN_TESTS:
+        return 'DynamicPlanTests';
+      case self::DYNAMIC_PLAN_DECL:
+        return 'DynamicPlanDecl';
+      case self::STATIC_PLAN_TESTS:
+        return 'StaticPlanTests';
+      case self::SKIP_ALL:
+        return 'SkipAll';
+      case self::BAIL_OUT:
+        return 'BailOut';
+      case self::END:
+        return 'End';
+      default:
+        throw new Narvalo\ArgumentException('state', 'Unknown state.');
     }
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

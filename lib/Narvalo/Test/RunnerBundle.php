@@ -14,8 +14,6 @@ use \Narvalo\Test\Runner\Internal as _;
 // Test runner
 // =================================================================================================
 
-// {{{ TestRunner
-
 class TestRunner {
   private
     $_errorCatcher,
@@ -45,20 +43,13 @@ class TestRunner {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Test harness
 // =================================================================================================
-
-// {{{ ITestHarnessWriter
 
 interface ITestHarnessWriter {
   function writeResult($_name_, Framework\TestSetResult $_result_);
   function writeSummary(TestHarnessSummary $_summary_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TestHarnessSummary
 
 class TestHarnessSummary {
   private
@@ -108,9 +99,6 @@ class TestHarnessSummary {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TestHarness
-
 class TestHarness {
   private
     $_writer,
@@ -148,8 +136,6 @@ class TestHarness {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // #################################################################################################
 
 namespace Narvalo\Test\Runner\Internal;
@@ -159,8 +145,6 @@ use \Narvalo\Test\Framework;
 
 // Utilities
 // =================================================================================================
-
-// {{{ RuntimeErrorCatcher
 
 final class RuntimeErrorCatcher extends Narvalo\StartStopWorkflow_ {
   private $_producer;
@@ -195,7 +179,5 @@ final class RuntimeErrorCatcher extends Narvalo\StartStopWorkflow_ {
     \restore_error_handler();
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

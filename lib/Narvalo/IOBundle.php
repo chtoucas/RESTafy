@@ -6,32 +6,20 @@ require_once 'NarvaloBundle.php';
 
 use \Narvalo;
 
-// {{{ IOException
-
 class IOException extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileNotFoundException
 
 class FileNotFoundException extends IOException { }
 
-// }}}
-
-// {{{ FileMode
-
 final class FileMode {
   const
-    Append       = 1,
-    CreateNew    = 2,
-    Open         = 3,
-    OpenOrCreate = 4,
-    Truncate     = 5;
+    APPEND         = 1,
+    CREATE_NEW     = 2,
+    OPEN           = 3,
+    OPEN_OR_CREATE = 4,
+    TRUNCATE       = 5;
 
   private function __construct() { }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ File
 
 final class File {
   // Creational methods
@@ -39,32 +27,32 @@ final class File {
 
   /// Create the file with write-only access.
   static function Create($_path_) {
-    return new FileStream($_path_, FileMode::CreateNew);
+    return new FileStream($_path_, FileMode::CREATE_NEW);
   }
 
   /// Open the file with read-only access
   /// and position the stream at the beginning of the file.
   static function OpenRead($_path_) {
-    return new FileStream($_path_, FileMode::Open);
+    return new FileStream($_path_, FileMode::OPEN);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   static function OpenWrite($_path_) {
-    return new FileStream($_path_, FileMode::OpenOrCreate);
+    return new FileStream($_path_, FileMode::OPEN_OR_CREATE);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the end of the file.
   static function OpenAppend($_path_) {
-    return new FileStream($_path_, FileMode::Append);
+    return new FileStream($_path_, FileMode::APPEND);
   }
 
   /// Open or create the file with write-only access
   /// and position the stream at the beginning of the file.
   /// WARNING: This method is destructive, the file gets truncated.
   static function OpenTruncate($_path_) {
-    return new FileStream($_path_, FileMode::Truncate);
+    return new FileStream($_path_, FileMode::TRUNCATE);
   }
 
   static function CreateWriter($_path_, $_append_) {
@@ -86,6 +74,7 @@ final class File {
     if (!$_overwrite_ && self::Exists($_dest_)) {
       throw new IOException(\sprintf('The file "%s" already exists.', $_dest_));
     }
+
     if (!\copy($_source_, $_dest_)) {
       throw new IOException(\sprintf('Unable to copy the file "%s" to "%s".', $_source_, $_dest_));
     }
@@ -119,9 +108,6 @@ final class File {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileHandle
-
 final class FileHandle extends Narvalo\SafeHandle_ {
   function __construct($_preexistingHandle_, $_ownsHandle_) {
     parent::__construct($_ownsHandle_);
@@ -133,9 +119,6 @@ final class FileHandle extends Narvalo\SafeHandle_ {
     return \FALSE !== \fclose($this->handle_);
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ FileStream
 
 class FileStream extends Narvalo\DisposableObject {
   private
@@ -228,11 +211,9 @@ class FileStream extends Narvalo\DisposableObject {
     }
   }
 
-  // Private methods
-  // ---------------
-
   private static function _CreateFileHandle($_path_, $_mode_, $_extended_) {
     $handle = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));
+
     if (\FALSE === $handle) {
       self::_ThrowOnFailedOpen($_path_, $_mode_);
     } else {
@@ -242,29 +223,29 @@ class FileStream extends Narvalo\DisposableObject {
 
   private static function _FileModeToString($_mode_, $_extended_) {
     switch ($_mode_) {
-    case FileMode::Append:
-      return $_extended_ ? 'a+' : 'a';
-    case FileMode::CreateNew:
-      return $_extended_ ? 'x+' : 'x';
-    case FileMode::Open:
-      return $_extended_ ? 'r+' : 'r';
-    case FileMode::OpenOrCreate:
-      return $_extended_ ? 'c+' : 'c';
-    case FileMode::Truncate:
-      return $_extended_ ? 'w+' : 'w';
+      case FileMode::APPEND:
+        return $_extended_ ? 'a+' : 'a';
+      case FileMode::CREATE_NEW:
+        return $_extended_ ? 'x+' : 'x';
+      case FileMode::OPEN:
+        return $_extended_ ? 'r+' : 'r';
+      case FileMode::OPEN_OR_CREATE:
+        return $_extended_ ? 'c+' : 'c';
+      case FileMode::TRUNCATE:
+        return $_extended_ ? 'w+' : 'w';
     }
   }
 
   private static function _ThrowOnFailedOpen($_path_, $_mode_) {
     switch ($_mode_) {
-    case FileMode::CreateNew:
-      throw new IOException(\sprintf('Unable to create the file "%s".', $_path_));
-    case FileMode::Open:
-      throw new FileNotFoundException(\sprintf('Unable to open the file "%s".', $_path_));
-    case FileMode::Append:
-    case FileMode::OpenOrCreate:
-    case FileMode::Truncate:
-      throw new IOException(\sprintf('Unable to open the file "%s" for writing.', $_path_));
+      case FileMode::CREATE_NEW:
+        throw new IOException(\sprintf('Unable to create the file "%s".', $_path_));
+      case FileMode::OPEN:
+        throw new FileNotFoundException(\sprintf('Unable to open the file "%s".', $_path_));
+      case FileMode::APPEND:
+      case FileMode::OPEN_OR_CREATE:
+      case FileMode::TRUNCATE:
+        throw new IOException(\sprintf('Unable to open the file "%s" for writing.', $_path_));
     }
   }
 
@@ -274,18 +255,16 @@ class FileStream extends Narvalo\DisposableObject {
       $this->_canWrite = \TRUE;
     } else {
       switch ($_mode_) {
-      case FileMode::Append:
-      case FileMode::CreateNew:
-      case FileMode::OpenOrCreate:
-      case FileMode::Truncate:
-        $this->_canWrite = \TRUE; break;
-      case FileMode::Open:
-        $this->_canRead  = \TRUE; break;
+        case FileMode::APPEND:
+        case FileMode::CREATE_NEW:
+        case FileMode::OPEN_OR_CREATE:
+        case FileMode::TRUNCATE:
+          $this->_canWrite = \TRUE; break;
+        case FileMode::OPEN:
+          $this->_canRead  = \TRUE; break;
       }
     }
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

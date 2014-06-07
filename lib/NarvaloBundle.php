@@ -5,8 +5,6 @@ namespace Narvalo;
 // Core classes
 // =================================================================================================
 
-// {{{ Exception
-
 /// We really don't care about exception codes.
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
@@ -14,41 +12,22 @@ class Exception extends \Exception {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ ObjectDisposedException
-
 class ObjectDisposedException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ RuntimeException
 
 class RuntimeException extends Exception { }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ InvalidOperationException
-
 class InvalidOperationException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ NotSupportedException
 
 class NotSupportedException extends Exception { }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ApplicationException
-
 class ApplicationException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ ArgumentException
 
 class ArgumentException extends Exception {
   private $_paramName;
 
   function __construct($_paramName_, $_message_ = '', \Exception $_innerException_ = \NULL) {
     parent::__construct($_message_, $_innerException_);
+
     $this->_paramName = $_paramName_;
   }
 
@@ -61,34 +40,26 @@ class ArgumentException extends Exception {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ArgumentNullException
-
 class ArgumentNullException extends ArgumentException { }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ KeyNotFoundException
-
 class KeyNotFoundException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ DataType
 
 final class DataType {
   const
     // Simple types.
-    Boolean    = 1,
-    Integer    = 2,
-    Float      = 3,
-    String     = 4,
+    BOOLEAN    = 1,
+    INTEGER    = 2,
+    FLOAT      = 3,
+    STRING     = 4,
     // Complex types.
-    RealArray  = 5,
-    Hash       = 6,
-    Object     = 7,
-    Resource   = 8;
+    REAL_ARRAY = 5,
+    HASH       = 6,
+    OBJECT     = 7,
+    RESOURCE   = 8;
 
-  /// Why create our own function? There is already gettype you say!
+  private function __construct() { }
+
+  /// Why create our own function? There is already "gettype" you say!
   /// According to the documentation, we should never rely on it...
   /// A difference with it is that we return a different type
   /// for dictionaries (associative arrays) and real arrays.
@@ -96,28 +67,30 @@ final class DataType {
     Guard::NotNull($_value_);
 
     if (\is_string($_value_)) {
-      return DataType::String;
+      return DataType::STRING;
     } elseif (\is_int($_value_)) {
-      return DataType::Integer;
+      return DataType::INTEGER;
     } elseif (\is_bool($_value_)) {
-      return DataType::Boolean;
+      return DataType::BOOLEAN;
     } elseif (\is_float($_value_)) {
-      return DataType::Float;
+      return DataType::FLOAT;
     } elseif (\is_array($_value_)) {
       // Faster alternative to the usual snippet:
       // empty($_value_) || \array_keys($_value_) === \range(0, \count($_value_) - 1)
       $i = 0;
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {
-          return DataType::Hash;
+          return DataType::HASH;
         }
+
         $i++;
       }
-      return DataType::RealArray;
+
+      return DataType::REAL_ARRAY;
     } elseif (\is_object($_value_)) {
-      return DataType::Object;
+      return DataType::OBJECT;
     } elseif (\is_resource($_value_)) {
-      return DataType::Resource;
+      return DataType::RESOURCE;
     } else {
       throw new RuntimeException(\sprintf('Unknown data type: "%s".', $_value_));
     }
@@ -125,26 +98,21 @@ final class DataType {
 
   static function IsPrimitive($_value_) {
     switch ($type = self::Of($_value_)) {
-    case DataType::Boolean:
-    case DataType::Integer:
-    case DataType::Float:
-    case DataType::String:
-      return \TRUE;
-    default:
-      return \FALSE;
+      case DataType::BOOLEAN:
+      case DataType::INTEGER:
+      case DataType::FLOAT:
+      case DataType::STRING:
+        return \TRUE;
+      default:
+        return \FALSE;
     }
   }
-
-  private function __construct() { }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Type
 
 final class Type {
   const
-    NamespaceDelimiter = '\\',
-    GlobalNamespace    = '\\';
+    NAMESPACE_DELIMITER = '\\',
+    GLOBAL_NAMESPACE = '\\';
 
   private static
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
@@ -156,13 +124,14 @@ final class Type {
     $_name,
     $_namespace;
 
-  function __construct($_name_, $_namespace_ = self::GlobalNamespace) {
-    $this->_name      = $_name_;
+  function __construct($_name_, $_namespace_ = self::GLOBAL_NAMESPACE) {
+    $this->_name = $_name_;
     $this->_namespace = $_namespace_;
   }
 
   static function Of($_obj_) {
     $class = \get_class($_obj_);
+
     if (\FALSE === $class) {
       throw new ArgumentException('obj', 'XXX');
     } else {
@@ -170,20 +139,20 @@ final class Type {
     }
   }
 
-  static function FromFullyQualifiedName($_name_) {
-    throw new NotImplementedException();
-  }
+  //static function FromFullyQualifiedName($_name_) {
+  //  throw new NotImplementedException();
+  //}
 
   static function IsWellformed($_name_) {
     return 1 === \preg_match(self::$_NameRegex, $_name_);
   }
 
   static function IsWellformedNamespace($_name_) {
-    return 1 === \preg_match(self::$_NamespaceNameRegex,  $_name_);
+    return 1 === \preg_match(self::$_NamespaceNameRegex, $_name_);
   }
 
   function getFullyQualifiedName() {
-    return self::GlobalNamespace . $this->getQualifiedName();
+    return self::GLOBAL_NAMESPACE . $this->getQualifiedName();
   }
 
   function getName() {
@@ -195,7 +164,7 @@ final class Type {
   }
 
   function getQualifiedName() {
-    return $this->_namespace . self::NamespaceDelimiter . $this->_name;
+    return $this->_namespace . self::NAMESPACE_DELIMITER . $this->_name;
   }
 
   function __toString() {
@@ -203,15 +172,11 @@ final class Type {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ DynaLoader
-
-/// WARNING: Only works if the target files do not return FALSE.
+/// WARNING: Only works if the target file does not return FALSE.
 final class DynaLoader {
   const
-    DirectorySeparator = '/',
-    FileExtension      = '.php';
+    DIRECTORY_SEPARATOR = '/',
+    FILE_EXTENSION = '.php';
 
   /// WARNING: Does not work with includes that return FALSE.
   static function IncludeFile($_path_) {
@@ -255,17 +220,14 @@ final class DynaLoader {
     return self::_TryIncludeLibrary(self::_GetTypePath($_type_));
   }
 
-  // Private methods
-  // ---------------
-
   private static function _NameToPath($_name_) {
-    return \str_replace(Type::NamespaceDelimiter, \DIRECTORY_SEPARATOR, $_name_)
-      . self::FileExtension;
+    return \str_replace(Type::NAMESPACE_DELIMITER, \DIRECTORY_SEPARATOR, $_name_)
+      . self::FILE_EXTENSION;
   }
 
   private static function _NormalizePath($_path_) {
-    return \DIRECTORY_SEPARATOR !== self::DirectorySeparator
-      ? \str_replace(self::DirectorySeparator, \DIRECTORY_SEPARATOR, $_path_)
+    return \DIRECTORY_SEPARATOR !== self::DIRECTORY_SEPARATOR
+      ? \str_replace(self::DIRECTORY_SEPARATOR, \DIRECTORY_SEPARATOR, $_path_)
       : $_path_;
   }
 
@@ -284,16 +246,13 @@ final class DynaLoader {
   private static function _TryIncludeLibrary($_path_) {
     if (\FALSE !== ($file = \stream_resolve_include_path($_path_))) {
       include_once $file;
+
       return \TRUE;
     } else {
       return \FALSE;
     }
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ Guard
 
 final class Guard {
   static function NotEmpty($_value_, $_paramName_) {
@@ -309,16 +268,9 @@ final class Guard {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ IDisposable
-
 interface IDisposable {
   function dispose();
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DisposableObject
 
 class DisposableObject {
   private $_disposed = \FALSE;
@@ -331,18 +283,14 @@ class DisposableObject {
   /// - dispose all disposable fields that the object owns.
   /// - optionally reset the state of the object
   /// WARNING: This method should NEVER throw or catch an exception.
-  protected function close_() {
-    ;
-  }
+  protected function close_() { }
 
   /// This method run when the object is either disposed or finalized (if you supply a finalizer):
   /// - free all external resources hold by the object and nullify them
   /// - optionally nullify large value fields
   /// NB: In most cases, you are better off using a SafeHandle_.
   /// WARNING: This method should NEVER throw or catch an exception.
-  protected function free_() {
-    ;
-  }
+  protected function free_() { }
 
   protected function throwIfDisposed_() {
     if ($this->_disposed) {
@@ -365,20 +313,18 @@ class DisposableObject {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ SafeHandle_
-
 abstract class SafeHandle_ implements IDisposable {
-  const _InvalidHandleValue = -1;
+  const _INVALID_HANDLE_VALUE = -1;
 
   protected $handle_;
+
   private
-    $_refCount   = 0,
+    $_refCount = 0,
     $_ownsHandle = \FALSE;
 
   protected function __construct($_ownsHandle_) {
     $this->_ownsHandle = $_ownsHandle_;
-    $this->_refCount   = 1;
+    $this->_refCount = 1;
   }
 
   final function __destruct() {
@@ -389,15 +335,16 @@ abstract class SafeHandle_ implements IDisposable {
     if (0 === $this->_refCount) {
       throw new ObjectDisposedException(Type::Of($this));
     }
+
     return $this->handle_;
   }
 
   final function invalid() {
-    return self::_InvalidHandleValue === $this->handle_;
+    return self::_INVALID_HANDLE_VALUE === $this->handle_;
   }
 
   final function setHandleAsInvalid() {
-    $this->handle_ = self::_InvalidHandleValue;
+    $this->handle_ = self::_INVALID_HANDLE_VALUE;
   }
 
   final function closed() {
@@ -416,6 +363,7 @@ abstract class SafeHandle_ implements IDisposable {
     if (0 === $this->_refCount) {
       throw new ObjectDisposedException(Type::Of($this));
     }
+
     $this->_refCount++;
   }
 
@@ -423,6 +371,7 @@ abstract class SafeHandle_ implements IDisposable {
     if (0 === $this->_refCount) {
       throw new ObjectDisposedException(Type::Of($this));
     }
+
     if (0 === --$this->_refCount) {
       $this->_release();
     }
@@ -435,7 +384,7 @@ abstract class SafeHandle_ implements IDisposable {
   }
 
   final protected function dispose_($_disposing_) {
-    // If the resource has already been released.
+    // Break if the resource has already been released.
     if (0 === $this->_refCount) {
       return;
     }
@@ -454,7 +403,7 @@ abstract class SafeHandle_ implements IDisposable {
       // If we don't own the handle.
       !$this->_ownsHandle
       // If the handle is invalid.
-      || self::_InvalidHandleValue === $this->handle_
+      || self::_INVALID_HANDLE_VALUE === $this->handle_
     ) {
       return;
     }
@@ -463,20 +412,14 @@ abstract class SafeHandle_ implements IDisposable {
       Log::Warning('Unable to release the handle.');
     }
 
-    $this->handle_ = self::_InvalidHandleValue;
+    $this->handle_ = self::_INVALID_HANDLE_VALUE;
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ StartStopWorkflow_
 
 abstract class StartStopWorkflow_ {
   private $_running = \FALSE;
 
-  protected function __construct() {
-    ;
-  }
+  protected function __construct() { }
 
   function __destruct() {
     if ($this->_running) {
@@ -512,7 +455,8 @@ abstract class StartStopWorkflow_ {
 
   abstract protected function stopCore_();
 
-  protected function throwIfStopped_() {
+  protected function throwIfStopped_()
+  {
     if (!$this->_running) {
       throw new InvalidOperationException(
         \sprintf('%s stopped. You forget to call start()?', Type::Of($this)));
@@ -520,60 +464,50 @@ abstract class StartStopWorkflow_ {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Diagnostics
 // =================================================================================================
 
-// {{{ ILogger
-
 interface ILogger {
   function debug($_msg_);
+
   function notice($_msg_);
+
   function warn($_msg_);
+
   function error($_msg_);
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ LoggerLevel
-
 final class LoggerLevel {
   const
-    None      = 0x00,
-    Error     = 0x01,
-    Warning   = 0x02,
-    Notice    = 0x04,
-    Debug     = 0x08;
+    NONE    = 0x00,
+    ERROR   = 0x01,
+    WARNING = 0x02,
+    NOTICE  = 0x04,
+    DEBUG   = 0x08;
 
-  private function __construct() {
-    ;
-  }
+  private function __construct() { }
 
   static function GetDefault() {
-    return LoggerLevel::Error | LoggerLevel::Warning | LoggerLevel::Notice;
+    return LoggerLevel::ERROR | LoggerLevel::WARNING | LoggerLevel::NOTICE;
   }
 
   static function ToString($_level_) {
     switch ($_level_) {
-    case self::Debug:
-      return 'Debug';
-    case self::Notice:
-      return 'Notice';
-    case self::Error:
-      return 'Error';
-    case self::Warning:
-      return 'Warning';
-    case self::None:
-      return 'None';
-    default:
-      return 'Unknown';
+      case self::DEBUG:
+        return 'Debug';
+      case self::NOTICE:
+        return 'Notice';
+      case self::ERROR:
+        return 'Error';
+      case self::WARNING:
+        return 'Warning';
+      case self::NONE:
+        return 'None';
+      default:
+        return 'Unknown';
     }
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ Logger_
 
 abstract class Logger_ implements ILogger {
   private $_level;
@@ -585,35 +519,35 @@ abstract class Logger_ implements ILogger {
   abstract protected function log_($_level_, $_msg_);
 
   function debug($_msg_) {
-    if (!$this->isEnabled_(LoggerLevel::Debug)) {
+    if (!$this->isEnabled_(LoggerLevel::DEBUG)) {
       return;
     }
 
-    $this->log_(LoggerLevel::Debug, $_msg_);
+    $this->log_(LoggerLevel::DEBUG, $_msg_);
   }
 
   function notice($_msg_) {
-    if (!$this->isEnabled_(LoggerLevel::Notice)) {
+    if (!$this->isEnabled_(LoggerLevel::NOTICE)) {
       return;
     }
 
-    $this->log_(LoggerLevel::Notice, $_msg_);
+    $this->log_(LoggerLevel::NOTICE, $_msg_);
   }
 
   function error($_msg_) {
-    if (!$this->isEnabled_(LoggerLevel::Error)) {
+    if (!$this->isEnabled_(LoggerLevel::ERROR)) {
       return;
     }
 
-    $this->log_(LoggerLevel::Error, $_msg_);
+    $this->log_(LoggerLevel::ERROR, $_msg_);
   }
 
   function warn($_msg_) {
-    if (!$this->isEnabled_(LoggerLevel::Warning)) {
+    if (!$this->isEnabled_(LoggerLevel::WARNING)) {
       return;
     }
 
-    $this->log_(LoggerLevel::Warning, $_msg_);
+    $this->log_(LoggerLevel::WARNING, $_msg_);
   }
 
   protected function isEnabled_($_level_) {
@@ -621,21 +555,15 @@ abstract class Logger_ implements ILogger {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ DefaultLogger
-
 class DefaultLogger extends Logger_ {
   function __construct($_level_ = \NULL) {
-    parent::__construct($_level_ ?: LoggerLevel::GetDefault());
+    parent::__construct($_level_ ? : LoggerLevel::GetDefault());
   }
 
   function log_($_level_, $_msg_) {
     \error_log(\sprintf('[%s] %s', LoggerLevel::ToString($_level_), $_msg_));
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ AggregateLogger
 
 class AggregateLogger implements ILogger {
   private $_loggers;
@@ -677,10 +605,6 @@ class AggregateLogger implements ILogger {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ Log
-
 final class Log {
   private static $_Logger;
 
@@ -688,6 +612,7 @@ final class Log {
     if (\NULL !== self::$_Logger) {
       throw new InvalidOperationException('You can not set the logger twice.');
     }
+
     self::$_Logger = $_logger_;
   }
 
@@ -711,16 +636,13 @@ final class Log {
     if (\NULL === self::$_Logger) {
       self::SetLogger(new DefaultLogger());
     }
+
     return self::$_Logger;
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Collections
 // =================================================================================================
-
-// {{{ Dictionary
 
 trait Dictionary {
   private $_store = array();
@@ -731,6 +653,7 @@ trait Dictionary {
 
   function get($_key_) {
     $this->_checkKey($_key_);
+
     return $this->_store[$_key_];
   }
 
@@ -750,12 +673,8 @@ trait Dictionary {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Singleton pattern
 // =================================================================================================
-
-// {{{ Singleton
 
 trait Singleton {
   private static $_Instance = \NULL;
@@ -764,55 +683,41 @@ trait Singleton {
     $this->_initialize();
   }
 
-  final private function __clone() {
-    ;
-  }
+  final private function __clone() { }
 
-  final private function __wakeup() {
-    ;
-  }
+  final private function __wakeup() { }
 
   final static function UniqInstance() {
-    return static::$_Instance ?: static::$_Instance = new static();
+    return static::$_Instance ? : static::$_Instance = new static();
   }
 
   private function _initialize() { }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Borg pattern
 // =================================================================================================
 
-// {{{ Borg
-
-// TODO: Should extend \ArrayObject?
+// XXX: Should extend \ArrayObject?
 class DictionaryBorg {
   use Dictionary;
 
   function __construct() {
-    $this->_store =& static::GetSharedState_();
+    $this->_store = & static::GetSharedState_();
   }
 
   protected static function & GetSharedState_() {
     static $state = array();
+
     return $state;
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Observer pattern
 // =================================================================================================
-
-// {{{ IObserver
 
 interface IObserver {
   function update(Observable $_observable_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Observable
 
 class Observable {
   private $_observers;
@@ -836,12 +741,8 @@ class Observable {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Provider
 // =================================================================================================
-
-// {{{ ProviderSection
 
 class ProviderSection {
   private
@@ -849,7 +750,7 @@ class ProviderSection {
     $_providerParams;
 
   function __construct($_providerClass_, $_providerParams_ = \NULL) {
-    $this->_providerClass  = $_providerClass_;
+    $this->_providerClass = $_providerClass_;
     $this->_providerParams = $_providerParams_;
   }
 
@@ -862,9 +763,6 @@ class ProviderSection {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ProviderHelper
-
 final class ProviderHelper {
   static function InstantiateProvider(ProviderSection $_section_) {
     $providerClass = $_section_->getProviderClass();
@@ -874,30 +772,20 @@ final class ProviderHelper {
       return new $providerClass();
     } else {
       $rc = new \ReflectionClass($providerClass);
+
       return $rc->newInstance($params);
     }
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Configuration
 // =================================================================================================
 
-// {{{ ConfigurationException
-
 class ConfigurationException extends Exception { }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ IConfiguration
-
 interface IConfiguration {
-  function GetSection($_sectionName_);
+  function getSection($_sectionName_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ConfigurationManager
 
 final class ConfigurationManager {
   private static
@@ -908,106 +796,30 @@ final class ConfigurationManager {
     if (!self::$_Initialized) {
       throw new ConfigurationException('XXX');
     }
-    return self::$_Current->GetSection($_sectionName_);
+
+    return self::$_Current->getSection($_sectionName_);
   }
 
   static function Initialize(IConfiguration $_config_) {
     if (self::$_Initialized) {
       throw new ConfigurationException('XXX');
     }
+
     self::$_Current = $_config_;
     self::$_Initialized = \TRUE;
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
-// DI container
-// =================================================================================================
-
-// {{{ ContainerException
-
-class ContainerException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ ContainerBuilder
-
-class ContainerBuilder {
-  function build() {
-    throw new NotImplementedException();
-  }
-
-  function register() {
-    throw new NotImplementedException();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Container
-
-class Container {
-  function resolve() {
-    throw new NotImplementedException();
-  }
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// Caching
-// =================================================================================================
-
-// {{{ ICache
-
-interface ICache {
-  /// Return TRUE if cache exists, FALSE otherwise.
-  /// $_id_ (string) Cache Id
-  /// $_namespace_ (string) Cache namespace
-  /// $_test_validity_ (boolean) Check the cache validity
-  function has($_id_, $_namespace_, $_test_ = \TRUE);
-
-  /// Return cached data on success, NULL if no available cache.
-  /// $_id_ (string) Cache Id
-  /// $_namespace_ (string) Cache namespace
-  /// $_test_validity_ (boolean) Check the cache validity
-  function get($_id_, $_namespace_, $_test_ = \TRUE);
-
-  /// Put $_data_ into the cache.
-  /// $_id_ (string) Cache Id
-  /// $_namespace_ (string) Cache namespace
-  /// $_data_ (string) Data to be cached
-  /// Return TRUE on success, FALSE otherwise.
-  function put($_id_, $_namespace_, $_data_);
-
-  /// Delete cache.
-  /// $_id_ (string) Cache Id
-  /// $_namespace_ (string) Cache namespace
-  /// Return TRUE on success, FALSE otherwise.
-  function remove($_id_, $_namespace_);
-
-  /// Get last modified time for cache.
-  /// $_id_ (string) Cache Id
-  /// $_namespace_ (string) Cache namespace
-  /// Return last modified time.
-  function getLastModified($_id_, $_namespace_);
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-
 // Persistence
 // =================================================================================================
 
-// {{{ DbiException
-
 class DbiException extends Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ IDbi
 
 interface IDbi extends IDisposable {
   function open();
+
   function close();
+
   //function open($_opts_);
   //function selectDb($_db_);
   //function quote($_str_);
@@ -1020,124 +832,5 @@ interface IDbi extends IDisposable {
   //function rollback();
   //function finish();
 }
-
-// }}}
-
-// {{{ Broken
-
-//class Slice implements \Iterator {
-//  private
-//    $_index   = 1,
-//    $_isFirst = \TRUE,
-//    $_isLast  = \TRUE,
-//    $_isEmpty = \FALSE,
-//    $_last    = 1,
-//    $_pointer = 0,
-//    $_slice;
-//
-//  function __construct(Iterator $_it_, $_count_, $_index_, $_max_) {
-//    $this->_isEmpty = ($_count_ <= 0);
-//    $index = (int)$_index_;
-//    if ($index <= 0) {
-//      $index = 1;
-//    }
-//    if ($_max_ > 0 && ($last = ceil($_count_ / $_max_)) > 1) {
-//      $this->_index = min($index, $last);
-//      $this->_last  = $last;
-//      if ($this->_index > 1) {
-//        $this->_isFirst = \FALSE;
-//      }
-//      if ($this->_index < $last) {
-//        $this->_isLast = \FALSE;
-//      }
-//      $this->_slice = new LimitIterator(
-//        $_it_, max(0, ($this->_index - 1) * $_max_), $_max_
-//      );
-//    }
-//    else {
-//      $this->_slice = $_it_;
-//    }
-//  }
-//
-//  function index() {
-//    return $this->_index;
-//  }
-//
-//  function last() {
-//    return $this->_last;
-//  }
-//
-//  function isLast() {
-//    return $this->_isLast;
-//  }
-//
-//  function isFirst() {
-//    return $this->_isFirst;
-//  }
-//
-//  function isEmpty() {
-//    return $this->_isEmpty;
-//  }
-//
-//  function rewind() {
-//    $this->_slice->rewind();
-//  }
-//
-//  function current() {
-//    return $this->_slice->current();
-//  }
-//
-//  function key() {
-//    return $this->_slice->key();
-//  }
-//
-//  function next() {
-//    return $this->_slice->next();
-//  }
-//
-//  function valid() {
-//    return $this->_slice->valid();
-//  }
-//}
-//
-//class Pager {
-//  private
-//    $_itemMax,
-//    $_pageCount,
-//    $_pageIndex;
-//
-//  function __construct($_pageIndex_, $_pageCount_, $_itemMax_) {
-//    $this->_itemMax   = $_itemMax_;
-//    $this->_pageIndex = $_pageIndex_;
-//    $this->_pageCount = $_pageCount_;
-//  }
-//
-//  static function Create($_pageIndex_, $_itemCount_, $_itemMax_) {
-//    if (\NULL === $_itemCount_) {
-//      $pageCount = 1;
-//      $pageIndex = 1;
-//    } else {
-//      $pageCount
-//        = 1 + ($_itemCount_ - $_itemCount_ % $_itemMax_) / $_itemMax_;
-//      $pageIndex = \min(\max(1, $_pageIndex_), $pageCount);
-//    }
-//
-//    return new self($pageIndex, $pageCount, $_itemMax_);
-//  }
-//
-//  function isFirstPage() {
-//    return 1 === $this->_pageIndex;
-//  }
-//
-//  function isLastPage() {
-//    return $this->_pageCount === $this->_pageIndex;
-//  }
-//
-//  function getStartIndex() {
-//    return ($this->_pageIndex - 1) * $this->_itemMax;
-//  }
-//}
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

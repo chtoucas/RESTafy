@@ -35,7 +35,7 @@ class RunTestCmd extends Term\Cmd_ {
     } elseif ($result->bailedOut()) {
       return self::FailureCode;
     } elseif ($result->passed()) {
-      return self::SuccessCode;
+      return self::SUCCESS_CODE;
     } elseif (($count = $result->getFailuresCount()) > 0) {
       return $count < self::FailureCode ? $count : (self::FailureCode - 1);
     } else {

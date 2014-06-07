@@ -16,14 +16,3 @@ Narvalo\Test
 * Add timers to Harness & Runner
 * Add OnTestCompleted event?
 
-Narvalo
-=======
-
-* Not yet working on it.
-
-RESTafy
-=======
-
-* Not yet working on it.
-
-

@@ -6,9 +6,7 @@ require_once 'NarvaloBundle.php';
 
 use Narvalo;
 
-// {{{ MysqlPDO
-
-class MysqlPDO implements Narvalo\DBI {
+class MysqlPDO implements Narvalo\IDbi {
   private $_dsn;
   protected $handle_;
 
@@ -22,17 +20,17 @@ class MysqlPDO implements Narvalo\DBI {
     }
 
     try {
-      $handle = new \PDO($this->_dsn,
-        $this->userName_, $this->password_, array(
-          \PDO::ATTR_ERRMODE
-          => \PDO::ERRMODE_EXCEPTION,
-          \PDO::ATTR_PERSISTENT
-          => true,
-          \PDO::MYSQL_ATTR_INIT_COMMAND
-          => "SET NAMES utf8"
+      $handle = new \PDO(
+        $this->_dsn,
+        $this->userName_,
+        $this->password_,
+        array(
+          \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+          \PDO::ATTR_PERSISTENT         => true,
+          \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"
         ));
     } catch (\PDOException $e) {
-      throw new Narvalo\DBIException('Unable to connect to MySQL.', $e);
+      throw new Narvalo\DbiException('Unable to connect to MySQL.', $e);
     }
 
     // Tell PDO to throw an exception on error.
@@ -69,7 +67,7 @@ class MysqlPDO implements Narvalo\DBI {
     try {
       $stmt = $this->handle_->prepare($_query_);
     } catch (\PDOException $e) {
-      throw new Narvalo\DBIException('Unable to prepare stmt MySQL.', $e);
+      throw new Narvalo\DbiException('Unable to prepare stmt MySQL.', $e);
     }
 
     return $stmt;
@@ -81,17 +79,14 @@ class MysqlPDO implements Narvalo\DBI {
     try {
       $result = $this->handle_->query($_query_);
     } catch (\PDOException $e) {
-      throw new Narvalo\DBIException('Unable to query MySQL.', $e);
+      throw new Narvalo\DbiException('Unable to query MySQL.', $e);
     }
 
     return $result;
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Mysqli
-
-class Mysqli implements Narvalo\DBI {
+class Mysqli implements Narvalo\IDbi {
   protected
     $database_,
     $host_,
@@ -115,7 +110,7 @@ class Mysqli implements Narvalo\DBI {
       $this->password_, $this->database_);
 
     if (\mysqli_connect_errno()) {
-      throw new Narvalo\DBIException(
+      throw new Narvalo\DbiException(
         'Unable to connect to MySQL: ' . mysqli_connect_error());
     }
 
@@ -163,7 +158,7 @@ class Mysqli implements Narvalo\DBI {
     $result = $this->handle_->multi_query($_queries_);
 
     if (\FALSE === $result) {
-      throw new Narvalo\DBIException(
+      throw new Narvalo\DbiException(
         'Unable to query MySQL: ' . $this->handle_->error);
     }
 
@@ -176,7 +171,7 @@ class Mysqli implements Narvalo\DBI {
     $result = $this->handle_->query($_query_);
 
     if (\FALSE === $result) {
-      throw new Narvalo\DBIException(
+      throw new Narvalo\DbiException(
         'Unable to query MySQL: ' . $this->handle_->error);
     }
 
@@ -187,7 +182,5 @@ class Mysqli implements Narvalo\DBI {
     return $this->handle_->store_result();
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

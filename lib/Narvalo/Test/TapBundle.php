@@ -31,8 +31,6 @@ define('_TRAILING_CRLF_REGEX',   '{' . _CRLF_REGEX_PART . '\z}s');
 // RegEx to find any combination of \r and \n inside a normalized string.
 define('_MULTILINE_CRLF_REGEX',  '{' . _CRLF_REGEX_PART . '(?!\z)}');
 
-// {{{ TapWriter
-
 class TapWriter extends Narvalo\DisposableObject {
   private
     $_stream,
@@ -84,9 +82,6 @@ class TapWriter extends Narvalo\DisposableObject {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TapOutWriter
-
 class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
   const Version = 12;
 
@@ -104,9 +99,7 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
     }
   }
 
-  function writeFooter() {
-    ;
-  }
+  function writeFooter() { }
 
   function writePlan($_num_of_tests_) {
     $this->writeTapLine_('1..' . $_num_of_tests_);
@@ -158,23 +151,24 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
     $desc = \preg_replace('{^\s+}', '¤', $desc);
     // Escape #.
     $desc = \str_replace('#', '\\#', $desc);
+    
     if ($desc != $_desc_) {
       Narvalo\Log::Notice(\sprintf('The description "%s" contains invalid chars.', $_desc_));
     }
+    
     return $desc;
   }
 
   private static function _FormatReason($_reason_) {
     $reason = \preg_replace(_CRLF_REGEX, '¤', $_reason_);
+    
     if ($reason != $_reason_) {
       Narvalo\Log::Notice(\sprintf('The reason "%s" contains invalid chars.', $_reason_));
     }
+    
     return $reason;
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TapErrWriter
 
 class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
   function __construct() {
@@ -186,9 +180,6 @@ class TapErrWriter extends TapWriter implements Framework\ITestErrWriter {
     $this->writeTapLine_(Term\Ansi::Colorize($msg, Term\Ansi::Red));
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TapHarnessWriter
 
 class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestHarnessWriter {
   private
@@ -285,11 +276,7 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // =================================================================================================
-
-// {{{ TapRunner
 
 class TapRunner extends Runner\TestRunner implements Narvalo\IDisposable {
   private
@@ -329,9 +316,6 @@ class TapRunner extends Runner\TestRunner implements Narvalo\IDisposable {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ TapHarness
-
 class TapHarness extends Runner\TestHarness {
   private
     $_writer,
@@ -366,7 +350,5 @@ class TapHarness extends Runner\TestHarness {
     $this->_disposed = \TRUE;
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

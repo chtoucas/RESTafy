@@ -11,13 +11,7 @@ use \Narvalo;
 
 const HTTP_EOL = "\n";
 
-// {{{ HttpException
-
 class HttpException extends Narvalo\Exception { }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ HttpVersion
 
 final class HttpVersion {
   const
@@ -25,23 +19,16 @@ final class HttpVersion {
     V_1_1 = '1.1';
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ HttpVerb
-
 final class HttpVerb {
   const
-    Get    = 'GET',
-    Post   = 'POST',
-    Put    = 'PUT',
-    Delete = 'DELETE',
-    Head   = 'HEAD';
+    GET    = 'GET',
+    POST   = 'POST',
+    PUT    = 'PUT',
+    DELETE = 'DELETE',
+    HEAD   = 'HEAD';
 
     private function __construct() { }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ HttpHeaders
 
 class HttpHeaders implements \Iterator {
   private $_headers = array();
@@ -123,9 +110,6 @@ class HttpHeaders implements \Iterator {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ HttpRequest
-
 class HttpRequest {
   private
     $_protocol,
@@ -172,9 +156,6 @@ class HttpRequest {
       . $this->_content;
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ HttpResponse
 
 class HttpResponse {
   const
@@ -272,19 +253,8 @@ class HttpResponse {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Addressing
 // =================================================================================================
-
-// {{{ Addr
-
-interface IAddr {
-  function getUrl();
-}
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Url
 
 final class Url {
   private
@@ -301,12 +271,8 @@ final class Url {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // Http clients
 // =================================================================================================
-
-// {{{ Curl
 
 class Curl extends Narvalo\DisposableObject {
   private $_ch;
@@ -471,13 +437,9 @@ class Curl extends Narvalo\DisposableObject {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // #################################################################################################
 
 namespace Narvalo\Web\Internal;
-
-// {{{ CurlHelper
 
 class CurlHelper {
   private static $_SharedResponse;
@@ -516,9 +478,6 @@ class CurlHelper {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ scan_header()
-
 /// Parser for the HTTP response preamble.
 function scan_header($_ch_, $_line_) {
   // NB: Each preamble line ends with a CRLF, the first empty line (after removing the CRLF)
@@ -543,7 +502,5 @@ function scan_header($_ch_, $_line_) {
 
   return \strlen($_line_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

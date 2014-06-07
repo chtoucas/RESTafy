@@ -8,8 +8,6 @@ require_once 'Narvalo/IOBundle.php';
 use \Narvalo;
 use \Narvalo\IO;
 
-// {{{ Ansi
-
 final class Ansi {
   // The following list of ANSI codes is taken from:
   //  http://perldoc.perl.org/Term/ANSIColor.html
@@ -66,9 +64,6 @@ final class Ansi {
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ StandardErrorLogger
-
 class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable {
   private
     $_stream,
@@ -108,13 +103,10 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ Cmd_
-
 abstract class Cmd_ {
   const
-    SuccessCode = 0,
-    FailureCode = 1;
+    SUCCESS_CODE = 0,
+    FAILURE_CODE = 1;
 
   private $_argv;
 
@@ -134,10 +126,10 @@ abstract class Cmd_ {
     try {
       Narvalo\Log::SetLogger(static::CreateLogger_());
 
-      $exit_code = (new static($argv))->run() ?: self::SuccessCode;
+      $exit_code = (new static($argv))->run() ?: self::SUCCESS_CODE;
     } catch (\Exception $e) {
       static::OnUnhandledException_($e);
-      $exit_code = static::FailureCode;
+      $exit_code = static::FAILURE_CODE;
     }
 
     exit($exit_code);
@@ -148,7 +140,7 @@ abstract class Cmd_ {
   protected static function CreateLogger_() {
     $logger = new Narvalo\AggregateLogger();
     $logger->attach(new Narvalo\DefaultLogger());
-    $logger->attach(new StandardErrorLogger(Narvalo\Loggerlevel::Error));
+    $logger->attach(new StandardErrorLogger(Narvalo\Loggerlevel::ERROR));
 
     return $logger;
   }
@@ -157,7 +149,5 @@ abstract class Cmd_ {
     Narvalo\Log::Error($_e_);
   }
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF

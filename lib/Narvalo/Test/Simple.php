@@ -22,6 +22,7 @@ class Simple extends Framework\TestModule {
   function ok($_test_, $_name_) {
     return $this->getProducer()->assert($_test_, $_name_);
   }
+
 }
 
 // EOF

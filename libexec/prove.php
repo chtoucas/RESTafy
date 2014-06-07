@@ -19,7 +19,7 @@ class ProveCmd extends Term\Cmd_ {
     $harness->scanDirectoryAndExecute($path);
     $harness->dispose();
 
-    return self::SuccessCode;
+    return self::SUCCESS_CODE;
   }
 
   private function _getDirectoryPath() {

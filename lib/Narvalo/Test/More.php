@@ -9,57 +9,33 @@ use \Narvalo;
 use \Narvalo\Test\Framework;
 use \Narvalo\Test\Internal as _;
 
-// {{{ plan()
-
 function plan($_max_) {
   _\mk_test()->plan($_max_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ ok()
 
 function ok($_test_, $_name_) {
   return _\mk_test()->ok($_test_, $_name_);
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ is()
-
 function is($_got_, $_expected_, $_name_) {
   return _\mk_test()->is($_got_, $_expected_, $_name_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ isnt()
 
 function isnt($_got_, $_expected_, $_name_) {
   return _\mk_test()->isnt($_got_, $_expected_, $_name_);
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ pass()
-
 function pass($_name_) {
   return _\mk_test()->pass($_got_, $_expected_, $_name_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ fail()
 
 function fail($_name_) {
   return _\mk_test()->fail($_got_, $_expected_, $_name_);
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-// {{{ BAIL_OUT()
-
 function BAIL_OUT($_reason_) {
   return _\mk_test()->bailOut($_reason_);
 }
-
-// }}} ---------------------------------------------------------------------------------------------
-
-// {{{ More
 
 class More extends Framework\TestModule {
   // TODO: Test deep object graph.
@@ -106,9 +82,11 @@ class More extends Framework\TestModule {
   function is($_got_, $_expected_, $_name_) {
     $test = $_got_ === $_expected_;
     $passed = $this->ok($test, $_name_);
+    
     if (!$passed) {
       $this->_diagnoseFailedEquality($_got_, $_expected_);
     }
+    
     return $passed;
   }
 
@@ -116,9 +94,11 @@ class More extends Framework\TestModule {
   function isnt($_got_, $_expected_, $_name_) {
     $test = $_got_ !== $_expected_;
     $passed = $this->ok($test, $_name_);
+    
     if (!$passed) {
       $this->_diagnoseFailedInequality($_got_, $_expected_);
     }
+    
     return $passed;
   }
 
@@ -164,18 +144,22 @@ class More extends Framework\TestModule {
   function like($_subject_, $_pattern_, $_name_) {
     $test = 1 === \preg_match($_pattern_, $_subject_);
     $passed = $this->ok($test, $_name_);
+    
     if (!$passed) {
       $this->_diagnoseFailedMatch($_subject_, $_pattern_);
     }
+    
     return $passed;
   }
 
   function unlike($_subject_, $_pattern_, $_name_) {
     $test = 0 === \preg_match($_pattern_, $_subject_);
     $passed = $this->ok($test, $_name_);
+    
     if (!$passed) {
       $this->_diagnoseFailedUnmatch($_subject_, $_pattern_);
     }
+    
     return $passed;
   }
 
@@ -295,15 +279,11 @@ EOL;
   }
 }
 
-// }}} ---------------------------------------------------------------------------------------------
-
 // #################################################################################################
 
 namespace Narvalo\Test\Internal;
 
 use \Narvalo\Test;
-
-// {{{ mk_test()
 
 function mk_test() {
   static $_Test;
@@ -314,7 +294,5 @@ function mk_test() {
 
   return $_Test;
 }
-
-// }}} ---------------------------------------------------------------------------------------------
 
 // EOF
