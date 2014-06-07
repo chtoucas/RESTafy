@@ -501,18 +501,12 @@ final class LoggerLevel {
 
   static function ToString($_level_) {
     switch ($_level_) {
-      case self::DEBUG:
-        return 'Debug';
-      case self::NOTICE:
-        return 'Notice';
-      case self::ERROR:
-        return 'Error';
-      case self::WARNING:
-        return 'Warning';
-      case self::NONE:
-        return 'None';
-      default:
-        return 'Unknown';
+      case self::DEBUG:   return 'Debug';
+      case self::NOTICE:  return 'Notice';
+      case self::ERROR:   return 'Error';
+      case self::WARNING: return 'Warning';
+      case self::NONE:    return 'None';
+      default:            return 'Unknown';
     }
   }
 }

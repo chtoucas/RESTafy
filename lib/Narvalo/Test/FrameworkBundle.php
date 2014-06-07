@@ -561,6 +561,7 @@ use \Narvalo\Test\Framework;
 
 abstract class TestResultSet_ {
   private
+    // TRUE if the set is closed.
     $_closed        = \FALSE,
     // Number of failed tests.
     $_failuresCount = 0,

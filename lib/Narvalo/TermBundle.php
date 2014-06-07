@@ -82,7 +82,7 @@ class StandardErrorLogger extends Narvalo\Logger_ implements Narvalo\IDisposable
       Narvalo\LoggerLevel::ToString($_level_),
       $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
 
-    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::Red));
+    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::RED));
   }
 
   function dispose() {
