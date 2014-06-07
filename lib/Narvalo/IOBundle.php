@@ -25,32 +25,32 @@ final class File {
   // Creational methods
   // ------------------
 
-  /// Create the file with write-only access.
+  // Create the file with write-only access.
   static function Create($_path_) {
     return new FileStream($_path_, FileMode::CREATE_NEW);
   }
 
-  /// Open the file with read-only access
-  /// and position the stream at the beginning of the file.
+  // Open the file with read-only access
+  // and position the stream at the beginning of the file.
   static function OpenRead($_path_) {
     return new FileStream($_path_, FileMode::OPEN);
   }
 
-  /// Open or create the file with write-only access
-  /// and position the stream at the beginning of the file.
+  // Open or create the file with write-only access
+  // and position the stream at the beginning of the file.
   static function OpenWrite($_path_) {
     return new FileStream($_path_, FileMode::OPEN_OR_CREATE);
   }
 
-  /// Open or create the file with write-only access
-  /// and position the stream at the end of the file.
+  // Open or create the file with write-only access
+  // and position the stream at the end of the file.
   static function OpenAppend($_path_) {
     return new FileStream($_path_, FileMode::APPEND);
   }
 
-  /// Open or create the file with write-only access
-  /// and position the stream at the beginning of the file.
-  /// WARNING: This method is destructive, the file gets truncated.
+  // Open or create the file with write-only access
+  // and position the stream at the beginning of the file.
+  // WARNING: This method is destructive, the file gets truncated.
   static function OpenTruncate($_path_) {
     return new FileStream($_path_, FileMode::TRUNCATE);
   }
@@ -86,7 +86,7 @@ final class File {
     }
   }
 
-  /// WARNING: This method does not report on exceptional conditions like an authorization failure.
+  // WARNING: This method does not report on exceptional conditions like an authorization failure.
   static function Exists($_path_) {
     return \file_exists($_path_);
   }
@@ -210,6 +210,9 @@ class FileStream extends Narvalo\DisposableObject {
       $this->_fh->close();
     }
   }
+
+  // Private methods
+  // ---------------
 
   private static function _CreateFileHandle($_path_, $_mode_, $_extended_) {
     $handle = \fopen($_path_, self::_FileModeToString($_mode_, $_extended_));

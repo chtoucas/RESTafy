@@ -2,12 +2,13 @@
 
 namespace Narvalo\Persistence;
 
-require_once 'NarvaloBundle.php';
+require_once 'Narvalo\Persistence\DbiBundle.php';
 
 use Narvalo;
 
 class MysqlPDO implements Narvalo\IDbi {
   private $_dsn;
+
   protected $handle_;
 
   function __construct($_dsn_) {

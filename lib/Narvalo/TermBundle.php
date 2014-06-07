@@ -15,37 +15,37 @@ final class Ansi {
   //  http://en.wikipedia.org/wiki/ANSI_escape_code
   const
     // SGR (Select Graphic Rendition) parameters.
-    Clear      = 0,
-    Reset      = 0,   // Alias for Clear.
-    Bold       = 1,
-    Dark       = 2,
-    Faint      = 2,   // Alias for Dark.
-    Italic     = 3,
-    Underline  = 4,
-    Underscore = 4,   // Alias fot Underline.
-    Blink      = 5,
-    Reverse    = 7,
-    Concealed  = 8,
+    CLEAR       = 0,
+    RESET       = 0,   // Alias for Clear.
+    BOLD        = 1,
+    DARK        = 2,
+    FAINT       = 2,   // Alias for Dark.
+    ITALIC      = 3,
+    UNDERLINE   = 4,
+    UNDERSCORE  = 4,   // Alias fot Underline.
+    BLINK       = 5,
+    REVERSE     = 7,
+    CONCEALED   = 8,
 
     // Foreground colors.
-    Black      = 30,
-    Red        = 31,
-    Green      = 32,
-    Yellow     = 33,
-    Blue       = 34,
-    Magenta    = 35,
-    Cyan       = 36,
-    White      = 37,
+    BLACK       = 30,
+    RED         = 31,
+    GREEN       = 32,
+    YELLOW      = 33,
+    BLUE        = 34,
+    MAGENTA     = 35,
+    CYAN        = 36,
+    WHITE       = 37,
 
     // Background colors.
-    OnBlack    = 40,
-    OnRed      = 41,
-    OnGreen    = 42,
-    OnYellow   = 43,
-    OnBlue     = 44,
-    OnMagenta  = 45,
-    OnCyan     = 46,
-    OnWhite    = 47
+    ON_BLACK    = 40,
+    ON_RED      = 41,
+    ON_GREEN    = 42,
+    ON_YELLOW   = 43,
+    ON_BLUE     = 44,
+    ON_MAGENTA  = 45,
+    ON_CYAN     = 46,
+    ON_WHITE    = 47
     ;
 
   static function Color($_code_) {
@@ -58,9 +58,10 @@ final class Ansi {
 
   static function Colorize($_value_) {
     $codes = \array_slice(\func_get_args(), 1);
+
     return empty($codes)
       ? $_value_
-      : \sprintf('[%sm%s[%dm', \join(';', $codes), $_value_, self::Reset);
+      : \sprintf('[%sm%s[%dm', \join(';', $codes), $_value_, self::RESET);
   }
 }
 

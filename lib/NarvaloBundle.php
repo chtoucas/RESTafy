@@ -5,7 +5,7 @@ namespace Narvalo;
 // Core classes
 // =================================================================================================
 
-/// We really don't care about exception codes.
+// We really don't care about exception codes.
 class Exception extends \Exception {
   function __construct($_message_ = '', \Exception $_innerException_ = \NULL) {
     parent::__construct($_message_, 0 /* code */, $_innerException_);
@@ -51,6 +51,7 @@ final class DataType {
     INTEGER    = 2,
     FLOAT      = 3,
     STRING     = 4,
+
     // Complex types.
     REAL_ARRAY = 5,
     HASH       = 6,
@@ -59,10 +60,10 @@ final class DataType {
 
   private function __construct() { }
 
-  /// Why create our own function? There is already "gettype" you say!
-  /// According to the documentation, we should never rely on it...
-  /// A difference with it is that we return a different type
-  /// for dictionaries (associative arrays) and real arrays.
+  // Why create our own function? There is already "gettype" you say!
+  // According to the documentation, we should never rely on it...
+  // A difference with it is that we return a different type
+  // for dictionaries (associative arrays) and real arrays.
   static function Of($_value_) {
     Guard::NotNull($_value_);
 
@@ -78,6 +79,7 @@ final class DataType {
       // Faster alternative to the usual snippet:
       // empty($_value_) || \array_keys($_value_) === \range(0, \count($_value_) - 1)
       $i = 0;
+
       while (list($k, ) = each($_value_)) {
         if ($k !== $i) {
           return DataType::HASH;
@@ -112,11 +114,11 @@ final class DataType {
 final class Type {
   const
     NAMESPACE_DELIMITER = '\\',
-    GLOBAL_NAMESPACE = '\\';
+    GLOBAL_NAMESPACE    = '\\';
 
   private static
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
-    $_NameRegex = "{^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$}",
+    $_NameRegex          = "{^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$}",
     // TODO: Check the namespace regex.
     $_NamespaceNameRegex = "{^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$}";
 
@@ -125,7 +127,7 @@ final class Type {
     $_namespace;
 
   function __construct($_name_, $_namespace_ = self::GLOBAL_NAMESPACE) {
-    $this->_name = $_name_;
+    $this->_name      = $_name_;
     $this->_namespace = $_namespace_;
   }
 
@@ -172,13 +174,13 @@ final class Type {
   }
 }
 
-/// WARNING: Only works if the target file does not return FALSE.
+// WARNING: Only works if the target file does not return FALSE.
 final class DynaLoader {
   const
     DIRECTORY_SEPARATOR = '/',
-    FILE_EXTENSION = '.php';
+    FILE_EXTENSION      = '.php';
 
-  /// WARNING: Does not work with includes that return FALSE.
+  // WARNING: Does not work with includes that return FALSE.
   static function IncludeFile($_path_) {
     if (!self::TryIncludeFile($_path_)) {
       throw new RuntimeException(\sprintf('Unable to include the file: "%s".', $_path_));
@@ -203,7 +205,7 @@ final class DynaLoader {
     }
   }
 
-  /// WARNING: Does not work with includes that return FALSE.
+  // WARNING: Does not work with includes that return FALSE.
   static function TryIncludeFile($_path_) {
     return self::_TryIncludeFile(self::_NormalizePath($_path_));
   }
@@ -219,6 +221,9 @@ final class DynaLoader {
   static function TryLoadType(Type $_type_) {
     return self::_TryIncludeLibrary(self::_GetTypePath($_type_));
   }
+
+  // Private methods
+  // ---------------
 
   private static function _NameToPath($_name_) {
     return \str_replace(Type::NAMESPACE_DELIMITER, \DIRECTORY_SEPARATOR, $_name_)
@@ -279,17 +284,17 @@ class DisposableObject {
     $this->dispose_(\TRUE /* disposing */);
   }
 
-  /// Only happens when dispose() is called explicitly.
-  /// - dispose all disposable fields that the object owns.
-  /// - optionally reset the state of the object
-  /// WARNING: This method should NEVER throw or catch an exception.
+  // Only happens when dispose() is called explicitly.
+  // - dispose all disposable fields that the object owns.
+  // - optionally reset the state of the object
+  // WARNING: This method should NEVER throw or catch an exception.
   protected function close_() { }
 
-  /// This method run when the object is either disposed or finalized (if you supply a finalizer):
-  /// - free all external resources hold by the object and nullify them
-  /// - optionally nullify large value fields
-  /// NB: In most cases, you are better off using a SafeHandle_.
-  /// WARNING: This method should NEVER throw or catch an exception.
+  // This method run when the object is either disposed or finalized (if you supply a finalizer):
+  // - free all external resources hold by the object and nullify them
+  // - optionally nullify large value fields
+  // NB: In most cases, you are better off using a SafeHandle_.
+  // WARNING: This method should NEVER throw or catch an exception.
   protected function free_() { }
 
   protected function throwIfDisposed_() {
@@ -319,7 +324,7 @@ abstract class SafeHandle_ implements IDisposable {
   protected $handle_;
 
   private
-    $_refCount = 0,
+    $_refCount   = 0,
     $_ownsHandle = \FALSE;
 
   protected function __construct($_ownsHandle_) {
@@ -397,6 +402,9 @@ abstract class SafeHandle_ implements IDisposable {
       $this->_release();
     }
   }
+
+  // Private methods
+  // ---------------
 
   private function _release() {
     if (
@@ -632,6 +640,9 @@ final class Log {
     self::_GetLogger()->error($_msg_);
   }
 
+  // Private methods
+  // ---------------
+
   private static function _GetLogger() {
     if (\NULL === self::$_Logger) {
       self::SetLogger(new DefaultLogger());
@@ -666,6 +677,9 @@ trait Dictionary {
     unset($this->_store[$_key_]);
   }
 
+  // Private methods
+  // ---------------
+
   private function _checkKey($_key_) {
     if (!$this->has($_key_)) {
       throw new KeyNotFoundException(\sprintf('The key "%s" does not exist.', $_key_));
@@ -683,15 +697,19 @@ trait Singleton {
     $this->_initialize();
   }
 
-  final private function __clone() { }
-
-  final private function __wakeup() { }
-
   final static function UniqInstance() {
     return static::$_Instance ? : static::$_Instance = new static();
   }
 
+  // TODO: Explain this.
   private function _initialize() { }
+
+  // Private methods
+  // ---------------
+
+  final private function __clone() { }
+
+  final private function __wakeup() { }
 }
 
 // Borg pattern
@@ -808,29 +826,6 @@ final class ConfigurationManager {
     self::$_Current = $_config_;
     self::$_Initialized = \TRUE;
   }
-}
-
-// Persistence
-// =================================================================================================
-
-class DbiException extends Exception { }
-
-interface IDbi extends IDisposable {
-  function open();
-
-  function close();
-
-  //function open($_opts_);
-  //function selectDb($_db_);
-  //function quote($_str_);
-  //function & query($_sql_);
-  //function prepare($_sql_);
-  //function & execute();
-  //function fetchRowArray();
-  //function fetchRowHash();
-  //function commit();
-  //function rollback();
-  //function finish();
 }
 
 // EOF

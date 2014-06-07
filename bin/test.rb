@@ -6,8 +6,8 @@ include RESTafy
 if ARGV.empty? then Term.croak 'ARGV can not be empty.' end
 
 CmdFactory
-    .new(Env.instance)
-    .runtest_cmd(ARGV)
-    .exec()
+  .new(Env.instance)
+  .runtest_cmd(ARGV)
+  .exec()
 
 # EOF

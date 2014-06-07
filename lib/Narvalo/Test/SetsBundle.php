@@ -10,23 +10,24 @@ use \Narvalo\Test\Sets\Internal as _;
 // Core classes
 // =================================================================================================
 
-class TestSetException extends Narvalo\Exception {
-  
-}
+class TestSetException extends Narvalo\Exception { }
 
 interface ITestSet {
   function getName();
+
   function run();
 }
 
 interface ITestFixture {
   function setup();
+
   function teardown();
 }
 
-/// A very simple xUnit-like test set.
+// A very simple xUnit-like test set.
 class TestSuite implements ITestSet, ITestFixture {
   private static $_MethodNamesToExclude;
+
   private
       $_name,
       $_testMethods;
@@ -65,13 +66,12 @@ class TestSuite implements ITestSet, ITestFixture {
     $this->teardown();
   }
 
-  function setup() {
-    ;
-  }
+  function setup() { }
 
-  function teardown() {
-    ;
-  }
+  function teardown() { }
+
+  // Private methods
+  // ---------------
 
   private static function _Initialize() {
     if (NULL === self::$_MethodNamesToExclude) {
@@ -108,7 +108,6 @@ class FileTestSet implements ITestSet {
   function run() {
     Narvalo\DynaLoader::IncludeFile($this->_path);
   }
-
 }
 
 class FileTestSetIterator extends \IteratorIterator {
@@ -119,7 +118,6 @@ class FileTestSetIterator extends \IteratorIterator {
   function current() {
     return new FileTestSet(parent::current());
   }
-
 }
 
 class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
@@ -137,7 +135,6 @@ class InDirectoryFileTestSetIterator extends \RecursiveIteratorIterator {
   function current() {
     return new FileTestSet(parent::current()->getPathname());
   }
-
 }
 
 // #################################################################################################
@@ -166,10 +163,12 @@ class FileExtensionRecursiveFilterIterator extends \RecursiveFilterIterator {
     return new self($this->getInnerIterator()->getChildren(), $this->_fileExt);
   }
 
+  // Private methods
+  // ---------------
+
   private function _matchExtension($_value_) {
     return \substr($_value_, - $this->_fileExtLength) === $this->_fileExt;
   }
-
 }
 
 // EOF

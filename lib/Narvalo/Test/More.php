@@ -78,27 +78,27 @@ class More extends Framework\TestModule {
     return $this->ok(\FALSE, $_name_);
   }
 
-  /// Compare $_got_ and $_expected_ with ===
+  // Compare $_got_ and $_expected_ with ===
   function is($_got_, $_expected_, $_name_) {
     $test = $_got_ === $_expected_;
     $passed = $this->ok($test, $_name_);
-    
+
     if (!$passed) {
       $this->_diagnoseFailedEquality($_got_, $_expected_);
     }
-    
+
     return $passed;
   }
 
-  /// Compare $_got_ and $_expected_ with !==
+  // Compare $_got_ and $_expected_ with !==
   function isnt($_got_, $_expected_, $_name_) {
     $test = $_got_ !== $_expected_;
     $passed = $this->ok($test, $_name_);
-    
+
     if (!$passed) {
       $this->_diagnoseFailedInequality($_got_, $_expected_);
     }
-    
+
     return $passed;
   }
 
@@ -144,22 +144,22 @@ class More extends Framework\TestModule {
   function like($_subject_, $_pattern_, $_name_) {
     $test = 1 === \preg_match($_pattern_, $_subject_);
     $passed = $this->ok($test, $_name_);
-    
+
     if (!$passed) {
       $this->_diagnoseFailedMatch($_subject_, $_pattern_);
     }
-    
+
     return $passed;
   }
 
   function unlike($_subject_, $_pattern_, $_name_) {
     $test = 0 === \preg_match($_pattern_, $_subject_);
     $passed = $this->ok($test, $_name_);
-    
+
     if (!$passed) {
       $this->_diagnoseFailedUnmatch($_subject_, $_pattern_);
     }
-    
+
     return $passed;
   }
 

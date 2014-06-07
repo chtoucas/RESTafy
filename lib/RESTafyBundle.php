@@ -99,6 +99,9 @@ final class AssetManager {
     return self::_GetProvider()->getStyleUrl($_relativePath_);
   }
 
+  // Private methods
+  // ---------------
+
   private static function _GetProvider() {
     if (\NULL === self::$_Provider) {
       $section = ConfigurationManager::GetSection('AssetSection');

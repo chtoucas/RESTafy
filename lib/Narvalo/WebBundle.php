@@ -478,7 +478,7 @@ class CurlHelper {
   }
 }
 
-/// Parser for the HTTP response preamble.
+// Parser for the HTTP response preamble.
 function scan_header($_ch_, $_line_) {
   // NB: Each preamble line ends with a CRLF, the first empty line (after removing the CRLF)
   // marks the preamble's end.
@@ -487,7 +487,7 @@ function scan_header($_ch_, $_line_) {
 
     $helper = new CurlHelper();
 
-    if (   'HTTP' == \substr($line, 0, 4)
+    if ('HTTP' == \substr($line, 0, 4)
       && \FALSE !== ($fields = \split("\x20", $line, 3))
     ) {
       // Status line.

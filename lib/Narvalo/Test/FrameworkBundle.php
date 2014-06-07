@@ -68,12 +68,12 @@ class TestCaseResult {
     $this->_passed      = $_passed_;
   }
 
-  /// The test's description.
+  // The test's description.
   function getDescription() {
     return $this->_description;
   }
 
-  /// TRUE if the test passed, FALSE otherwise.
+  // TRUE if the test passed, FALSE otherwise.
   function passed() {
     return $this->_passed;
   }
@@ -215,11 +215,11 @@ final class NoopTestErrWriter implements ITestErrWriter {
 
 class TestEngine {
   private
-    /// Out stream.
+    // Out stream.
     $_outWriter,
-    /// Error stream.
+    // Error stream.
     $_errWriter,
-    /// Test workflow.
+    // Test workflow.
     $_workflow;
 
   function __construct(ITestOutWriter $_outWriter_, ITestErrWriter $_errWriter_) {
@@ -333,9 +333,9 @@ class BailOutTestProducerInterrupt extends TestProducerInterrupt { }
 
 class TestProducer {
   private
-    /// Test engine.
+    // Test engine.
     $_engine,
-    /// Test set.
+    // Test set.
     $_set,
     $_bailedOut          = \FALSE,
     $_runtimeErrorsCount = 0;
@@ -396,7 +396,7 @@ class TestProducer {
     throw new BailOutTestProducerInterrupt();
   }
 
-  /// Same as bailOut() but does not throw an exception. Only useful in a catch block.
+  // Same as bailOut() but does not throw an exception. Only useful in a catch block.
   function bailOutOnException(\Exception $_e_) {
     $this->_bailedOut = \TRUE;
     $this->_engine->bailOutOnException($_e_);
@@ -515,9 +515,10 @@ class TestProducer {
 // Test modules
 // =================================================================================================
 
-/// NB: you can create as many derived class as you wish, they will always share the same producer.
+// NB: you can create as many derived class as you wish, they will always share the same producer.
 class TestModule {
   private static $_SharedProducer;
+
   private $_producer;
 
   function __construct() {
@@ -561,9 +562,9 @@ use \Narvalo\Test\Framework;
 abstract class TestResultSet_ {
   private
     $_closed        = \FALSE,
-    /// Number of failed tests.
+    // Number of failed tests.
     $_failuresCount = 0,
-    /// List of tests.
+    // List of tests.
     $_tests         = array();
 
   protected function __construct() { }
@@ -656,7 +657,7 @@ final class DynamicTestResultSet extends TestResultSet_ {
     return 0 === $this->getFailuresCount() && $this->getTestsCount() != 0;
   }
 
-  /// Print helpful messages if something went wrong AND post plan.
+  // Print helpful messages if something went wrong AND post plan.
   protected function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
@@ -679,7 +680,7 @@ final class DynamicTestResultSet extends TestResultSet_ {
 }
 
 final class FixedSizeTestResultSet extends TestResultSet_ {
-  /// Number of expected tests.
+  // Number of expected tests.
   private $_length;
 
   function __construct($_length_) {
@@ -701,7 +702,7 @@ final class FixedSizeTestResultSet extends TestResultSet_ {
       && 0 === $this->getExtrasCount();
   }
 
-  /// Print helpful messages if something went wrong.
+  // Print helpful messages if something went wrong.
   protected function closeCore_(Framework\TestEngine $_engine_) {
     if (($tests_count = $this->getTestsCount()) > 0) {
       // We actually run tests.
@@ -1109,26 +1110,20 @@ final class TestWorkflow extends Narvalo\StartStopWorkflow_ {
     }
   }
 
+  // Private methods
+  // ---------------
+
   private static function _GetStateDisplayName($_state_) {
     switch ($_state_) {
-      case self::START:
-        return 'Start';
-      case self::HEADER:
-        return 'Header';
-      case self::STATIC_PLAN_DECL:
-        return 'StaticPlanDecl';
-      case self::DYNAMIC_PLAN_TESTS:
-        return 'DynamicPlanTests';
-      case self::DYNAMIC_PLAN_DECL:
-        return 'DynamicPlanDecl';
-      case self::STATIC_PLAN_TESTS:
-        return 'StaticPlanTests';
-      case self::SKIP_ALL:
-        return 'SkipAll';
-      case self::BAIL_OUT:
-        return 'BailOut';
-      case self::END:
-        return 'End';
+      case self::START:              return 'Start';
+      case self::HEADER:             return 'Header';
+      case self::STATIC_PLAN_DECL:   return 'StaticPlanDecl';
+      case self::DYNAMIC_PLAN_TESTS: return 'DynamicPlanTests';
+      case self::DYNAMIC_PLAN_DECL:  return 'DynamicPlanDecl';
+      case self::STATIC_PLAN_TESTS:  return 'StaticPlanTests';
+      case self::SKIP_ALL:           return 'SkipAll';
+      case self::BAIL_OUT:           return 'BailOut';
+      case self::END:                return 'End';
       default:
         throw new Narvalo\ArgumentException('state', 'Unknown state.');
     }

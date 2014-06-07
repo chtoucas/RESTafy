@@ -73,6 +73,9 @@ class TapWriter extends Narvalo\DisposableObject {
     return $_prefix_ . \preg_replace(_MULTILINE_CRLF_REGEX, $prefix, $_value_);
   }
 
+  // Private methods
+  // ---------------
+
   private function _indent() {
     $this->_indent = '    ' . $this->_indent;
   }
@@ -151,21 +154,21 @@ class TapOutWriter extends TapWriter implements Framework\ITestOutWriter {
     $desc = \preg_replace('{^\s+}', '¤', $desc);
     // Escape #.
     $desc = \str_replace('#', '\\#', $desc);
-    
+
     if ($desc != $_desc_) {
       Narvalo\Log::Notice(\sprintf('The description "%s" contains invalid chars.', $_desc_));
     }
-    
+
     return $desc;
   }
 
   private static function _FormatReason($_reason_) {
     $reason = \preg_replace(_CRLF_REGEX, '¤', $_reason_);
-    
+
     if ($reason != $_reason_) {
       Narvalo\Log::Notice(\sprintf('The reason "%s" contains invalid chars.', $_reason_));
     }
-    
+
     return $reason;
   }
 }
@@ -253,6 +256,9 @@ class TapHarnessWriter extends Narvalo\DisposableObject implements Runner\ITestH
       $this->_stream->close();
     }
   }
+
+  // Private methods
+  // ---------------
 
   private function _writeWarning(Runner\TestHarnessSummary $_summary_) {
     if (($dubious_count = $_summary_->getDubiousSetsCount()) > 0) {

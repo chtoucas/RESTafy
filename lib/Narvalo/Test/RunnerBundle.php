@@ -48,6 +48,7 @@ class TestRunner {
 
 interface ITestHarnessWriter {
   function writeResult($_name_, Framework\TestSetResult $_result_);
+
   function writeSummary(TestHarnessSummary $_summary_);
 }
 
