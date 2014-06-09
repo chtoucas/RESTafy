@@ -76,15 +76,6 @@ class StandardErrorLogger extends Narvalo\LoggerBase implements Narvalo\IDisposa
     $this->_stream = IO\File::GetStandardError();
   }
 
-  protected function log_($_level_, $_msg_) {
-    $msg = \sprintf(
-      '[%s] %s',
-      Narvalo\LoggerLevel::ToString($_level_),
-      $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
-
-    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::RED));
-  }
-
   function dispose() {
     $this->dispose_(\TRUE /* disposing */);
   }
@@ -101,6 +92,15 @@ class StandardErrorLogger extends Narvalo\LoggerBase implements Narvalo\IDisposa
     }
 
     $this->_disposed = \TRUE;
+  }
+
+  protected function log_($_level_, $_msg_) {
+    $msg = \sprintf(
+      '[%s] %s',
+      Narvalo\LoggerLevel::ToString($_level_),
+      $_msg_ instanceof \Exception ? $_msg_->getMessage() : $_msg_);
+
+    $this->_stream->writeLine(Ansi::Colorize($msg, Ansi::RED));
   }
 }
 

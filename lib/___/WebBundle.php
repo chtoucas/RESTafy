@@ -355,20 +355,16 @@ class Curl extends Narvalo\DisposableObject {
     case 'HEAD':
       $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'HEAD');
       throw new Narvalo\NotImplementedException('HEAD not yet implemented');
-      break;
     case 'PUT':
       $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'PUT');
       $this->setOpt(\CURLOPT_POSTFIELDS, $_req_->getContent());
       throw new Narvalo\NotImplementedException('PUT not yet implemented');
-      break;
     case 'DELETE':
       $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'DELETE');
       throw new Narvalo\NotImplementedException('DELETE not yet implemented');
-      break;
     case 'TRACE':
       $this->setOpt(\CURLOPT_CUSTOMREQUEST, 'TRACE');
       throw new Narvalo\NotImplementedException('TRACE not yet implemented');
-      break;
     default:
       throw new Narvalo\InvalidOperationException('Unknown HTTP verb.');
     }

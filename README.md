@@ -1,15 +1,14 @@
 RESTafy
 =======
 
-Minimal requirement:
-* PHP 5.4+
-* SPL extension
+Contains:
 
-Currently largely unmaintained, unstable and broken.
+- A set of lightweight utilities
+- A testing framework providing [TAP](http://en.wikipedia.org/wiki/Test_Anything_Protocol) support
 
-Objectives
-----------
+**Status: Experimental**
 
-- A set of lightweight classes for the most common operations
-- Provides a testing framework similar to TAP
+### Requirements ###
 
+- PHP 5.4+
+- SPL extension

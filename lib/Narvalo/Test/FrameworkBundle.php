@@ -1124,15 +1124,15 @@ final class TestWorkflow extends Framework\StartStopWorkflowBase {
 
     // This method does not change the current state.
     switch ($this->_state) {
-    // Invalid states.
-    case self::START:
-      throw new TestWorkflowException('You can not write an error: missing header.');
-    case self::END:
-      throw new TestWorkflowException('You can not write an error: workflow already closed.');
+      // Invalid states.
+      case self::START:
+        throw new TestWorkflowException('You can not write an error: missing header.');
+      case self::END:
+        throw new TestWorkflowException('You can not write an error: workflow already closed.');
 
-    // Valid states.
-    default:
-      break;
+      // Valid states.
+      default:
+        break;
     }
   }
 

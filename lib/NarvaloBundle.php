@@ -119,7 +119,7 @@ final class Type {
   private static
     // Cf. http://www.php.net/manual/fr/language.oop5.basic.php
     $_NameRegex          = "{^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$}",
-    // TODO: Check the namespace regex.
+    // TODO: Verify the namespace regex.
     $_NamespaceNameRegex = "{^[a-zA-Z_\x7f-\xff][\\a-zA-Z0-9_\x7f-\xff]*[a-zA-Z0-9_\x7f-\xff]$}";
 
   private
