@@ -9,7 +9,7 @@ use \Narvalo;
 use \Narvalo\IO;
 
 final class Ansi {
-  // The following list of ANSI codes is taken from:
+  // The list of ANSI codes is taken from:
   //  http://perldoc.perl.org/Term/ANSIColor.html
   // See also:
   //  http://en.wikipedia.org/wiki/ANSI_escape_code
